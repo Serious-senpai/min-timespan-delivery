@@ -234,7 +234,6 @@ if __name__ == "__main__":
     print(namespace, file=sys.stderr)
 
     problem = Problem.import_data(namespace.problem)
-    print(problem.problem)
     print(problem.customers_count, problem.trucks_count, problem.drones_count)
 
     print(*problem.x)
@@ -263,5 +262,38 @@ if __name__ == "__main__":
         raise RuntimeError("Cannot find a satisfying model from list", models)
 
     print(model.__class__.__name__)
-    for key, value in asdict(model).items():
-        print(key, value)
+    print(
+        model.capacity,
+        model.speed_type,
+        model.range_type,
+    )
+    if isinstance(model, DroneLinearConfig):
+        print(
+            model.takeoff_speed,
+            model.cruise_speed,
+            model.landing_speed,
+            model.altitude,
+            model.battery,
+            model.beta,
+            model.gamma,
+        )
+    elif isinstance(model, DroneNonlinearConfig):
+        print(
+            model.takeoff_speed,
+            model.cruise_speed,
+            model.landing_speed,
+            model.altitude,
+            model.battery,
+            model.k1,
+            model.k2,
+            model.c1,
+            model.c2,
+            model.c4,
+            model.c5,
+        )
+    else:
+        print(
+            model.fixed_time,
+            model.fixed_distance,
+            model.drone_speed,
+        )
