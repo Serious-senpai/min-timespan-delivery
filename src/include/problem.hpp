@@ -49,7 +49,11 @@ namespace d2d
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
             const std::vector<std::vector<double>> &distances,
-            _BaseDroneConfig *const config)
+            const TruckConfig *const truck,
+            const _BaseDroneConfig *const drone,
+            const DroneLinearConfig *const linear,
+            const DroneNonlinearConfig *const nonlinear,
+            const DroneEnduranceConfig *const endurance)
             : iterations(iterations),
               tabu_size(tabu_size),
               customers_count(customers_count),
@@ -57,11 +61,16 @@ namespace d2d
               drones_count(drones_count),
               customers(customers),
               distances(distances),
-              config(config) {}
+              truck(truck),
+              drone(drone),
+              linear(linear),
+              nonlinear(nonlinear),
+              endurance(endurance) {}
 
         ~Problem()
         {
-            delete config;
+            delete truck;
+            delete drone;
         }
 
     public:
@@ -69,7 +78,12 @@ namespace d2d
         const std::size_t customers_count, trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
-        _BaseDroneConfig *const config;
+        const double maximum_waiting_time = 3600;
+        const TruckConfig *const truck;
+        const _BaseDroneConfig *const drone;
+        const DroneLinearConfig *const linear;
+        const DroneNonlinearConfig *const nonlinear;
+        const DroneEnduranceConfig *const endurance;
 
         static Problem *get_instance();
     };
@@ -141,8 +155,24 @@ namespace d2d
             std::size_t iterations, tabu_size;
             std::cin >> iterations >> tabu_size;
 
-            std::string config_class;
-            std::cin >> config_class;
+            double truck_maximum_velocity, truck_capacity;
+            std::cin >> truck_maximum_velocity >> truck_capacity;
+
+            std::size_t truck_coefficients_count;
+            std::cin >> truck_coefficients_count;
+            std::vector<double> truck_coefficients(truck_coefficients_count);
+            for (std::size_t i = 0; i < truck_coefficients_count; i++)
+            {
+                std::cin >> truck_coefficients[i];
+            }
+
+            TruckConfig *truck = new TruckConfig(
+                truck_maximum_velocity,
+                truck_capacity,
+                truck_coefficients);
+
+            std::string drone_class;
+            std::cin >> drone_class;
 
             double capacity;
             std::string _speed_type;
@@ -152,12 +182,12 @@ namespace d2d
             StatsType speed_type = _speed_type == "low" ? StatsType::low : StatsType::high,
                       range_type = _range_type == "low" ? StatsType::low : StatsType::high;
 
-            _BaseDroneConfig *config = nullptr;
-            if (config_class == "DroneLinearConfig")
+            _BaseDroneConfig *drone = nullptr;
+            if (drone_class == "DroneLinearConfig")
             {
                 double takeoff_speed, cruise_speed, landing_speed, altitude, battery, beta, gamma;
                 std::cin >> takeoff_speed >> cruise_speed >> landing_speed >> altitude >> battery >> beta >> gamma;
-                config = new DroneLinearConfig(
+                drone = new DroneLinearConfig(
                     capacity,
                     speed_type,
                     range_type,
@@ -169,11 +199,11 @@ namespace d2d
                     beta,
                     gamma);
             }
-            else if (config_class == "DroneNonlinearConfig")
+            else if (drone_class == "DroneNonlinearConfig")
             {
                 double takeoff_speed, cruise_speed, landing_speed, altitude, battery, k1, k2, c1, c2, c4, c5;
                 std::cin >> takeoff_speed >> cruise_speed >> landing_speed >> altitude >> battery >> k1 >> k2 >> c1 >> c2 >> c4 >> c5;
-                config = new DroneNonlinearConfig(
+                drone = new DroneNonlinearConfig(
                     capacity,
                     speed_type,
                     range_type,
@@ -189,11 +219,11 @@ namespace d2d
                     c4,
                     c5);
             }
-            else if (config_class == "DroneEnduranceConfig")
+            else if (drone_class == "DroneEnduranceConfig")
             {
                 double fixed_time, fixed_distance, drone_speed;
                 std::cin >> fixed_time >> fixed_distance >> drone_speed;
-                config = new DroneEnduranceConfig(
+                drone = new DroneEnduranceConfig(
                     capacity,
                     speed_type,
                     range_type,
@@ -203,7 +233,7 @@ namespace d2d
             }
             else
             {
-                throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", config_class.c_str()));
+                throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
             _instance = new Problem(
@@ -214,7 +244,11 @@ namespace d2d
                 drones_count,
                 customers,
                 distances,
-                config);
+                truck,
+                drone,
+                dynamic_cast<DroneLinearConfig *>(drone),
+                dynamic_cast<DroneNonlinearConfig *>(drone),
+                dynamic_cast<DroneEnduranceConfig *>(drone));
         }
 
         return _instance;

@@ -56,6 +56,10 @@ namespace d2d
         virtual double takeoff_power(const double weight) const = 0;
         virtual double landing_power(const double weight) const = 0;
         virtual double cruise_power(const double weight) const = 0;
+
+        virtual double takeoff_time() const = 0;
+        virtual double landing_time() const = 0;
+        virtual double cruise_time(const double distance) const = 0;
     };
 
     class _VariableDroneConfig : public _BaseDroneConfig
@@ -86,6 +90,21 @@ namespace d2d
         }
 
         virtual ~_VariableDroneConfig() = default;
+
+        double takeoff_time() const override
+        {
+            return altitude / takeoff_speed;
+        }
+
+        double landing_time() const override
+        {
+            return altitude / landing_speed;
+        }
+
+        double cruise_time(const double distance) const override
+        {
+            return distance / cruise_speed;
+        }
     };
 
     class DroneLinearConfig : public _VariableDroneConfig
@@ -240,17 +259,32 @@ namespace d2d
 
         double takeoff_power(const double weight) const override
         {
-            return std::numeric_limits<double>::infinity();
+            return 0;
         }
 
         double landing_power(const double weight) const override
         {
-            return std::numeric_limits<double>::infinity();
+            return 0;
         }
 
         double cruise_power(const double weight) const override
         {
-            return drone_speed;
+            return 0;
+        }
+
+        double takeoff_time() const override
+        {
+            return 0;
+        }
+
+        double landing_time() const override
+        {
+            return 0;
+        }
+
+        double cruise_time(const double distance) const override
+        {
+            return distance / drone_speed;
         }
     };
 }

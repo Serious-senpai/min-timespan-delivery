@@ -247,6 +247,10 @@ if __name__ == "__main__":
     print(namespace.iterations)
     print(namespace.tabu_size)
 
+    truck = TruckConfig.import_data()
+    print(truck.maximum_velocity, truck.capacity)
+    print(len(truck.coefficients), *truck.coefficients)
+
     models: Tuple[_BaseDroneConfig, ...]
     if namespace.config == "linear":
         models = DroneLinearConfig.import_data()

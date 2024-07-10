@@ -4,10 +4,9 @@
 
 namespace utils
 {
-    template <typename T>
+    template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T pow2(const T &value)
     {
-        static_assert(std::is_arithmetic_v<T>, "pow2() requires an arithmetic type");
         return value * value;
     }
 
@@ -17,10 +16,15 @@ namespace utils
         return value * pow2(value);
     }
 
-    template <typename T>
+    template <typename _Iterator>
+    using _iterator_category_t = typename std::iterator_traits<_Iterator>::iterator_category;
+
+    template <typename _InputIterator>
+    using is_input_iterator_t = std::enable_if_t<std::is_convertible_v<_iterator_category_t<_InputIterator>, std::input_iterator_tag>, void>;
+
+    template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T sqrt(const T &value)
     {
-        static_assert(std::is_arithmetic_v<T>, "sqrt() requires an arithmetic type");
         if (value < 0)
         {
             throw std::out_of_range(format("Attempted to calculate square root of %s < 0", std::to_string(value).c_str()));

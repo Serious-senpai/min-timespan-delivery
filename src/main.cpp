@@ -3,7 +3,7 @@
 int main()
 {
     auto problem = d2d::Problem::get_instance();
-    auto ptr = dynamic_cast<d2d::DroneLinearConfig *>(problem->config);
+    auto ptr = problem->linear;
     if (ptr != NULL)
     {
         std::cout << ptr->beta << std::endl;
