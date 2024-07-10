@@ -38,7 +38,7 @@ namespace utils
         T low = 0, high = std::max(static_cast<T>(1), value), accuracy = 1;
         if constexpr (std::is_floating_point_v<T>)
         {
-            accuracy = 1.0e-6;
+            accuracy = 1.0e-7;
         }
 
         while (high - low > accuracy)

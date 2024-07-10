@@ -7,24 +7,26 @@ namespace d2d
 {
     class TruckConfig
     {
+    private:
+        const double _maximum_velocity;
+        const std::vector<double> _coefficients;
+
     public:
-        const double maximum_velocity;
         const double capacity;
-        const std::vector<double> coefficients;
 
         TruckConfig(
             const double maximum_velocity,
-            const double capacity,
-            const std::vector<double> coefficients)
-            : maximum_velocity(maximum_velocity),
-              capacity(capacity),
-              coefficients(coefficients)
+            const std::vector<double> coefficients,
+            const double capacity)
+            : _maximum_velocity(maximum_velocity),
+              _coefficients(coefficients),
+              capacity(capacity)
         {
         }
 
         double speed(const std::size_t &index) const
         {
-            return maximum_velocity * coefficients[index % coefficients.size()];
+            return _maximum_velocity * _coefficients[index % _coefficients.size()];
         }
     };
 

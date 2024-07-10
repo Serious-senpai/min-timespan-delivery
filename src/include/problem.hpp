@@ -44,7 +44,6 @@ namespace d2d
         Problem(
             const std::size_t &iterations,
             const std::size_t &tabu_size,
-            const std::size_t &customers_count,
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
@@ -56,7 +55,6 @@ namespace d2d
             const DroneEnduranceConfig *const endurance)
             : iterations(iterations),
               tabu_size(tabu_size),
-              customers_count(customers_count),
               trucks_count(trucks_count),
               drones_count(drones_count),
               customers(customers),
@@ -75,7 +73,7 @@ namespace d2d
 
     public:
         const std::size_t iterations, tabu_size;
-        const std::size_t customers_count, trucks_count, drones_count;
+        const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
         const double maximum_waiting_time = 3600;
@@ -168,8 +166,8 @@ namespace d2d
 
             TruckConfig *truck = new TruckConfig(
                 truck_maximum_velocity,
-                truck_capacity,
-                truck_coefficients);
+                truck_coefficients,
+                truck_capacity);
 
             std::string drone_class;
             std::cin >> drone_class;
@@ -239,7 +237,6 @@ namespace d2d
             _instance = new Problem(
                 iterations,
                 tabu_size,
-                customers_count,
                 trucks_count,
                 drones_count,
                 customers,

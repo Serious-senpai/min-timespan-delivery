@@ -57,11 +57,9 @@ namespace utils
         template <typename _InputIterator, typename = is_input_iterator_t<_InputIterator>>
         FenwickTree(const _InputIterator &begin, const _InputIterator &end) : FenwickTree()
         {
-            _array.insert(_array.end(), begin, end);
-            _tree.reserve(_array.size() + 1);
-            for (const T &value : _array)
+            for (auto iter = begin; iter != end; iter++)
             {
-                push_back(value);
+                push_back(*iter);
             }
         }
 
@@ -96,7 +94,7 @@ namespace utils
             return _sum(offset, offset + length);
         }
 
-        /** @brief Calculate the sum of the array */
+        /** @brief Calculate the sum of the underlying array */
         T sum() const
         {
             return _sum(0, size());
@@ -126,6 +124,13 @@ namespace utils
             }
         }
 
+        /** @brief Attempt to preallocate enough memory for specified number of elements. */
+        void reserve(const std::size_t &size)
+        {
+            _array.reserve(size);
+            _tree.reserve(size + 1);
+        }
+
         /**
          * @brief Append a value to the end of the underlying array
          *
@@ -139,28 +144,46 @@ namespace utils
             _tree.push_back(value + _sum(index ^ (index & -index), index - 1));
         }
 
+        /** @brief Alias of `std::vector<T>::const_iterator` */
+        using const_iterator = typename std::vector<T>::const_iterator;
+
         /** @brief Return a const_iterator to the beginning of underlying array */
-        std::vector<T>::const_iterator begin() const
+        const_iterator begin() const
         {
             return _array.cbegin();
         }
 
         /** @brief Return a const_iterator past the end of underlying array */
-        std::vector<T>::const_iterator end() const
+        const_iterator end() const
         {
             return _array.cend();
         }
 
         /** @brief Return a const_iterator to the beginning of underlying array */
-        std::vector<T>::const_iterator cbegin() const
+        const_iterator cbegin() const
         {
             return _array.cbegin();
         }
 
         /** @brief Return a const_iterator past the end of underlying array */
-        std::vector<T>::const_iterator cend() const
+        const_iterator cend() const
         {
             return _array.cend();
+        }
+
+        /** @brief Get a copy of the underlying array */
+        std::vector<T> array() const
+        {
+            return _array;
         }
     };
+}
+
+namespace std
+{
+    template <typename T>
+    ostream &operator<<(ostream &stream, const utils::FenwickTree<T> &tree)
+    {
+        return stream << tree.array();
+    }
 }
