@@ -236,8 +236,9 @@ namespace d2d
 
             for (std::size_t i = old_last_index; i + 1 < _customers.size(); i++)
             {
-                double time_segment = problem->customers[_customers[i]].truck_service_time,
+                double time_segment = 0,
                        distance = problem->distances[_customers[i]][_customers[i + 1]];
+                shift(&time_segment, problem->customers[_customers[i]].truck_service_time);
 
                 _distance += distance;
                 while (distance > 0)
