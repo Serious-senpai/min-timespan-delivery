@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     strategy:
+      fail-fast: false
       matrix:
         problem: [6.20.4, 10.20.4, 20.20.4, 50.40.4, 100.40.4, 200.40.4]
 
@@ -56,7 +57,7 @@ jobs:
           path: build/
 
       - name: Run executable in debug mode
-        run: python scripts/transform_data.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --return-child-result -ex run build/main.exe
+        run: python scripts/transform.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --return-child-result -ex run build/main.exe
 
       - name: Print report files
         run: |
