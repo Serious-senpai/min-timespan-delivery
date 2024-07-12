@@ -42,17 +42,22 @@ namespace utils
         }
 
     public:
-        /** @brief Construct a new FenwickTree object */
+        /**
+         * @brief Construct a new FenwickTree object.
+         * @note Time complexity `O(1)`
+         */
         FenwickTree()
         {
             _tree.push_back(static_cast<T>(0));
         }
 
         /**
-         * @brief Construct a new FenwickTree object from the range [begin, end)
+         * @brief Construct a new FenwickTree object from the range [begin, end).
          *
          * @param begin An iterator to the beginning of the range
          * @param end An iterator past the end of the range
+         * @note Time complexity `O(nlogn)`, where `n` is the number of elements
+         * between `begin` and `end`.
          */
         template <typename _InputIterator, typename = is_input_iterator_t<_InputIterator>>
         FenwickTree(const _InputIterator &begin, const _InputIterator &end) : FenwickTree()
@@ -64,9 +69,33 @@ namespace utils
         }
 
         /**
+         * @brief Construct a new FenwickTree object from the "prefix" of another
+         * FenwickTree object.
+         *
+         * Although this constructor results in an object identical to
+         * `FenwickTree<T>(other.begin(), other.begin() + n)`, it offers
+         * a more favorable time complexity.
+         *
+         * @param other The other FenwickTree object
+         * @param n The length of the prefix to copy
+         * @note Time complexity `O(n)`
+         */
+        FenwickTree(const FenwickTree<T> &other, const std::size_t &n)
+        {
+            if (other.size() < n)
+            {
+                throw std::out_of_range(format("Cannot copy %lu elements from a FenwickTree of size %lu", n, other.size()));
+            }
+
+            _array.insert(_array.end(), other._array.begin(), other._array.begin() + n);
+            _tree.insert(_tree.end(), other._tree.begin(), other._tree.begin() + n + 1);
+        }
+
+        /**
          * @brief Get the value at the specified index of the underlying array.
          *
          * @param index The index to get the value from (0-based)
+         * @note Time complexity `O(1)`
          */
         T get(const std::size_t &index) const
         {
@@ -88,13 +117,18 @@ namespace utils
          * @param offset The starting index of the subarray (0-based)
          * @param length The length of the subarray
          * @return The sum of the subarray
+         * @note Time complexity `O(logn)`, where `n` is the size of the underlying array.
          */
         T sum(const std::size_t &offset, const std::size_t &length) const
         {
             return _sum(offset, offset + length);
         }
 
-        /** @brief Calculate the sum of the underlying array */
+        /**
+         * @brief Calculate the sum of the underlying array.
+         *
+         * This is a shorthand for `sum(0, size())`.
+         */
         T sum() const
         {
             return _sum(0, size());
@@ -105,6 +139,7 @@ namespace utils
          *
          * @param index The index to update (0-based)
          * @param value The new value
+         * @note Time complexity `O(logn)`, where `n` is the size of the underlying array.
          */
         void set(const std::size_t &index, const T &value)
         {
@@ -135,6 +170,7 @@ namespace utils
          * @brief Append a value to the end of the underlying array
          *
          * @param value The value to append
+         * @note Time complexity `O(logn)`, where `n` is the size of the underlying array.
          */
         void push_back(const T &value)
         {
@@ -142,6 +178,20 @@ namespace utils
 
             std::size_t index = _tree.size();
             _tree.push_back(value + _sum(index ^ (index & -index), index - 1));
+        }
+
+        /**
+         * @brief Remove the last element of the underlying array. No data is returned.
+         */
+        void pop_back()
+        {
+            if (_array.empty())
+            {
+                throw std::out_of_range("Cannot pop from an empty FenwickTree");
+            }
+
+            _array.pop_back();
+            _tree.pop_back();
         }
 
         /** @brief Alias of `std::vector<T>::const_iterator` */
@@ -171,12 +221,42 @@ namespace utils
             return _array.cend();
         }
 
-        /** @brief Get a copy of the underlying array */
-        std::vector<T> array() const
+        /** @brief Get a const reference of the underlying array */
+        const std::vector<T> &array() const
         {
             return _array;
         }
+
+        /** @brief Get the first element of the underlying array */
+        T front() const
+        {
+            return _array.front();
+        }
+
+        /** @brief Get the last element of the underlying array */
+        T back() const
+        {
+            return _array.back();
+        }
     };
+
+    template <typename T>
+    bool operator==(const FenwickTree<T> &first, const FenwickTree<T> &second)
+    {
+        return first.array() == second.array();
+    }
+
+    template <typename T>
+    bool operator!=(const FenwickTree<T> &first, const FenwickTree<T> &second)
+    {
+        return first.array() != second.array();
+    }
+
+    template <typename T>
+    bool operator<(const FenwickTree<T> &first, const FenwickTree<T> &second)
+    {
+        return first.array() < second.array();
+    }
 }
 
 namespace std

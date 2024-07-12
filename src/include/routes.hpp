@@ -10,63 +10,35 @@ namespace d2d
     protected:
         static double _calculate_distance(const std::vector<std::size_t> &customers);
         static double _calculate_weight(const std::vector<std::size_t> &customers);
-        static std::vector<double> _calculate_waiting_time_violations(
+        static utils::FenwickTree<double> _calculate_waiting_time_violations(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments,
             const std::function<double(const std::size_t &)> service_time);
 
-    public:
-        /**
-         * @brief The order of customers in this route, starting and ending at the depot `0`.
-         */
-        const std::vector<std::size_t> customers;
-
-        /**
-         * @brief The time segments between each pair of adjacent customers.
-         *
-         * Given a pair of adjacent customers `(x, y)` in this route, a time segment is the time
-         * from the moment the vehicle starts serving customer `x` to the moment it starts serving
-         * customer `y` (including service time of `x` but not `y`).
-         */
-        const utils::FenwickTree<double> time_segments;
-
-        /**
-         * @brief The waiting time violations of each customer in this route.
-         */
-        const std::vector<double> waiting_time_violations;
-
-        /**
-         * @brief The total traveling distance of this route.
-         */
-        const double distance;
-
-        /**
-         * @brief The total customer demands of this route.
-         */
-        const double weight;
-
-        /**
-         * @brief The total working time of this route
-         */
-        const double working_time;
+        std::vector<std::size_t> _customers;
+        utils::FenwickTree<double> _time_segments;
+        utils::FenwickTree<double> _waiting_time_violations;
+        double _distance;
+        double _weight;
+        double _working_time;
 
         _BaseRoute(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments,
-            const std::vector<double> &waiting_time_violations,
+            const utils::FenwickTree<double> &waiting_time_violations,
             const double &distance,
             const double &weight)
-            : customers(customers),
-              time_segments(time_segments),
-              waiting_time_violations(waiting_time_violations),
-              distance(distance),
-              weight(weight),
-              working_time(time_segments.sum())
+            : _customers(customers),
+              _time_segments(time_segments),
+              _waiting_time_violations(waiting_time_violations),
+              _distance(distance),
+              _weight(weight),
+              _working_time(time_segments.sum())
         {
 #ifdef DEBUG
-            if (customers.empty())
+            if (customers.size() < 3)
             {
-                throw std::runtime_error("Routes must not be empty");
+                throw std::runtime_error("Empty routes are not allowed");
             }
 
             if (customers.front() != 0 || customers.back() != 0)
@@ -76,8 +48,61 @@ namespace d2d
 #endif
         }
 
-        /** @brief The amount of weight exceeding vehicle capacity */
-        virtual double weight_violation() const = 0;
+    public:
+        /** @brief The amount of weight exceeding vehicle capacity. */
+        virtual double capacity_violation() const = 0;
+
+        /**
+         * @brief The order of customers in this route, starting and ending at the depot `0`.
+         */
+        const std::vector<std::size_t> &customers() const
+        {
+            return _customers;
+        }
+
+        /**
+         * @brief The time segments between each pair of adjacent customers.
+         *
+         * Given a pair of adjacent customers `(x, y)` in this route, a time segment is the time
+         * from the moment the vehicle starts serving customer `x` to the moment it starts serving
+         * customer `y` (including service time of `x` but not `y`).
+         */
+        const utils::FenwickTree<double> &time_segments() const
+        {
+            return _time_segments;
+        }
+
+        /**
+         * @brief The waiting time violations of each customer in this route.
+         */
+        const utils::FenwickTree<double> &waiting_time_violations() const
+        {
+            return _waiting_time_violations;
+        }
+
+        /**
+         * @brief The total traveling distance of this route.
+         */
+        double distance() const
+        {
+            return _distance;
+        }
+
+        /**
+         * @brief The total customer demands of this route.
+         */
+        double weight() const
+        {
+            return _weight;
+        }
+
+        /**
+         * @brief The total working time of this route
+         */
+        double working_time() const
+        {
+            return _working_time;
+        }
     };
 
     double _BaseRoute::_calculate_distance(const std::vector<std::size_t> &customers)
@@ -104,18 +129,19 @@ namespace d2d
         return weight;
     }
 
-    std::vector<double> _BaseRoute::_calculate_waiting_time_violations(
+    utils::FenwickTree<double> _BaseRoute::_calculate_waiting_time_violations(
         const std::vector<std::size_t> &customers,
         const utils::FenwickTree<double> &time_segments,
         const std::function<double(const std::size_t &)> service_time)
     {
         auto problem = Problem::get_instance();
-        std::vector<double> violations(customers.size());
+        utils::FenwickTree<double> violations;
+        violations.reserve(customers.size());
 
         double time = time_segments.sum();
         for (std::size_t i = 0; i < customers.size(); i++)
         {
-            violations[i] = std::max(0.0, time - service_time(customers[i]) - problem->maximum_waiting_time);
+            violations.push_back(std::max(0.0, time - service_time(customers[i]) - problem->maximum_waiting_time));
             time -= time_segments.get(i);
         }
 
@@ -127,7 +153,7 @@ namespace d2d
     {
     private:
         static utils::FenwickTree<double> _calculate_time_segments(const std::vector<std::size_t> &customers);
-        static std::vector<double> _calculate_waiting_time_violations(
+        static utils::FenwickTree<double> _calculate_waiting_time_violations(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments);
 
@@ -136,10 +162,25 @@ namespace d2d
         TruckRoute(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments,
-            const std::vector<double> &waiting_time_violations,
+            const utils::FenwickTree<double> &waiting_time_violations,
             const double &distance,
             const double &weight)
             : _BaseRoute(customers, time_segments, waiting_time_violations, distance, weight) {}
+
+        /**
+         * @brief Construct a `TruckRoute` with pre-calculated `time_segments`, `distance` and `weight`.
+         */
+        TruckRoute(
+            const std::vector<std::size_t> &customers,
+            const utils::FenwickTree<double> &time_segments,
+            const double &distance,
+            const double &weight)
+            : TruckRoute(
+                  customers,
+                  time_segments,
+                  _calculate_waiting_time_violations(customers, time_segments),
+                  distance,
+                  weight) {}
 
         /** @brief Construct a `TruckRoute` with pre-calculated time_segments */
         TruckRoute(
@@ -148,20 +189,96 @@ namespace d2d
             : TruckRoute(
                   customers,
                   time_segments,
-                  _calculate_waiting_time_violations(customers, time_segments),
                   _calculate_distance(customers),
                   _calculate_weight(customers)) {}
 
         /** @brief Construct a `TruckRoute` from a list of customers in order. */
         TruckRoute(const std::vector<std::size_t> &customers)
-            : TruckRoute(
-                  customers,
-                  _calculate_time_segments(customers)) {}
+            : TruckRoute(customers, _calculate_time_segments(customers)) {}
 
-        double weight_violation() const override
+        double capacity_violation() const override
         {
             auto problem = Problem::get_instance();
-            return std::max(0.0, weight - problem->truck->capacity);
+            return std::max(0.0, _weight - problem->truck->capacity);
+        }
+
+        /**
+         * @brief Append a new customer to this route.
+         *
+         * This is a convenient method to use extensively during algorithm initialization step.
+         */
+        void push_back(const std::size_t &customer)
+        {
+            auto problem = Problem::get_instance();
+
+            _customers.back() = customer;
+            _customers.push_back(0); // Done updating _customers
+
+            _time_segments.pop_back();
+
+            double time_offset = _time_segments.sum();
+            std::size_t coefficients_index = time_offset / 3600.0;
+            double current_within_timespan = time_offset - 3600.0 * coefficients_index;
+
+            const auto shift = [&coefficients_index, &current_within_timespan](double *time_segment_ptr, double dt)
+            {
+                *time_segment_ptr += dt;
+                current_within_timespan += dt;
+                if (current_within_timespan >= 3600)
+                {
+                    current_within_timespan -= 3600;
+                    coefficients_index++;
+                }
+            };
+
+            std::size_t old_last_index = _customers.size() - 3;
+            _distance -= problem->distances[_customers[old_last_index]][0];
+
+            for (std::size_t i = old_last_index; i + 1 < _customers.size(); i++)
+            {
+                double time_segment = problem->customers[_customers[i]].truck_service_time,
+                       distance = problem->distances[_customers[i]][_customers[i + 1]];
+
+                _distance += distance;
+                while (distance > 0)
+                {
+                    double speed = problem->truck->speed(coefficients_index),
+                           distance_shift = std::min(distance, speed * (3600.0 - current_within_timespan));
+
+                    distance -= distance_shift;
+                    shift(&time_segment, distance_shift / speed);
+                }
+
+                _time_segments.push_back(time_segment);
+            } // Done updating _time_segments, _distance
+
+            _weight += problem->customers[customer].demand; // Done updating _weight
+
+            // Couldn't find a better way than recalculating it
+            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
+
+#ifdef DEBUG
+            TruckRoute verify(_customers);
+            if (_time_segments != verify._time_segments)
+            {
+                throw std::runtime_error("TruckRoute::push_back: Inconsistent time segments, possibly an error in calculation");
+            }
+
+            if (_waiting_time_violations != verify._waiting_time_violations)
+            {
+                throw std::runtime_error("TruckRoute::push_back: Inconsistent waiting time violations, possibly an error in calculation");
+            }
+
+            if (_distance != verify._distance)
+            {
+                throw std::runtime_error("TruckRoute::push_back: Inconsistent distance, possibly an error in calculation");
+            }
+
+            if (_weight != verify._weight)
+            {
+                throw std::runtime_error("TruckRoute::push_back: Inconsistent weight, possibly an error in calculation");
+            }
+#endif
         }
     };
 
@@ -204,7 +321,7 @@ namespace d2d
         return time_segments;
     }
 
-    std::vector<double> TruckRoute::_calculate_waiting_time_violations(
+    utils::FenwickTree<double> TruckRoute::_calculate_waiting_time_violations(
         const std::vector<std::size_t> &customers,
         const utils::FenwickTree<double> &time_segments)
     {
@@ -223,34 +340,62 @@ namespace d2d
     {
     private:
         static utils::FenwickTree<double> _calculate_time_segments(const std::vector<std::size_t> &customers);
-        static std::vector<double> _calculate_waiting_time_violations(
+        static utils::FenwickTree<double> _calculate_waiting_time_violations(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments);
         static double _calculate_energy_consumption(const std::vector<std::size_t> &customers);
 
-    public:
-        /** @brief Total energy consumption of drone (SI unit: J) */
-        const double energy_consumption;
+        double _energy_consumption;
 
-        /** @brief Construct a `DroneRoute` with pre-calculated attributes */
+    public:
+        /** @brief Construct a `DroneRoute` with pre-calculated attributes. */
         DroneRoute(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments,
-            const std::vector<double> &waiting_time_violations,
+            const utils::FenwickTree<double> &waiting_time_violations,
             const double &distance,
             const double &weight,
             const double &energy_consumption)
             : _BaseRoute(customers, time_segments, waiting_time_violations, distance, weight),
-              energy_consumption(energy_consumption) {}
+              _energy_consumption(energy_consumption)
+        {
+#ifdef DEBUG
+            auto problem = Problem::get_instance();
+            for (auto &customer : customers)
+            {
+                if (!problem->customers[customer].dronable)
+                {
+                    throw std::runtime_error(utils::format("Customer %lu is not allowed to be served by drone", customer));
+                }
+            }
+#endif
+        }
 
-        /** @brief Construct a `DroneRoute` with pre-calculated time_segments */
+        /**
+         * @brief Construct a `DroneRoute` with pre-calculated `time_segments`, `distance`, `weight`
+         * and `energy_consumption`.
+         */
+        DroneRoute(
+            const std::vector<std::size_t> &customers,
+            const utils::FenwickTree<double> &time_segments,
+            const double &distance,
+            const double &weight,
+            const double &energy_consumption)
+            : DroneRoute(
+                  customers,
+                  time_segments,
+                  _calculate_waiting_time_violations(customers, time_segments),
+                  distance,
+                  weight,
+                  energy_consumption) {}
+
+        /** @brief Construct a `DroneRoute` with pre-calculated `time_segments`. */
         DroneRoute(
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments)
             : DroneRoute(
                   customers,
                   time_segments,
-                  _calculate_waiting_time_violations(customers, time_segments),
                   _calculate_distance(customers),
                   _calculate_weight(customers),
                   _calculate_energy_consumption(customers)) {}
@@ -259,10 +404,101 @@ namespace d2d
         DroneRoute(const std::vector<std::size_t> &customers)
             : DroneRoute(customers, _calculate_time_segments(customers)) {}
 
-        double weight_violation() const override
+        double capacity_violation() const override
         {
             auto problem = Problem::get_instance();
-            return std::max(0.0, weight - problem->drone->capacity);
+            return std::max(0.0, _weight - problem->drone->capacity);
+        }
+
+        /** @brief Total energy consumption of drone (SI unit: J) */
+        double energy_consumption() const
+        {
+            return _energy_consumption;
+        }
+
+        double energy_violation() const
+        {
+            auto problem = Problem::get_instance();
+            if (problem->linear != NULL)
+            {
+                return std::max(0.0, _energy_consumption - problem->linear->battery);
+            }
+            else if (problem->nonlinear != NULL)
+            {
+                return std::max(0.0, _energy_consumption - problem->nonlinear->battery);
+            }
+
+            return 0;
+        }
+
+        /**
+         * @brief Append a new customer to this route.
+         *
+         * This is a convenient method to use extensively during algorithm initialization step.
+         */
+        void push_back(const std::size_t &customer)
+        {
+            auto problem = Problem::get_instance();
+            auto drone = problem->drone;
+
+            _customers.back() = customer;
+            _customers.push_back(0); // Done updating _customers
+
+            _time_segments.pop_back();
+
+            std::size_t old_last_index = _customers.size() - 3;
+
+            _distance -= problem->distances[_customers[old_last_index]][0];
+            _energy_consumption -= drone->takeoff_time() * drone->takeoff_power(_weight) +
+                                   drone->landing_time() * drone->landing_power(_weight) +
+                                   drone->cruise_time(problem->distances[_customers[old_last_index]][0]) * drone->cruise_power(_weight);
+            _weight -= problem->customers[_customers[old_last_index]].demand;
+
+            for (std::size_t i = old_last_index; i + 1 < _customers.size(); i++)
+            {
+                double distance = problem->distances[_customers[i]][_customers[i + 1]];
+                _time_segments.push_back(
+                    problem->customers[_customers[i]].drone_service_time +
+                    drone->takeoff_time() +
+                    drone->cruise_time(distance) +
+                    drone->landing_time());
+
+                _distance += distance;
+                _weight += problem->customers[_customers[i]].demand;
+                _energy_consumption += drone->takeoff_time() * drone->takeoff_power(_weight) +
+                                       drone->cruise_time(distance) * drone->cruise_power(_weight) +
+                                       drone->landing_time() * drone->landing_power(_weight);
+            } // Done updating _time_segments, _distance, _weight, _energy_consumption
+
+            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
+
+#ifdef DEBUG
+            DroneRoute verify(_customers);
+            if (_time_segments != verify._time_segments)
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent time segments, possibly an error in calculation");
+            }
+
+            if (_waiting_time_violations != verify._waiting_time_violations)
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent waiting time violation, possibly an error in calculation");
+            }
+
+            if (_distance != verify._distance)
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent distance, possibly an error in calculation");
+            }
+
+            if (_weight != verify._weight)
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent weight, possibly an error in calculation");
+            }
+
+            if (_energy_consumption != verify._energy_consumption)
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent energy consumption, possibly an error in calculation");
+            }
+#endif
         }
     };
 
@@ -285,7 +521,7 @@ namespace d2d
         return time_segments;
     }
 
-    std::vector<double> DroneRoute::_calculate_waiting_time_violations(
+    utils::FenwickTree<double> DroneRoute::_calculate_waiting_time_violations(
         const std::vector<std::size_t> &customers,
         const utils::FenwickTree<double> &time_segments)
     {
@@ -309,10 +545,18 @@ namespace d2d
         {
             weight += problem->customers[customers[i]].demand;
             energy += drone->takeoff_time() * drone->takeoff_power(weight) +
-                      drone->landing_time() * drone->landing_power(weight) +
-                      drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight);
+                      drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight) +
+                      drone->landing_time() * drone->landing_power(weight);
         }
 
         return energy;
+    }
+}
+
+namespace std
+{
+    ostream &operator<<(ostream &stream, const d2d::_BaseRoute &route)
+    {
+        return stream << route.customers();
     }
 }

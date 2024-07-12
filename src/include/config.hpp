@@ -170,7 +170,7 @@ namespace d2d
         static constexpr double W = 1.5;
         static constexpr double g = 9.8;
 
-        double _vertical_speed(const double weight, const double speed) const
+        double _vertical_power(const double weight, const double speed) const
         {
             double p = (W + weight) * g, half_speed = speed / 2;
             return k1 * p * (half_speed + utils::sqrt(utils::pow2(half_speed) + p / utils::pow2(k2))) + c2 * std::pow(p, 1.5);
@@ -221,12 +221,12 @@ namespace d2d
 
         double takeoff_power(const double weight) const override
         {
-            return _vertical_speed(weight, takeoff_speed);
+            return _vertical_power(weight, takeoff_speed);
         }
 
         double landing_power(const double weight) const override
         {
-            return _vertical_speed(weight, landing_speed);
+            return _vertical_power(weight, landing_speed);
         }
 
         double cruise_power(const double weight) const override
