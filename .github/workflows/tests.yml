@@ -59,6 +59,7 @@ jobs:
       - name: Run executable in debug mode
         run: |
           mkdir result
+          chmod +x build/main.exe
           python scripts/transform.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --return-child-result -ex run build/main.exe
 
       - name: Print performance report
