@@ -57,9 +57,9 @@ jobs:
           path: build/
 
       - name: Run executable in debug mode
-        run: python scripts/transform.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --return-child-result -ex run build/main.exe
-
-      - name: Print report files
         run: |
-          echo result/perf.txt
-          cat result/perf.txt
+          mkdir result
+          python scripts/transform.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --return-child-result -ex run build/main.exe
+
+      - name: Print performance report
+        run: cat result/perf.txt
