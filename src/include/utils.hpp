@@ -20,7 +20,7 @@ namespace utils
     using _iterator_category_t = typename std::iterator_traits<_Iterator>::iterator_category;
 
     template <typename _InputIterator>
-    using is_input_iterator_t = std::enable_if_t<std::is_convertible_v<_iterator_category_t<_InputIterator>, std::input_iterator_tag>, void>;
+    using is_input_iterator_t = std::enable_if_t<std::is_convertible_v<_iterator_category_t<_InputIterator>, std::input_iterator_tag>, bool>;
 
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T sqrt(const T &value)

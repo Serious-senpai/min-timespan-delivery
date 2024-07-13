@@ -59,7 +59,7 @@ namespace utils
          * @note Time complexity `O(nlogn)`, where `n` is the number of elements
          * between `begin` and `end`.
          */
-        template <typename _InputIterator, typename = is_input_iterator_t<_InputIterator>>
+        template <typename _InputIterator, is_input_iterator_t<_InputIterator> = true>
         FenwickTree(const _InputIterator &begin, const _InputIterator &end) : FenwickTree()
         {
             for (auto iter = begin; iter != end; iter++)

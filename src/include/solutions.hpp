@@ -188,7 +188,14 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial()
     {
-        return d2d::initial_1();
+        auto result = initial_12(true);
+        auto r = initial_12(false);
+        result = result->cost() < r->cost() ? result : r;
+
+        r = initial_3();
+        result = result->cost() < r->cost() ? result : r;
+
+        return result;
     }
 
     std::shared_ptr<Solution> Solution::post_optimization(const std::shared_ptr<Solution> &solution)
