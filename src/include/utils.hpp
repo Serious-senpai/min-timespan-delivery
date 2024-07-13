@@ -62,4 +62,40 @@ namespace utils
     {
         return sqrt(pow2(dx) + pow2(dy));
     }
+
+    template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
+    T abs(const T &value)
+    {
+        return value > 0 ? value : -value;
+    }
+
+    template <typename T>
+    bool approximate(const T &first, const T &second)
+    {
+        return first == second;
+    }
+
+    template <>
+    bool approximate(const double &first, const double &second)
+    {
+        return abs(first - second) < 1.0e-6;
+    }
+
+    template <>
+    bool approximate(const float &first, const float &second)
+    {
+        return abs(first - second) < 1.0e-6;
+    }
+
+    template <typename T>
+    bool approximate(const std::vector<T> &first, const std::vector<T> &second)
+    {
+        return std::equal(
+            first.begin(), first.end(),
+            second.begin(), second.end(),
+            [](const T &first, const T &second)
+            {
+                return approximate(first, second);
+            });
+    }
 }

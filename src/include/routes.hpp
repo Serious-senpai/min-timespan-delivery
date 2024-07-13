@@ -260,22 +260,22 @@ namespace d2d
 
 #ifdef DEBUG
             TruckRoute verify(_customers);
-            if (_time_segments != verify._time_segments)
+            if (!utils::approximate(_time_segments, verify._time_segments))
             {
                 throw std::runtime_error("TruckRoute::push_back: Inconsistent time segments, possibly an error in calculation");
             }
 
-            if (_waiting_time_violations != verify._waiting_time_violations)
+            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
             {
                 throw std::runtime_error("TruckRoute::push_back: Inconsistent waiting time violations, possibly an error in calculation");
             }
 
-            if (_distance != verify._distance)
+            if (!utils::approximate(_distance, verify._distance))
             {
                 throw std::runtime_error("TruckRoute::push_back: Inconsistent distance, possibly an error in calculation");
             }
 
-            if (_weight != verify._weight)
+            if (!utils::approximate(_weight, verify._weight))
             {
                 throw std::runtime_error("TruckRoute::push_back: Inconsistent weight, possibly an error in calculation");
             }
@@ -475,27 +475,27 @@ namespace d2d
 
 #ifdef DEBUG
             DroneRoute verify(_customers);
-            if (_time_segments != verify._time_segments)
+            if (!utils::approximate(_time_segments, verify._time_segments))
             {
                 throw std::runtime_error("DroneRoute::push_back: Inconsistent time segments, possibly an error in calculation");
             }
 
-            if (_waiting_time_violations != verify._waiting_time_violations)
+            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
             {
                 throw std::runtime_error("DroneRoute::push_back: Inconsistent waiting time violation, possibly an error in calculation");
             }
 
-            if (_distance != verify._distance)
+            if (!utils::approximate(_distance, verify._distance))
             {
                 throw std::runtime_error("DroneRoute::push_back: Inconsistent distance, possibly an error in calculation");
             }
 
-            if (_weight != verify._weight)
+            if (!utils::approximate(_weight, verify._weight))
             {
                 throw std::runtime_error("DroneRoute::push_back: Inconsistent weight, possibly an error in calculation");
             }
 
-            if (_energy_consumption != verify._energy_consumption)
+            if (!utils::approximate(_energy_consumption, verify._energy_consumption))
             {
                 throw std::runtime_error("DroneRoute::push_back: Inconsistent energy consumption, possibly an error in calculation");
             }

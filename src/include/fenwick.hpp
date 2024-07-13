@@ -257,6 +257,12 @@ namespace utils
     {
         return first.array() < second.array();
     }
+
+    template <>
+    bool approximate(const FenwickTree<double> &first, const FenwickTree<double> &second)
+    {
+        return approximate(first.array(), second.array());
+    }
 }
 
 namespace std
