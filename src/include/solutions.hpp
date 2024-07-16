@@ -177,7 +177,7 @@ namespace d2d
     std::shared_ptr<Solution> Solution::tabu_search()
     {
         auto problem = Problem::get_instance();
-        auto r = initial(), result = r;
+        auto current = initial(), result = current;
 
         const auto aspiration_criteria = [&result](const Solution &s)
         {
@@ -209,10 +209,14 @@ namespace d2d
             }
 
             auto neighborhood = utils::random_element(neighborhoods);
-            r = neighborhood->move(r, aspiration_criteria);
-            if (r != nullptr && r->cost() < result->cost())
+            auto neighbor = neighborhood->move(current, aspiration_criteria);
+            if (neighbor != nullptr)
             {
-                result = r;
+                current = neighbor;
+                if (neighbor->cost() < result->cost())
+                {
+                    result = neighbor;
+                }
             }
         }
 
