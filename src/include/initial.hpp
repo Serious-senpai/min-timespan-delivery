@@ -64,8 +64,7 @@ namespace d2d
         }                                                                                                \
     }
 
-    std::shared_ptr<Solution>
-    initial_12(const bool &nearest)
+    std::shared_ptr<Solution> initial_12(const bool &nearest)
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);

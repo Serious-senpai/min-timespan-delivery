@@ -210,7 +210,7 @@ namespace d2d
 
             auto neighborhood = utils::random_element(neighborhoods);
             r = neighborhood->move(r, aspiration_criteria);
-            if (r->cost() < result->cost())
+            if (r != nullptr && r->cost() < result->cost())
             {
                 result = r;
             }
