@@ -60,7 +60,4 @@ jobs:
         run: |
           mkdir result
           chmod +x build/main.exe
-          python scripts/transform.py ${{ matrix.problem }} -v | time -po result/perf.txt gdb --command=scripts/gdb.txt --return-child-result build/main.exe
-
-      - name: Print performance report
-        run: cat result/perf.txt
+          python scripts/transform.py ${{ matrix.problem }} -v | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe

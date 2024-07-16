@@ -4,6 +4,7 @@
 #include "problem.hpp"
 #include "random.hpp"
 #include "routes.hpp"
+#include "neighborhoods/move_xy.hpp"
 #include "neighborhoods/two_opt.hpp"
 
 namespace d2d
@@ -94,6 +95,7 @@ namespace d2d
     };
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
+        std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
     double Solution::_calculate_working_time(
