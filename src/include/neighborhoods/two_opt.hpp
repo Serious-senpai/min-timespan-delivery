@@ -68,7 +68,7 @@ namespace d2d
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
             for (std::size_t vehicle_i = 0; vehicle_i < problem->trucks_count + problem->drones_count; vehicle_i++)
             {
-                for (std::size_t vehicle_j = vehicle_i + 1; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)
+                for (std::size_t vehicle_j = vehicle_i; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)
                 {
 #define MODIFY_ROUTES(VehicleRoute_i, VehicleRoute_j, vehicle_routes_i, vehicle_routes_j, vehicle_i, vehicle_j)                                                \
     {                                                                                                                                                          \
@@ -82,6 +82,14 @@ namespace d2d
                 {                                                                                                                                              \
                     for (std::size_t j = 1; j + 2 < customers_j.size(); j++)                                                                                   \
                     {                                                                                                                                          \
+                        if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                          \
+                        {                                                                                                                                      \
+                            if (vehicle_i == vehicle_j && route_i == route_j)                                                                                  \
+                            {                                                                                                                                  \
+                                continue;                                                                                                                      \
+                            }                                                                                                                                  \
+                        }                                                                                                                                      \
+                                                                                                                                                               \
                         std::vector<std::size_t> ri(customers_i.begin(), customers_i.begin() + (i + 1)),                                                       \
                             rj(customers_j.begin(), customers_j.begin() + (j + 1));                                                                            \
                                                                                                                                                                \
