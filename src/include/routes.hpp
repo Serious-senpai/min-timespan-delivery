@@ -1,5 +1,6 @@
 #pragma once
 
+#include "errors.hpp"
 #include "fenwick.hpp"
 #include "problem.hpp"
 
@@ -46,6 +47,38 @@ namespace d2d
                 throw std::runtime_error("Routes must start and end at the depot");
             }
 #endif
+        }
+
+        template <typename T, std::enable_if_t<std::is_base_of_v<_BaseRoute, T>, bool> = true>
+        void _verify(const T &verify) const
+        {
+#ifdef DEBUG
+            if (!utils::approximate(_time_segments, verify._time_segments))
+            {
+                throw std::runtime_error("Inconsistent time segments, possibly an error in calculation");
+            }
+
+            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
+            {
+                throw std::runtime_error("Inconsistent waiting time violations, possibly an error in calculation");
+            }
+
+            if (!utils::approximate(_distance, verify._distance))
+            {
+                throw std::runtime_error("Inconsistent distance, possibly an error in calculation");
+            }
+
+            if (!utils::approximate(_weight, verify._weight))
+            {
+                throw std::runtime_error("Inconsistent weight, possibly an error in calculation");
+            }
+#endif
+        }
+
+        template <typename T, std::enable_if_t<std::is_base_of_v<_BaseRoute, T> && std::is_constructible_v<T, const std::vector<std::size_t> &>, bool> = true>
+        void _verify() const
+        {
+            _verify<T>(T(_customers));
         }
 
     public:
@@ -157,6 +190,14 @@ namespace d2d
             const std::vector<std::size_t> &customers,
             const utils::FenwickTree<double> &time_segments);
 
+    protected:
+        void _verify()
+        {
+#ifdef DEBUG
+            _BaseRoute::_verify<TruckRoute>();
+#endif
+        }
+
     public:
         /** @brief Construct a `TruckRoute` with pre-calculated attributes */
         TruckRoute(
@@ -258,28 +299,34 @@ namespace d2d
             // Couldn't find a better way than recalculating it
             _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
 
-#ifdef DEBUG
-            TruckRoute verify(_customers);
-            if (!utils::approximate(_time_segments, verify._time_segments))
+            _verify();
+        }
+
+        void reverse(const std::size_t &offset, const std::size_t &length)
+        {
+            if (length < 2)
             {
-                throw std::runtime_error("TruckRoute::push_back: Inconsistent time segments, possibly an error in calculation");
+                return;
             }
 
-            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
-            {
-                throw std::runtime_error("TruckRoute::push_back: Inconsistent waiting time violations, possibly an error in calculation");
-            }
+            auto problem = Problem::get_instance();
 
-            if (!utils::approximate(_distance, verify._distance))
-            {
-                throw std::runtime_error("TruckRoute::push_back: Inconsistent distance, possibly an error in calculation");
-            }
+            std::reverse(_customers.begin() + offset, _customers.begin() + (offset + length)); // Done updating _customers
 
-            if (!utils::approximate(_weight, verify._weight))
-            {
-                throw std::runtime_error("TruckRoute::push_back: Inconsistent weight, possibly an error in calculation");
-            }
-#endif
+            // Too lazy to implement recalculation, still O(nlogn) though.
+            // Algorithm complexity doesn't even matter in the first place - typically n < 20
+            _time_segments = _calculate_time_segments(_customers); // Done updating _time_segments
+
+            _distance += problem->distances[_customers[offset - 1]][_customers[offset]] +
+                         problem->distances[_customers[offset + length - 1]][_customers[offset + length]] -
+                         problem->distances[_customers[offset - 1]][_customers[offset + length - 1]] -
+                         problem->distances[_customers[offset]][_customers[offset + length]]; // Done updating _distance
+
+            // _weight = _weight; // Unchanged, done updating _weight
+
+            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
+
+            _verify();
         }
     };
 
@@ -348,6 +395,19 @@ namespace d2d
 
         double _energy_consumption;
 
+    protected:
+        void _verify()
+        {
+#ifdef DEBUG
+            DroneRoute verify(_customers);
+            _BaseRoute::_verify<DroneRoute>(verify);
+            if (!utils::approximate(_energy_consumption, verify._energy_consumption))
+            {
+                throw std::runtime_error("DroneRoute::push_back: Inconsistent energy consumption, possibly an error in calculation");
+            }
+#endif
+        }
+
     public:
         /** @brief Construct a `DroneRoute` with pre-calculated attributes. */
         DroneRoute(
@@ -366,7 +426,7 @@ namespace d2d
             {
                 if (!problem->customers[customer].dronable)
                 {
-                    throw std::runtime_error(utils::format("Customer %lu is not allowed to be served by drone", customer));
+                    throw NonDronable(customer);
                 }
             }
 #endif
@@ -420,11 +480,11 @@ namespace d2d
         double energy_violation() const
         {
             auto problem = Problem::get_instance();
-            if (problem->linear != NULL)
+            if (problem->linear != nullptr)
             {
                 return std::max(0.0, _energy_consumption - problem->linear->battery);
             }
-            else if (problem->nonlinear != NULL)
+            else if (problem->nonlinear != nullptr)
             {
                 return std::max(0.0, _energy_consumption - problem->nonlinear->battery);
             }
@@ -473,33 +533,34 @@ namespace d2d
 
             _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
 
-#ifdef DEBUG
-            DroneRoute verify(_customers);
-            if (!utils::approximate(_time_segments, verify._time_segments))
+            _verify();
+        }
+
+        void reverse(const std::size_t &offset, const std::size_t &length)
+        {
+            if (length < 2)
             {
-                throw std::runtime_error("DroneRoute::push_back: Inconsistent time segments, possibly an error in calculation");
+                return;
             }
 
-            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
-            {
-                throw std::runtime_error("DroneRoute::push_back: Inconsistent waiting time violation, possibly an error in calculation");
-            }
+            auto problem = Problem::get_instance();
 
-            if (!utils::approximate(_distance, verify._distance))
-            {
-                throw std::runtime_error("DroneRoute::push_back: Inconsistent distance, possibly an error in calculation");
-            }
+            std::reverse(_customers.begin() + offset, _customers.begin() + (offset + length)); // Done updating _customers
 
-            if (!utils::approximate(_weight, verify._weight))
-            {
-                throw std::runtime_error("DroneRoute::push_back: Inconsistent weight, possibly an error in calculation");
-            }
+            _time_segments = _calculate_time_segments(_customers); // Done updating _time_segments
 
-            if (!utils::approximate(_energy_consumption, verify._energy_consumption))
-            {
-                throw std::runtime_error("DroneRoute::push_back: Inconsistent energy consumption, possibly an error in calculation");
-            }
-#endif
+            _distance += problem->distances[_customers[offset - 1]][_customers[offset]] +
+                         problem->distances[_customers[offset + length - 1]][_customers[offset + length]] -
+                         problem->distances[_customers[offset - 1]][_customers[offset + length - 1]] -
+                         problem->distances[_customers[offset]][_customers[offset + length]]; // Done updating _distance
+
+            _energy_consumption = _calculate_energy_consumption(_customers); // Done updating _energy_consumption
+
+            // _weight = _weight; // Unchanged, done updating _weight
+
+            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
+
+            _verify();
         }
     };
 

@@ -246,6 +246,7 @@ if __name__ == "__main__":
 
     print(namespace.iterations)
     print(namespace.tabu_size)
+    print(int(namespace.verbose))
 
     truck = TruckConfig.import_data()
     print(truck.maximum_velocity, truck.capacity)

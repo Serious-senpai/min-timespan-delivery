@@ -12,11 +12,8 @@ namespace d2d
     class Solution
     {
     private:
-        static const std::vector<std::shared_ptr<Neighborhood>> neighborhoods;
+        static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
         static double _calculate_working_time(
-            const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<DroneRoute>> &drone_routes);
-        static double _calculate_waiting_time_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
@@ -27,9 +24,6 @@ namespace d2d
     public:
         /** @brief System working time */
         const double working_time;
-
-        /** @brief Total waiting time violation of customers */
-        const double waiting_time_violation;
 
         /** @brief Total drone energy violation */
         const double drone_energy_violation;
@@ -47,7 +41,6 @@ namespace d2d
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
             : working_time(_calculate_working_time(truck_routes, drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               truck_routes(truck_routes),
@@ -100,8 +93,8 @@ namespace d2d
         static std::shared_ptr<Solution> tabu_search();
     };
 
-    const std::vector<std::shared_ptr<Neighborhood>> Solution::neighborhoods = {
-        std::make_shared<TwoOpt>()};
+    const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
+        std::make_shared<TwoOpt<Solution>>()};
 
     double Solution::_calculate_working_time(
         const std::vector<std::vector<TruckRoute>> &truck_routes,
@@ -119,28 +112,6 @@ namespace d2d
         }                                    \
                                              \
         result = std::max(result, time);     \
-    }
-
-        CALCULATE_D2D_ROUTES(truck_routes);
-        CALCULATE_D2D_ROUTES(drone_routes);
-#undef CALCULATE_D2D_ROUTES
-
-        return result;
-    }
-
-    double Solution::_calculate_waiting_time_violation(
-        const std::vector<std::vector<TruckRoute>> &truck_routes,
-        const std::vector<std::vector<DroneRoute>> &drone_routes)
-    {
-        double result = 0;
-
-#define CALCULATE_D2D_ROUTES(vehicle_routes)                 \
-    for (auto &routes : vehicle_routes)                      \
-    {                                                        \
-        for (auto &route : routes)                           \
-        {                                                    \
-            result += route.waiting_time_violations().sum(); \
-        }                                                    \
     }
 
         CALCULATE_D2D_ROUTES(truck_routes);
@@ -215,12 +186,39 @@ namespace d2d
 
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
+            if (problem->verbose)
+            {
+                auto prefix = utils::format("Iteration #%lu/%lu(%.2lf) ", iteration + 1, problem->iterations, result->cost());
+                std::cout << prefix;
+                try
+                {
+                    auto width = utils::get_console_size().first;
+                    const std::size_t excess = 10;
+                    if (prefix.size() + excess < width)
+                    {
+                        auto total = width - prefix.size() - excess,
+                             cover = (iteration * total + problem->iterations - 1) / problem->iterations;
+                        std::cout << '[' << std::string(cover, '#') << std::string(total - cover, ' ') << ']';
+                    }
+                }
+                catch (std::runtime_error &)
+                {
+                    // pass
+                }
+                std::cout << '\r' << std::flush;
+            }
+
             auto neighborhood = utils::random_element(neighborhoods);
             r = neighborhood->move(r, aspiration_criteria);
             if (r->cost() < result->cost())
             {
                 result = r;
             }
+        }
+
+        if (problem->verbose)
+        {
+            std::cout << std::endl;
         }
 
         return post_optimization(result);

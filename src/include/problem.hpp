@@ -44,6 +44,7 @@ namespace d2d
         Problem(
             const std::size_t &iterations,
             const std::size_t &tabu_size,
+            const bool verbose,
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
@@ -55,6 +56,7 @@ namespace d2d
             const DroneEnduranceConfig *const endurance)
             : iterations(iterations),
               tabu_size(tabu_size),
+              verbose(verbose),
               trucks_count(trucks_count),
               drones_count(drones_count),
               customers(customers),
@@ -73,10 +75,11 @@ namespace d2d
 
     public:
         const std::size_t iterations, tabu_size;
+        const bool verbose;
         const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
-        const double maximum_waiting_time = 3600;
+        const double maximum_waiting_time = 3600; // hard-coded value
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;
         const DroneLinearConfig *const linear;
@@ -151,7 +154,8 @@ namespace d2d
             }
 
             std::size_t iterations, tabu_size;
-            std::cin >> iterations >> tabu_size;
+            bool verbose;
+            std::cin >> iterations >> tabu_size >> verbose;
 
             double truck_maximum_velocity, truck_capacity;
             std::cin >> truck_maximum_velocity >> truck_capacity;
@@ -237,6 +241,7 @@ namespace d2d
             _instance = new Problem(
                 iterations,
                 tabu_size,
+                verbose,
                 trucks_count,
                 drones_count,
                 customers,

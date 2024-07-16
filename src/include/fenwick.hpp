@@ -270,6 +270,6 @@ namespace std
     template <typename T>
     ostream &operator<<(ostream &stream, const utils::FenwickTree<T> &tree)
     {
-        return stream << tree.array();
+        return stream << "FenwickTree(" << tree.array() << ")";
     }
 }

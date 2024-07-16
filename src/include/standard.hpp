@@ -14,6 +14,17 @@
 #include <string>
 #include <vector>
 
+#if defined(_WIN32) && !defined(WIN32)
+#define WIN32
+#endif
+
+#if defined(WIN32)
+#include <windows.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#include <sys/ioctl.h>
+#endif
+
 namespace std
 {
     /**
