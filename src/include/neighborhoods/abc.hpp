@@ -27,7 +27,7 @@ namespace d2d
     template <typename ST>
     class TabuPairNeighborhood : public Neighborhood<ST>
     {
-    protected:
+    private:
         using tabu_pair = std::pair<std::size_t, std::size_t>;
 
         /**
@@ -36,6 +36,7 @@ namespace d2d
          */
         std::vector<tabu_pair> tabu_list;
 
+    protected:
         void add_to_tabu(const std::size_t &first, const std::size_t &second)
         {
             auto problem = Problem::get_instance();
@@ -59,6 +60,44 @@ namespace d2d
         {
             tabu_pair p = std::minmax(first, second);
             return std::find(tabu_list.begin(), tabu_list.end(), p) != tabu_list.end();
+        }
+    };
+
+    template <typename ST>
+    class CommonRouteNeighborhood : public TabuPairNeighborhood<ST>
+    {
+    private:
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+            const std::shared_ptr<ST> &solution,
+            const std::function<bool(const ST &)> &aspiration_criteria) = 0;
+
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
+            const std::shared_ptr<ST> &solution,
+            const std::function<bool(const ST &)> &aspiration_criteria) = 0;
+
+    public:
+        virtual std::shared_ptr<ST> move(
+            const std::shared_ptr<ST> &solution,
+            const std::function<bool(const ST &)> &aspiration_criteria) override final
+        {
+            std::shared_ptr<ST> result;
+            std::pair<std::size_t, std::size_t> tabu_pair;
+
+            const auto update = [&result, &tabu_pair](const std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> &r)
+            {
+                if (r.first != nullptr && (result == nullptr || r.first->cost() < result->cost()))
+                {
+                    result = r.first;
+                    tabu_pair = r.second;
+                }
+            };
+
+            update(same_route(solution, aspiration_criteria));
+            update(multi_route(solution, aspiration_criteria));
+
+            this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+
+            return result;
         }
     };
 }

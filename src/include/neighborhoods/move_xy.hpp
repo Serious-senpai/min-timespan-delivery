@@ -5,11 +5,12 @@
 namespace d2d
 {
     template <typename ST, int X, int Y>
-    class MoveXY : public TabuPairNeighborhood<ST>
+    class MoveXY : public CommonRouteNeighborhood<ST>
     {
+    private:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria)
+            const std::function<bool(const ST &)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -74,31 +75,152 @@ namespace d2d
             return std::make_pair(result, tabu_pair);
         }
 
-        std::shared_ptr<ST> move(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria)
+            const std::function<bool(const ST &)> &aspiration_criteria) override
         {
+            auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
-            const auto update = [&result, &tabu_pair](const std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> &r)
+            std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
+            std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
+            for (std::size_t vehicle_i = 0; vehicle_i < problem->trucks_count + problem->drones_count; vehicle_i++)
             {
-                if (r.first != nullptr && (result == nullptr || r.first->cost() < result->cost()))
+                std::size_t offset_j = 0;
+                if constexpr (X == Y)
                 {
-                    result = r.first;
-                    tabu_pair = r.second;
+                    offset_j = vehicle_i;
                 }
-            };
 
-            update(same_route(solution, aspiration_criteria));
-            this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+                for (std::size_t vehicle_j = offset_j; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)
+                {
+#define MODIFY_ROUTES(vehicle_routes_i, vehicle_routes_j)                                                                                                         \
+    {                                                                                                                                                             \
+        std::size_t _vehicle_i = vehicle_i < problem->trucks_count ? vehicle_i : vehicle_i - problem->trucks_count,                                               \
+                    _vehicle_j = vehicle_j < problem->trucks_count ? vehicle_j : vehicle_j - problem->trucks_count;                                               \
+        for (std::size_t route_i = 0; route_i < solution->vehicle_routes_i[_vehicle_i].size(); route_i++)                                                         \
+        {                                                                                                                                                         \
+            for (std::size_t route_j = 0; route_j < solution->vehicle_routes_j[_vehicle_j].size(); route_j++)                                                     \
+            {                                                                                                                                                     \
+                const std::vector<std::size_t> &customers_i = solution->vehicle_routes_i[_vehicle_i][route_i].customers();                                        \
+                const std::vector<std::size_t> &customers_j = solution->vehicle_routes_j[_vehicle_j][route_j].customers();                                        \
+                for (std::size_t i = 1; i + X < customers_i.size(); i++)                                                                                          \
+                {                                                                                                                                                 \
+                    for (std::size_t j = 1; j + Y < customers_j.size(); j++)                                                                                      \
+                    {                                                                                                                                             \
+                        using VehicleRoute_i = std::remove_reference_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                          \
+                        using VehicleRoute_j = std::remove_reference_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                          \
+                        if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                             \
+                        {                                                                                                                                         \
+                            if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                  \
+                            {                                                                                                                                     \
+                                continue;                                                                                                                         \
+                            }                                                                                                                                     \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        std::vector<std::size_t> ri(customers_i.begin(), customers_i.begin() + i),                                                                \
+                            rj(customers_j.begin(), customers_j.begin() + j);                                                                                     \
+                                                                                                                                                                  \
+                        ri.insert(ri.end(), customers_j.begin() + j, customers_j.begin() + (j + Y));                                                              \
+                        rj.insert(rj.end(), customers_i.begin() + i, customers_i.begin() + (i + X));                                                              \
+                                                                                                                                                                  \
+                        ri.insert(ri.end(), customers_i.begin() + (i + X), customers_i.end());                                                                    \
+                        rj.insert(rj.end(), customers_j.begin() + (j + Y), customers_j.end());                                                                    \
+                                                                                                                                                                  \
+                        if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute>)                                                                                 \
+                        {                                                                                                                                         \
+                            if (std::any_of(ri.begin(), ri.end(), [&problem](const std::size_t &c) { return !problem->customers[c].dronable; }))                  \
+                            {                                                                                                                                     \
+                                continue;                                                                                                                         \
+                            }                                                                                                                                     \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        if constexpr (std::is_same_v<VehicleRoute_j, DroneRoute>)                                                                                 \
+                        {                                                                                                                                         \
+                            if (std::any_of(rj.begin(), rj.end(), [&problem](const std::size_t &c) { return !problem->customers[c].dronable; }))                  \
+                            {                                                                                                                                     \
+                                continue;                                                                                                                         \
+                            }                                                                                                                                     \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        bool ri_empty = (ri.size() == 2), rj_empty = (rj.size() == 2);                                                                            \
+                        if (ri_empty)                                                                                                                             \
+                        {                                                                                                                                         \
+                            vehicle_routes_i[_vehicle_i].erase(vehicle_routes_i[_vehicle_i].begin() + route_i);                                                   \
+                        }                                                                                                                                         \
+                        else                                                                                                                                      \
+                        {                                                                                                                                         \
+                            vehicle_routes_i[_vehicle_i][route_i] = VehicleRoute_i(ri);                                                                           \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        if (rj_empty)                                                                                                                             \
+                        {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j].erase(vehicle_routes_j[_vehicle_j].begin() + route_j);                                                   \
+                        }                                                                                                                                         \
+                        else                                                                                                                                      \
+                        {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                           \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                                     \
+                        if ((aspiration_criteria(*new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                             \
+                            (result == nullptr || new_solution->cost() < result->cost()))                                                                         \
+                        {                                                                                                                                         \
+                            result.swap(new_solution);                                                                                                            \
+                            tabu_pair = std::make_pair(customers_i[i], customers_j[j]);                                                                           \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        /* Restore */                                                                                                                             \
+                        if (ri_empty)                                                                                                                             \
+                        {                                                                                                                                         \
+                            vehicle_routes_i[_vehicle_i].insert(vehicle_routes_i[_vehicle_i].begin() + route_i, solution->vehicle_routes_i[_vehicle_i][route_i]); \
+                        }                                                                                                                                         \
+                        else                                                                                                                                      \
+                        {                                                                                                                                         \
+                            vehicle_routes_i[_vehicle_i][route_i] = solution->vehicle_routes_i[_vehicle_i][route_i];                                              \
+                        }                                                                                                                                         \
+                                                                                                                                                                  \
+                        if (rj_empty)                                                                                                                             \
+                        {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j].insert(vehicle_routes_j[_vehicle_j].begin() + route_j, solution->vehicle_routes_j[_vehicle_j][route_j]); \
+                        }                                                                                                                                         \
+                        else                                                                                                                                      \
+                        {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j][route_j] = solution->vehicle_routes_j[_vehicle_j][route_j];                                              \
+                        }                                                                                                                                         \
+                    }                                                                                                                                             \
+                }                                                                                                                                                 \
+            }                                                                                                                                                     \
+        }                                                                                                                                                         \
+    }
 
-            return result;
+                    if (vehicle_i < problem->trucks_count)
+                    {
+                        if (vehicle_j < problem->trucks_count)
+                        {
+                            MODIFY_ROUTES(truck_routes, truck_routes);
+                        }
+                        else
+                        {
+                            MODIFY_ROUTES(truck_routes, drone_routes);
+                        }
+                    }
+                    else
+                    {
+                        MODIFY_ROUTES(drone_routes, drone_routes);
+                    }
+
+#undef MODIFY_ROUTES
+                }
+            }
+
+            return std::make_pair(result, tabu_pair);
         }
     };
 
     template <typename ST, int X>
-    class MoveXY<ST, X, 0> : public TabuPairNeighborhood<ST>
+    class MoveXY<ST, X, 0> : public CommonRouteNeighborhood<ST>
     {
         std::shared_ptr<ST> move(
             const std::shared_ptr<ST> &solution,
