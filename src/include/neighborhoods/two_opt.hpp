@@ -10,7 +10,7 @@ namespace d2d
     private:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) override
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -19,34 +19,34 @@ namespace d2d
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
 
-#define MODIFY_ROUTES(vehicles_count, vehicle_routes)                                                                 \
-    {                                                                                                                 \
-        for (std::size_t index = 0; index < problem->vehicles_count; index++)                                         \
-        {                                                                                                             \
-            for (std::size_t route = 0; route < vehicle_routes[index].size(); route++)                                \
-            {                                                                                                         \
-                const std::vector<std::size_t> &customers = solution->vehicle_routes[index][route].customers();       \
-                for (std::size_t i = 1; i + 1 < customers.size(); i++)                                                \
-                {                                                                                                     \
-                    for (std::size_t j = i + 1; j + 1 < customers.size(); j++)                                        \
-                    {                                                                                                 \
-                        /* Temporary reverse segment [i, j] */                                                        \
-                        vehicle_routes[index][route].reverse(i, j - i + 1);                                           \
-                                                                                                                      \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                         \
-                        if ((aspiration_criteria(*new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
-                            (result == nullptr || new_solution->cost() < result->cost()))                             \
-                        {                                                                                             \
-                            result.swap(new_solution);                                                                \
-                            tabu_pair = std::make_pair(customers[i - 1], customers[j]);                               \
-                        }                                                                                             \
-                                                                                                                      \
-                        /* Restore */                                                                                 \
-                        vehicle_routes[index][route].reverse(i, j - i + 1);                                           \
-                    }                                                                                                 \
-                }                                                                                                     \
-            }                                                                                                         \
-        }                                                                                                             \
+#define MODIFY_ROUTES(vehicles_count, vehicle_routes)                                                                \
+    {                                                                                                                \
+        for (std::size_t index = 0; index < problem->vehicles_count; index++)                                        \
+        {                                                                                                            \
+            for (std::size_t route = 0; route < vehicle_routes[index].size(); route++)                               \
+            {                                                                                                        \
+                const std::vector<std::size_t> &customers = solution->vehicle_routes[index][route].customers();      \
+                for (std::size_t i = 1; i + 1 < customers.size(); i++)                                               \
+                {                                                                                                    \
+                    for (std::size_t j = i + 1; j + 1 < customers.size(); j++)                                       \
+                    {                                                                                                \
+                        /* Temporary reverse segment [i, j] */                                                       \
+                        vehicle_routes[index][route].reverse(i, j - i + 1);                                          \
+                                                                                                                     \
+                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                        \
+                        if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
+                            (result == nullptr || new_solution->cost() < result->cost()))                            \
+                        {                                                                                            \
+                            result.swap(new_solution);                                                               \
+                            tabu_pair = std::make_pair(customers[i - 1], customers[j]);                              \
+                        }                                                                                            \
+                                                                                                                     \
+                        /* Restore */                                                                                \
+                        vehicle_routes[index][route].reverse(i, j - i + 1);                                          \
+                    }                                                                                                \
+                }                                                                                                    \
+            }                                                                                                        \
+        }                                                                                                            \
     }
 
             MODIFY_ROUTES(trucks_count, truck_routes);
@@ -59,7 +59,7 @@ namespace d2d
 
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) override
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -137,7 +137,7 @@ namespace d2d
                         }                                                                                                                                         \
                                                                                                                                                                   \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                                     \
-                        if ((aspiration_criteria(*new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                             \
+                        if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                              \
                             (result == nullptr || new_solution->cost() < result->cost()))                                                                         \
                         {                                                                                                                                         \
                             result.swap(new_solution);                                                                                                            \
@@ -189,6 +189,12 @@ namespace d2d
             }
 
             return std::make_pair(result, tabu_pair);
+        }
+
+    protected:
+        std::string performance_message() const
+        {
+            return "2-opt";
         }
     };
 }

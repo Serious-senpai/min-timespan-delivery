@@ -4,6 +4,26 @@
 
 namespace utils
 {
+    class PerformanceBenchmark
+    {
+    private:
+        const std::chrono::time_point<std::chrono::high_resolution_clock> start;
+        const std::string message;
+
+    public:
+        PerformanceBenchmark(const std::string &message) : start(std::chrono::high_resolution_clock::now()), message(message) {}
+        ~PerformanceBenchmark()
+        {
+            report(message);
+        }
+
+        void report(const std::string &message) const
+        {
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+            std::cout << message << " " << duration.count() << "ms\n";
+        }
+    };
+
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T pow2(const T &value)
     {

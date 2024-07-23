@@ -95,6 +95,8 @@ namespace d2d
     };
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
+        std::make_shared<MoveXY<Solution, 2, 0>>(),
+        std::make_shared<MoveXY<Solution, 1, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
@@ -181,9 +183,9 @@ namespace d2d
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
 
-        const auto aspiration_criteria = [&result](const Solution &s)
+        const auto aspiration_criteria = [&result](const std::shared_ptr<Solution> &ptr)
         {
-            return s.cost() < result->cost();
+            return ptr->cost() < result->cost();
         };
 
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)

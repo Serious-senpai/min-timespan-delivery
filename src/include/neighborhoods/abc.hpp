@@ -21,7 +21,7 @@ namespace d2d
          */
         virtual std::shared_ptr<ST> move(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) = 0;
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) = 0;
     };
 
     template <typename ST>
@@ -66,20 +66,26 @@ namespace d2d
     template <typename ST>
     class CommonRouteNeighborhood : public TabuPairNeighborhood<ST>
     {
-    private:
+    protected:
         virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) = 0;
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) = 0;
 
         virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) = 0;
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) = 0;
+
+        virtual std::string performance_message() const = 0;
 
     public:
         virtual std::shared_ptr<ST> move(
             const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria) override final
+            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override final
         {
+#ifdef DEBUG
+            utils::PerformanceBenchmark _perf(performance_message());
+#endif
+
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
