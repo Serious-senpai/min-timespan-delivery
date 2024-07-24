@@ -38,6 +38,9 @@ namespace d2d
         /** @brief Routes of drones */
         const std::vector<std::vector<DroneRoute>> drone_routes;
 
+        /** @brief Solution feasibility */
+        const bool feasible;
+
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
@@ -45,7 +48,8 @@ namespace d2d
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               truck_routes(truck_routes),
-              drone_routes(drone_routes)
+              drone_routes(drone_routes),
+              feasible(drone_energy_violation == 0 && capacity_violation == 0)
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
@@ -97,6 +101,7 @@ namespace d2d
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 0>>(),
+        std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
@@ -193,7 +198,7 @@ namespace d2d
             if (problem->verbose)
             {
                 auto prefix = utils::format("Iteration #%lu/%lu(%.2lf) ", iteration + 1, problem->iterations, result->cost());
-                std::cout << prefix;
+                std::cerr << prefix;
                 try
                 {
                     auto width = utils::get_console_size().first;
@@ -202,14 +207,14 @@ namespace d2d
                     {
                         auto total = width - prefix.size() - excess,
                              cover = (iteration * total + problem->iterations - 1) / problem->iterations;
-                        std::cout << '[' << std::string(cover, '#') << std::string(total - cover, ' ') << ']';
+                        std::cerr << '[' << std::string(cover, '#') << std::string(total - cover, ' ') << ']';
                     }
                 }
                 catch (std::runtime_error &)
                 {
                     // pass
                 }
-                std::cout << '\r' << std::flush;
+                std::cerr << '\r' << std::flush;
             }
 
             auto neighborhood = utils::random_element(neighborhoods);
@@ -226,7 +231,7 @@ namespace d2d
 
         if (problem->verbose)
         {
-            std::cout << std::endl;
+            std::cerr << std::endl;
         }
 
         return post_optimization(result);

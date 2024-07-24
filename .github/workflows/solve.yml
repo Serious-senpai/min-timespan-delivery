@@ -56,11 +56,16 @@ jobs:
           name: executable
           path: build/
 
-      - name: Run algorithm
+      - name: Initialize working space
         run: |
           mkdir result
           chmod +x build/main.exe
-          python scripts/transform.py ${{ matrix.problem }} | time -po result/perf.txt build/main.exe
 
-      - name: Print performance report
-        run: cat result/perf.txt
+      - name: Run algorithm
+        run: python scripts/transform.py ${{ matrix.problem }} | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: solution-${{ matrix.problem }}
+          path: result/*
