@@ -16,6 +16,8 @@ if __name__ == "__main__":
     truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
     drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
 
+    cost = float(input())
+
     for paths in itertools.chain(truck_paths, drone_paths):
         new = True
         for customer in map(int, input().split()):
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         "config": namespace.config,
         "speed_type": namespace.speed_type,
         "range_type": namespace.range_type,
-        "cost": float(input()),
+        "cost": cost,
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,

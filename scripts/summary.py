@@ -14,10 +14,10 @@ if __name__ == "__main__":
     solutions: List[SolutionJSON] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
         if file.is_file() and file.suffix == ".json":
-            with open(file, "r") as file:
-                data = json.load(file)
+            with file.open("r") as f:
+                data = json.load(f)
 
-            solution = SolutionJSON(**data)
+            solution = SolutionJSON(**data)  # type: ignore  # will throw at runtime if fields are incompatible
             solutions.append(solution)
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
