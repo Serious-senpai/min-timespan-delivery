@@ -49,7 +49,7 @@ namespace d2d
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
-              feasible(drone_energy_violation == 0 && capacity_violation == 0)
+              feasible(utils::approximate(drone_energy_violation, 0.0) && utils::approximate(capacity_violation, 0.0))
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();

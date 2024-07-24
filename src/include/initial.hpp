@@ -11,7 +11,9 @@ namespace d2d
     {
         TruckRoute old(route);
         route.push_back(customer);
-        if (route.waiting_time_violations().sum() > 0 || route.capacity_violation() > 0)
+
+        const std::vector<double> &wtv = route.waiting_time_violations();
+        if (std::accumulate(wtv.begin(), wtv.end(), 0.0) > 0 || route.capacity_violation() > 0)
         {
             route = old;
             return false;
@@ -24,7 +26,9 @@ namespace d2d
     {
         DroneRoute old(route);
         route.push_back(customer);
-        if (route.waiting_time_violations().sum() > 0 || route.capacity_violation() > 0 || route.energy_violation() > 0)
+
+        const std::vector<double> &wtv = route.waiting_time_violations();
+        if (std::accumulate(wtv.begin(), wtv.end(), 0.0) > 0 || route.capacity_violation() > 0 || route.energy_violation() > 0)
         {
             route = old;
             return false;
