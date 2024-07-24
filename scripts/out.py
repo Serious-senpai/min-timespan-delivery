@@ -3,24 +3,14 @@ from __future__ import annotations
 import itertools
 import json
 import re
-from typing import Any, Dict, List
+from typing import List
 
-from package import parser, Namespace, Problem, ROOT
+from package import parser, Namespace, Problem, SolutionJSON, ROOT
 
 
 if __name__ == "__main__":
     namespace = Namespace()
     parser.parse_args(namespace=namespace)
-
-    data: Dict[str, Any] = {
-        "problem": namespace.problem,
-        "iterations": namespace.iterations,
-        "tabu_size": namespace.tabu_size,
-        "config": namespace.config,
-        "speed_type": namespace.speed_type,
-        "range_type": namespace.range_type,
-        "cost": float(input()),
-    }
 
     problem = Problem.import_data(namespace.problem)
     truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
@@ -40,9 +30,8 @@ if __name__ == "__main__":
             else:
                 paths[-1].append(customer)
 
-    data["truck_paths"] = truck_paths
-    data["drone_paths"] = drone_paths
-    data["feasible"] = bool(int(input()))
+    feasible = bool(int(input()))
+    real = user = sys = -1.0
 
     for _ in range(3):
         line = input()
@@ -52,7 +41,30 @@ if __name__ == "__main__":
             raise RuntimeError(message)
 
         groups = re_match.groups()
-        data[groups[0]] = float(groups[1])
+        value = float(groups[1])
+        match groups[0]:
+            case "real":
+                real = value
+            case "user":
+                user = value
+            case "sys":
+                sys = value
+
+    data: SolutionJSON = {
+        "problem": namespace.problem,
+        "iterations": namespace.iterations,
+        "tabu_size": namespace.tabu_size,
+        "config": namespace.config,
+        "speed_type": namespace.speed_type,
+        "range_type": namespace.range_type,
+        "cost": float(input()),
+        "truck_paths": truck_paths,
+        "drone_paths": drone_paths,
+        "feasible": feasible,
+        "real": real,
+        "user": user,
+        "sys": sys,
+    }
 
     index = 0
     while ROOT.joinpath("result", f"{namespace.problem}-{index}.json").exists():

@@ -25,7 +25,7 @@ jobs:
           name: executable
           path: build/main.exe
 
-  test:
+  solve:
     name: Run algorithm
     runs-on: ubuntu-latest
     needs: build
@@ -62,10 +62,55 @@ jobs:
           chmod +x build/main.exe
 
       - name: Run algorithm
-        run: python scripts/transform.py ${{ matrix.problem }} | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
+        run: |
+          exitcode=0
+          set +e
+          for i in $(seq 1 10)
+          do
+            python scripts/in.py ${{ matrix.problem }} | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          done
+
+          exit $exitcode
 
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
           name: solution-${{ matrix.problem }}
+          path: result/*
+
+  summary:
+    name: Summarize results
+    runs-on: ubuntu-latest
+    needs: solve
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download results
+        uses: actions/download-artifact@v4
+        with:
+          path: result/
+          pattern: solution-*
+          merge-multiple: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Summarize results
+        run: python scripts/summary.py
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary
           path: result/*
