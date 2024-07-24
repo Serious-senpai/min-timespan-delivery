@@ -53,6 +53,15 @@ namespace d2d
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
+            if (truck_routes.size() != problem->trucks_count)
+            {
+                throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
+            }
+            if (drone_routes.size() != problem->drones_count)
+            {
+                throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
+            }
+
             std::vector<bool> exists(problem->customers.size());
 
 #define CHECK_ROUTES(vehicle_routes)                                                                             \

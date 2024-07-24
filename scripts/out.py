@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import json
 import re
 from typing import Any, Dict, List
@@ -25,20 +26,19 @@ if __name__ == "__main__":
     truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
     drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
 
-    for vehicles_count, vehicle_paths in zip([problem.trucks_count, problem.drones_count], [truck_paths, drone_paths]):
-        for index in range(vehicles_count):
-            new = True
-            for customer in map(int, input().split()):
-                if customer == 0:
-                    if new:
-                        vehicle_paths[index].append([0])
-                    else:
-                        vehicle_paths[index][-1].append(0)
-
-                    new = not new
-
+    for paths in itertools.chain(truck_paths, drone_paths):
+        new = True
+        for customer in map(int, input().split()):
+            if customer == 0:
+                if new:
+                    paths.append([0])
                 else:
-                    vehicle_paths[index][-1].append(customer)
+                    paths[-1].append(0)
+
+                new = not new
+
+            else:
+                paths[-1].append(customer)
 
     data["truck_paths"] = truck_paths
     data["drone_paths"] = drone_paths

@@ -56,8 +56,10 @@ jobs:
           name: executable
           path: build/
 
-      - name: Run executable in debug mode
+      - name: Initialize working space
         run: |
           mkdir result
           chmod +x build/main.exe
-          python scripts/transform.py ${{ matrix.problem }} -v | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe
+  
+      - name: Run executable in debug mode
+        run: python scripts/transform.py ${{ matrix.problem }} -v | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe

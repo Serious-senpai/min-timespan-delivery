@@ -68,7 +68,7 @@ namespace d2d
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
-        std::vector<std::vector<DroneRoute>> drone_routes(problem->trucks_count);
+        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
 
         std::vector<std::size_t> second_phase;
         // Begin first phase
@@ -173,7 +173,7 @@ namespace d2d
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
-        std::vector<std::vector<DroneRoute>> drone_routes(problem->trucks_count);
+        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
 
         std::vector<std::size_t> customers_by_angle(problem->customers.size() - 1);
         std::iota(customers_by_angle.begin(), customers_by_angle.end(), 1);

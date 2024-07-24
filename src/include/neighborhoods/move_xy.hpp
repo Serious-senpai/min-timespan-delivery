@@ -147,7 +147,14 @@ namespace d2d
                     }
                     else
                     {
-                        MODIFY_ROUTES(drone_routes, drone_routes);
+                        if (vehicle_j < problem->trucks_count)
+                        {
+                            MODIFY_ROUTES(drone_routes, truck_routes);
+                        }
+                        else
+                        {
+                            MODIFY_ROUTES(drone_routes, drone_routes);
+                        }
                     }
 
 #undef MODIFY_ROUTES
