@@ -99,7 +99,29 @@ namespace d2d
         /** @brief Objective function evaluation, including penalties. */
         double cost() const
         {
-            return working_time;
+            auto problem = Problem::get_instance();
+
+            double result = working_time;
+            result *= 1.0 + capacity_violation / problem->total_demand;
+
+            if (problem->linear != nullptr)
+            {
+                result *= 1.0 + drone_energy_violation /
+                                    (problem->linear->battery * std::accumulate(
+                                                                    drone_routes.begin(), drone_routes.end(), 0.0,
+                                                                    [](const double &sum, const std::vector<DroneRoute> &routes)
+                                                                    { return sum + routes.size(); }));
+            }
+            else if (problem->nonlinear != nullptr)
+            {
+                result *= 1.0 + drone_energy_violation /
+                                    (problem->nonlinear->battery * std::accumulate(
+                                                                       drone_routes.begin(), drone_routes.end(), 0.0,
+                                                                       [](const double &sum, const std::vector<DroneRoute> &routes)
+                                                                       { return sum + routes.size(); }));
+            }
+
+            return result;
         }
 
         static std::shared_ptr<Solution> initial();

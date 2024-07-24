@@ -49,6 +49,7 @@ namespace d2d
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
             const std::vector<std::vector<double>> &distances,
+            const double &total_demand,
             const TruckConfig *const truck,
             const _BaseDroneConfig *const drone,
             const DroneLinearConfig *const linear,
@@ -61,6 +62,7 @@ namespace d2d
               drones_count(drones_count),
               customers(customers),
               distances(distances),
+              total_demand(total_demand),
               truck(truck),
               drone(drone),
               linear(linear),
@@ -80,6 +82,7 @@ namespace d2d
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
         const double maximum_waiting_time = 3600; // hard-coded value
+        const double total_demand;
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;
         const DroneLinearConfig *const linear;
@@ -246,6 +249,10 @@ namespace d2d
                 drones_count,
                 customers,
                 distances,
+                std::accumulate(
+                    customers.begin(), customers.end(), 0.0,
+                    [](const double &sum, const Customer &customer)
+                    { return sum + customer.demand; }),
                 truck,
                 drone,
                 dynamic_cast<DroneLinearConfig *>(drone),
