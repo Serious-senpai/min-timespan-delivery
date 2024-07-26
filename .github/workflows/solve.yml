@@ -2,6 +2,10 @@ name: Run algorithm
 
 on: push
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -88,6 +92,7 @@ jobs:
   summary:
     name: Summarize results
     runs-on: ubuntu-latest
+    if: ${{ always() }}
     needs: solve
 
     steps:

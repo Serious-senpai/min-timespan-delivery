@@ -188,7 +188,8 @@ namespace d2d
                                                                                                                         \
                         if constexpr (std::is_same_v<VehicleRoute, TruckRoute>)                                         \
                         {                                                                                               \
-                            if (std::any_of(                                                                            \
+                            if (vehicle_j >= problem->trucks_count &&                                                   \
+                                std::any_of(                                                                            \
                                     detached.begin() + 1, detached.end() - 1, /* excluding depot */                     \
                                     [&problem](const std::size_t &c) { return !problem->customers[c].dronable; }))      \
                             {                                                                                           \
