@@ -212,48 +212,7 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::post_optimization(const std::shared_ptr<Solution> &solution)
     {
-        auto problem = Problem::get_instance();
-        std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
-        std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
-
-#define OPTIMIZE_ROUTES(vehicle_routes)                                                       \
-    {                                                                                         \
-        for (auto &routes : vehicle_routes)                                                   \
-        {                                                                                     \
-            for (auto &route : routes)                                                        \
-            {                                                                                 \
-                using VehicleRoute = std::remove_reference_t<decltype(route)>;                \
-                const std::vector<std::size_t> &customers = route.customers();                \
-                if (customers.size() < 18)                                                    \
-                {                                                                             \
-                    auto [_, new_order] = utils::held_karp_algorithm(                         \
-                        customers.size() - 1, /* depot is included twice */                   \
-                        [&problem, &customers](const std::size_t &i, const std::size_t &j)    \
-                        {                                                                     \
-                            return problem->distances[customers[i]][customers[j]];            \
-                        });                                                                   \
-                                                                                              \
-                    std::transform(                                                           \
-                        new_order.begin(), new_order.end(), new_order.begin(),                \
-                        [&customers](const std::size_t &index) { return customers[index]; }); \
-                    std::rotate(                                                              \
-                        new_order.begin(),                                                    \
-                        std::find(new_order.begin(), new_order.end(), 0),                     \
-                        new_order.end());                                                     \
-                    new_order.push_back(0);                                                   \
-                                                                                              \
-                    route = VehicleRoute(new_order);                                          \
-                }                                                                             \
-            }                                                                                 \
-        }                                                                                     \
-    }
-
-        OPTIMIZE_ROUTES(truck_routes);
-        OPTIMIZE_ROUTES(drone_routes);
-
-#undef OPTIMIZE_ROUTES
-
-        return std::make_shared<Solution>(truck_routes, drone_routes);
+        return solution;
     }
 
     std::shared_ptr<Solution> Solution::tabu_search()

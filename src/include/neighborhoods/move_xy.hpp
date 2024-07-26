@@ -67,7 +67,7 @@ namespace d2d
                         ri.insert(ri.end(), customers_i.begin() + (i + X), customers_i.end());                                                                    \
                         rj.insert(rj.end(), customers_j.begin() + (j + Y), customers_j.end());                                                                    \
                                                                                                                                                                   \
-                        if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute>)                                                                                 \
+                        if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute> && std::is_same_v<VehicleRoute_j, TruckRoute>)                                   \
                         {                                                                                                                                         \
                             if (std::any_of(                                                                                                                      \
                                     customers_j.begin() + j, customers_j.begin() + (j + Y),                                                                       \
@@ -77,7 +77,7 @@ namespace d2d
                             }                                                                                                                                     \
                         }                                                                                                                                         \
                                                                                                                                                                   \
-                        if constexpr (std::is_same_v<VehicleRoute_j, DroneRoute>)                                                                                 \
+                        if constexpr (std::is_same_v<VehicleRoute_i, TruckRoute> && std::is_same_v<VehicleRoute_j, DroneRoute>)                                   \
                         {                                                                                                                                         \
                             if (std::any_of(                                                                                                                      \
                                     customers_i.begin() + i, customers_i.begin() + (i + X),                                                                       \
