@@ -67,6 +67,7 @@ if __name__ == "__main__":
         "user": user,
         "sys": sys,
     }
+    print(data)
 
     index = 0
     while ROOT.joinpath("result", f"{namespace.problem}-{index}.json").exists():

@@ -81,9 +81,9 @@ namespace d2d
             {                                                                                                                                                     \
                 const std::vector<std::size_t> &customers_i = solution->vehicle_routes_i[_vehicle_i][route_i].customers();                                        \
                 const std::vector<std::size_t> &customers_j = solution->vehicle_routes_j[_vehicle_j][route_j].customers();                                        \
-                for (std::size_t i = 0; i + 2 < customers_i.size(); i++)                                                                                          \
+                for (std::size_t i = 0; i + 1 < customers_i.size(); i++)                                                                                          \
                 {                                                                                                                                                 \
-                    for (std::size_t j = 0; j + 2 < customers_j.size(); j++)                                                                                      \
+                    for (std::size_t j = 0; j + 1 < customers_j.size(); j++)                                                                                      \
                     {                                                                                                                                             \
                         using VehicleRoute_i = std::remove_reference_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                          \
                         using VehicleRoute_j = std::remove_reference_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                          \
@@ -117,22 +117,20 @@ namespace d2d
                             }                                                                                                                                     \
                         }                                                                                                                                         \
                                                                                                                                                                   \
-                        bool ri_empty = (ri.size() == 2), rj_empty = (rj.size() == 2);                                                                            \
+                        bool ri_empty = (ri.size() == 2), rj_empty = (rj.size() == 2); /* Note: These values can't be true at the same time */                    \
                         if (ri_empty)                                                                                                                             \
                         {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                           \
                             vehicle_routes_i[_vehicle_i].erase(vehicle_routes_i[_vehicle_i].begin() + route_i);                                                   \
                         }                                                                                                                                         \
-                        else                                                                                                                                      \
+                        else if (rj_empty)                                                                                                                        \
                         {                                                                                                                                         \
                             vehicle_routes_i[_vehicle_i][route_i] = VehicleRoute_i(ri);                                                                           \
-                        }                                                                                                                                         \
-                                                                                                                                                                  \
-                        if (rj_empty)                                                                                                                             \
-                        {                                                                                                                                         \
                             vehicle_routes_j[_vehicle_j].erase(vehicle_routes_j[_vehicle_j].begin() + route_j);                                                   \
                         }                                                                                                                                         \
                         else                                                                                                                                      \
                         {                                                                                                                                         \
+                            vehicle_routes_i[_vehicle_i][route_i] = VehicleRoute_i(ri);                                                                           \
                             vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                           \
                         }                                                                                                                                         \
                                                                                                                                                                   \
@@ -148,18 +146,16 @@ namespace d2d
                         if (ri_empty)                                                                                                                             \
                         {                                                                                                                                         \
                             vehicle_routes_i[_vehicle_i].insert(vehicle_routes_i[_vehicle_i].begin() + route_i, solution->vehicle_routes_i[_vehicle_i][route_i]); \
+                            vehicle_routes_j[_vehicle_j][route_j] = solution->vehicle_routes_j[_vehicle_j][route_j];                                              \
+                        }                                                                                                                                         \
+                        else if (rj_empty)                                                                                                                        \
+                        {                                                                                                                                         \
+                            vehicle_routes_j[_vehicle_j].insert(vehicle_routes_j[_vehicle_j].begin() + route_j, solution->vehicle_routes_j[_vehicle_j][route_j]); \
+                            vehicle_routes_i[_vehicle_i][route_i] = solution->vehicle_routes_i[_vehicle_i][route_i];                                              \
                         }                                                                                                                                         \
                         else                                                                                                                                      \
                         {                                                                                                                                         \
                             vehicle_routes_i[_vehicle_i][route_i] = solution->vehicle_routes_i[_vehicle_i][route_i];                                              \
-                        }                                                                                                                                         \
-                                                                                                                                                                  \
-                        if (rj_empty)                                                                                                                             \
-                        {                                                                                                                                         \
-                            vehicle_routes_j[_vehicle_j].insert(vehicle_routes_j[_vehicle_j].begin() + route_j, solution->vehicle_routes_j[_vehicle_j][route_j]); \
-                        }                                                                                                                                         \
-                        else                                                                                                                                      \
-                        {                                                                                                                                         \
                             vehicle_routes_j[_vehicle_j][route_j] = solution->vehicle_routes_j[_vehicle_j][route_j];                                              \
                         }                                                                                                                                         \
                     }                                                                                                                                             \
