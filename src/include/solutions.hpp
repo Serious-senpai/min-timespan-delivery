@@ -14,12 +14,17 @@ namespace d2d
     class Solution
     {
     private:
+        static double A1, A2, A3, B;
+
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
         static double _calculate_working_time(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
+            const std::vector<std::vector<TruckRoute>> &truck_routes,
+            const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static std::vector<double> _calculate_waiting_time_violations(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
 
@@ -32,6 +37,9 @@ namespace d2d
 
         /** @brief Total capacity violation */
         const double capacity_violation;
+
+        /** @brief Waiting time violation of each customer */
+        const std::vector<double> waiting_time_violations;
 
         /** @brief Routes of trucks */
         const std::vector<std::vector<TruckRoute>> truck_routes;
@@ -48,6 +56,7 @@ namespace d2d
             : working_time(_calculate_working_time(truck_routes, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
+              waiting_time_violations(_calculate_waiting_time_violations(truck_routes, drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
               feasible(utils::approximate(drone_energy_violation, 0.0) && utils::approximate(capacity_violation, 0.0))
@@ -100,27 +109,10 @@ namespace d2d
         /** @brief Objective function evaluation, including penalties. */
         double cost() const
         {
-            auto problem = Problem::get_instance();
-
             double result = working_time;
-            result *= 1.0 + capacity_violation / problem->total_demand;
-
-            if (problem->linear != nullptr)
-            {
-                result *= 1.0 + drone_energy_violation /
-                                    (problem->linear->battery * std::accumulate(
-                                                                    drone_routes.begin(), drone_routes.end(), 0.0,
-                                                                    [](const double &sum, const std::vector<DroneRoute> &routes)
-                                                                    { return sum + routes.size(); }));
-            }
-            else if (problem->nonlinear != nullptr)
-            {
-                result *= 1.0 + drone_energy_violation /
-                                    (problem->nonlinear->battery * std::accumulate(
-                                                                       drone_routes.begin(), drone_routes.end(), 0.0,
-                                                                       [](const double &sum, const std::vector<DroneRoute> &routes)
-                                                                       { return sum + routes.size(); }));
-            }
+            result += A1 * drone_energy_violation;
+            result += A2 * capacity_violation;
+            result += A3 * std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
 
             return result;
         }
@@ -129,6 +121,11 @@ namespace d2d
         static std::shared_ptr<Solution> post_optimization(const std::shared_ptr<Solution> &solution);
         static std::shared_ptr<Solution> tabu_search();
     };
+
+    double Solution::A1 = 1;
+    double Solution::A2 = 1;
+    double Solution::A3 = 1;
+    double Solution::B = 0.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 2, 0>>(),
@@ -198,6 +195,37 @@ namespace d2d
         return result;
     }
 
+    std::vector<double> Solution::_calculate_waiting_time_violations(
+        const std::vector<std::vector<TruckRoute>> &truck_routes,
+        const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        auto problem = Problem::get_instance();
+        std::vector<double> result(problem->customers.size());
+
+#define CALCULATE_ROUTES(vehicle_routes)                                                              \
+    {                                                                                                 \
+        for (auto &routes : vehicle_routes)                                                           \
+        {                                                                                             \
+            for (auto &route : routes)                                                                \
+            {                                                                                         \
+                const std::vector<std::size_t> &customers = route.customers();                        \
+                const std::vector<double> &waiting_time_violations = route.waiting_time_violations(); \
+                for (std::size_t i = 0; i < customers.size(); i++)                                    \
+                {                                                                                     \
+                    result[customers[i]] = waiting_time_violations[i];                                \
+                }                                                                                     \
+            }                                                                                         \
+        }                                                                                             \
+    }
+
+        CALCULATE_ROUTES(truck_routes);
+        CALCULATE_ROUTES(drone_routes);
+
+#undef CALCULATE_ROUTES
+
+        return result;
+    }
+
     std::shared_ptr<Solution> Solution::initial()
     {
         auto result = initial_12(true);
@@ -229,7 +257,7 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format("Iteration #%lu/%lu(%.2lf) ", iteration + 1, problem->iterations, result->cost());
+                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf) ", iteration + 1, problem->iterations, result->cost());
                 std::cerr << prefix;
                 try
                 {
@@ -246,7 +274,7 @@ namespace d2d
                 {
                     // pass
                 }
-                std::cerr << '\r' << std::flush;
+                std::cerr << std::flush;
             }
 
             auto neighborhood = utils::random_element(neighborhoods);
@@ -259,6 +287,39 @@ namespace d2d
                     result = neighbor;
                 }
             }
+
+            if (result->drone_energy_violation > 0)
+            {
+                Solution::A1 *= 1.0 + B;
+            }
+            else
+            {
+                Solution::A1 /= 1.0 + B;
+            }
+
+            if (result->capacity_violation > 0)
+            {
+                Solution::A2 *= 1.0 + B;
+            }
+            else
+            {
+                Solution::A2 /= 1.0 + B;
+            }
+
+            if (std::any_of(
+                    result->waiting_time_violations.begin(),
+                    result->waiting_time_violations.end(),
+                    [](const double &violation)
+                    { return violation > 0; }))
+            {
+                Solution::A3 *= 1.0 + B;
+            }
+            else
+            {
+                Solution::A3 /= 1.0 + B;
+            }
+
+            std::cout << Solution::A1 << " " << Solution::A2 << " " << Solution::A3 << std::endl;
         }
 
         if (problem->verbose)
