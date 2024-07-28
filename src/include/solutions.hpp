@@ -318,8 +318,6 @@ namespace d2d
             {
                 Solution::A3 /= 1.0 + B;
             }
-
-            std::cout << Solution::A1 << " " << Solution::A2 << " " << Solution::A3 << std::endl;
         }
 
         if (problem->verbose)
