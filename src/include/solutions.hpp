@@ -59,7 +59,11 @@ namespace d2d
               waiting_time_violations(_calculate_waiting_time_violations(truck_routes, drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
-              feasible(utils::approximate(drone_energy_violation, 0.0) && utils::approximate(capacity_violation, 0.0))
+              feasible(
+                  utils::approximate(drone_energy_violation, 0.0) &&
+                  utils::approximate(capacity_violation, 0.0) &&
+                  std::all_of(waiting_time_violations.begin(), waiting_time_violations.end(), [](const double &violation)
+                              { return utils::approximate(violation, 0.0); }))
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
