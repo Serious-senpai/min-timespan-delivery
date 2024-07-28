@@ -41,6 +41,9 @@ namespace d2d
         /** @brief Waiting time violation of each customer */
         const std::vector<double> waiting_time_violations;
 
+        /** @brief Total waiting time violation */
+        const double waiting_time_violation;
+
         /** @brief Routes of trucks */
         const std::vector<std::vector<TruckRoute>> truck_routes;
 
@@ -57,6 +60,7 @@ namespace d2d
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               waiting_time_violations(_calculate_waiting_time_violations(truck_routes, drone_routes)),
+              waiting_time_violation(std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
               feasible(
@@ -116,7 +120,7 @@ namespace d2d
             double result = working_time;
             result += A1 * drone_energy_violation;
             result += A2 * capacity_violation;
-            result += A3 * std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
+            result += A3 * waiting_time_violation;
 
             return result;
         }
