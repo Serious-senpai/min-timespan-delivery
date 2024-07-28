@@ -24,7 +24,7 @@ namespace d2d
         static double _calculate_capacity_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
-        static std::vector<double> _calculate_waiting_time_violations(
+        static double _calculate_waiting_time_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
 
@@ -37,9 +37,6 @@ namespace d2d
 
         /** @brief Total capacity violation */
         const double capacity_violation;
-
-        /** @brief Waiting time violation of each customer */
-        const std::vector<double> waiting_time_violations;
 
         /** @brief Total waiting time violation */
         const double waiting_time_violation;
@@ -59,15 +56,13 @@ namespace d2d
             : working_time(_calculate_working_time(truck_routes, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
-              waiting_time_violations(_calculate_waiting_time_violations(truck_routes, drone_routes)),
-              waiting_time_violation(std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0)),
+              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
-                  std::all_of(waiting_time_violations.begin(), waiting_time_violations.end(), [](const double &violation)
-                              { return utils::approximate(violation, 0.0); }))
+                  utils::approximate(waiting_time_violation, 0.0))
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
@@ -203,27 +198,23 @@ namespace d2d
         return result;
     }
 
-    std::vector<double> Solution::_calculate_waiting_time_violations(
+    double Solution::_calculate_waiting_time_violation(
         const std::vector<std::vector<TruckRoute>> &truck_routes,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         auto problem = Problem::get_instance();
-        std::vector<double> result(problem->customers.size());
+        double result = 0;
 
-#define CALCULATE_ROUTES(vehicle_routes)                                                              \
-    {                                                                                                 \
-        for (auto &routes : vehicle_routes)                                                           \
-        {                                                                                             \
-            for (auto &route : routes)                                                                \
-            {                                                                                         \
-                const std::vector<std::size_t> &customers = route.customers();                        \
-                const std::vector<double> &waiting_time_violations = route.waiting_time_violations(); \
-                for (std::size_t i = 0; i < customers.size(); i++)                                    \
-                {                                                                                     \
-                    result[customers[i]] = waiting_time_violations[i];                                \
-                }                                                                                     \
-            }                                                                                         \
-        }                                                                                             \
+#define CALCULATE_ROUTES(vehicle_routes)                                                                        \
+    {                                                                                                           \
+        for (auto &routes : vehicle_routes)                                                                     \
+        {                                                                                                       \
+            for (auto &route : routes)                                                                          \
+            {                                                                                                   \
+                const std::vector<double> &waiting_time_violations = route.waiting_time_violations();           \
+                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0); \
+            }                                                                                                   \
+        }                                                                                                       \
     }
 
         CALCULATE_ROUTES(truck_routes);
@@ -314,11 +305,7 @@ namespace d2d
                 Solution::A2 /= 1.0 + B;
             }
 
-            if (std::any_of(
-                    result->waiting_time_violations.begin(),
-                    result->waiting_time_violations.end(),
-                    [](const double &violation)
-                    { return violation > 0; }))
+            if (result->waiting_time_violation > 0)
             {
                 Solution::A3 *= 1.0 + B;
             }
