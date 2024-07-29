@@ -14,7 +14,7 @@ namespace d2d
     class Solution
     {
     private:
-        static double A1, A2, A3, B;
+        static double A1, A2, A3, A4, A5, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
         static double _calculate_working_time(
@@ -27,6 +27,8 @@ namespace d2d
         static double _calculate_waiting_time_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
 
     public:
         /** @brief System working time */
@@ -40,6 +42,12 @@ namespace d2d
 
         /** @brief Total waiting time violation */
         const double waiting_time_violation;
+
+        /** @brief Total fixed time violation */
+        const double fixed_time_violation;
+
+        /** @brief Total fixed distance violation */
+        const double fixed_distance_violation;
 
         /** @brief Routes of trucks */
         const std::vector<std::vector<TruckRoute>> truck_routes;
@@ -57,12 +65,16 @@ namespace d2d
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               waiting_time_violation(_calculate_waiting_time_violation(truck_routes, drone_routes)),
+              fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
+              fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
-                  utils::approximate(waiting_time_violation, 0.0))
+                  utils::approximate(waiting_time_violation, 0.0) &&
+                  utils::approximate(fixed_time_violation, 0.0) &&
+                  utils::approximate(fixed_distance_violation, 0.0))
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
@@ -116,6 +128,8 @@ namespace d2d
             result += A1 * drone_energy_violation;
             result += A2 * capacity_violation;
             result += A3 * waiting_time_violation;
+            result += A4 * fixed_time_violation;
+            result += A5 * fixed_distance_violation;
 
             return result;
         }
@@ -128,6 +142,8 @@ namespace d2d
     double Solution::A1 = 1;
     double Solution::A2 = 1;
     double Solution::A3 = 1;
+    double Solution::A4 = 1;
+    double Solution::A5 = 1;
     double Solution::B = 0.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
@@ -202,7 +218,6 @@ namespace d2d
         const std::vector<std::vector<TruckRoute>> &truck_routes,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
-        auto problem = Problem::get_instance();
         double result = 0;
 
 #define CALCULATE_ROUTES(vehicle_routes)                                                                        \
@@ -221,6 +236,42 @@ namespace d2d
         CALCULATE_ROUTES(drone_routes);
 
 #undef CALCULATE_ROUTES
+
+        return result;
+    }
+
+    double Solution::_calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        auto problem = Problem::get_instance();
+        double result = 0;
+        if (problem->endurance != nullptr)
+        {
+            for (auto &routes : drone_routes)
+            {
+                for (auto &route : routes)
+                {
+                    result += route.fixed_time_violation();
+                }
+            }
+        }
+
+        return result;
+    }
+
+    double Solution::_calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        auto problem = Problem::get_instance();
+        double result = 0;
+        if (problem->endurance != nullptr)
+        {
+            for (auto &routes : drone_routes)
+            {
+                for (auto &route : routes)
+                {
+                    result += route.fixed_distance_violation();
+                }
+            }
+        }
 
         return result;
     }
@@ -312,6 +363,24 @@ namespace d2d
             else
             {
                 Solution::A3 /= 1.0 + B;
+            }
+
+            if (result->fixed_time_violation > 0)
+            {
+                Solution::A4 *= 1.0 + B;
+            }
+            else
+            {
+                Solution::A4 /= 1.0 + B;
+            }
+
+            if (result->fixed_distance_violation > 0)
+            {
+                Solution::A5 *= 1.0 + B;
+            }
+            else
+            {
+                Solution::A5 /= 1.0 + B;
             }
         }
 
