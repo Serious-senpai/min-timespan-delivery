@@ -30,8 +30,12 @@ namespace d2d
                 {                                                                                                    \
                     for (std::size_t j = i + 1; j + 1 < customers.size(); j++)                                       \
                     {                                                                                                \
+                        using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[index][route])>;        \
+                                                                                                                     \
                         /* Temporary reverse segment [i, j] */                                                       \
-                        vehicle_routes[index][route].reverse(i, j - i + 1);                                          \
+                        std::vector<std::size_t> new_customers(vehicle_routes[index][route].customers());            \
+                        std::reverse(new_customers.begin() + i, new_customers.begin() + (j + 1));                    \
+                        vehicle_routes[index][route] = VehicleRoute(new_customers);                                  \
                                                                                                                      \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                        \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
@@ -42,7 +46,7 @@ namespace d2d
                         }                                                                                            \
                                                                                                                      \
                         /* Restore */                                                                                \
-                        vehicle_routes[index][route].reverse(i, j - i + 1);                                          \
+                        vehicle_routes[index][route] = VehicleRoute(customers);                                      \
                     }                                                                                                \
                 }                                                                                                    \
             }                                                                                                        \

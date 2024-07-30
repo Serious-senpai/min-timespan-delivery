@@ -17,8 +17,11 @@ namespace d2d
         static double A1, A2, A3, A4, A5, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
+
+        static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
+            const std::vector<std::vector<TruckRoute>> &truck_routes);
         static double _calculate_working_time(
-            const std::vector<std::vector<TruckRoute>> &truck_routes,
+            const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
@@ -26,9 +29,12 @@ namespace d2d
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_waiting_time_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
+            const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
+
+        const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
     public:
         /** @brief System working time */
@@ -61,10 +67,11 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
-            : working_time(_calculate_working_time(truck_routes, drone_routes)),
+            : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, drone_routes)),
+              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
               fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
               fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
               truck_routes(truck_routes),
@@ -153,27 +160,52 @@ namespace d2d
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
+    std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
+        const std::vector<std::vector<TruckRoute>> &truck_routes)
+    {
+        std::vector<std::vector<std::vector<double>>> result(truck_routes.size());
+        for (std::size_t i = 0; i < truck_routes.size(); i++)
+        {
+            result[i].resize(truck_routes[i].size());
+
+            std::size_t coefficients_index = 0;
+            double current_within_timespan = 0;
+            for (std::size_t j = 0; j < truck_routes[i].size(); j++)
+            {
+                result[i][j] = TruckRoute::calculate_time_segments(
+                    truck_routes[i][j].customers(),
+                    coefficients_index,
+                    current_within_timespan);
+            }
+        }
+
+        return result;
+    }
+
     double Solution::_calculate_working_time(
-        const std::vector<std::vector<TruckRoute>> &truck_routes,
+        const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
 
-#define CALCULATE_D2D_ROUTES(vehicle_routes) \
-    for (auto &routes : vehicle_routes)      \
-    {                                        \
-        double time = 0;                     \
-        for (auto &route : routes)           \
-        {                                    \
-            time += route.working_time();    \
-        }                                    \
-                                             \
-        result = std::max(result, time);     \
-    }
-
-        CALCULATE_D2D_ROUTES(truck_routes);
-        CALCULATE_D2D_ROUTES(drone_routes);
-#undef CALCULATE_D2D_ROUTES
+        for (auto &routes : truck_time_segments)
+        {
+            double time = 0;
+            for (auto &route : routes)
+            {
+                time += std::accumulate(route.begin(), route.end(), 0.0);
+            }
+            result = std::max(result, time);
+        }
+        for (auto &routes : drone_routes)
+        {
+            double time = 0;
+            for (auto &route : routes)
+            {
+                time += route.working_time();
+            }
+            result = std::max(result, time);
+        }
 
         return result;
     }
@@ -216,26 +248,29 @@ namespace d2d
 
     double Solution::_calculate_waiting_time_violation(
         const std::vector<std::vector<TruckRoute>> &truck_routes,
+        const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
 
-#define CALCULATE_ROUTES(vehicle_routes)                                                                        \
-    {                                                                                                           \
-        for (auto &routes : vehicle_routes)                                                                     \
-        {                                                                                                       \
-            for (auto &route : routes)                                                                          \
-            {                                                                                                   \
-                const std::vector<double> &waiting_time_violations = route.waiting_time_violations();           \
-                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0); \
-            }                                                                                                   \
-        }                                                                                                       \
-    }
-
-        CALCULATE_ROUTES(truck_routes);
-        CALCULATE_ROUTES(drone_routes);
-
-#undef CALCULATE_ROUTES
+        for (std::size_t i = 0; i < truck_routes.size(); i++)
+        {
+            for (std::size_t j = 0; j < truck_routes[i].size(); j++)
+            {
+                auto waiting_time_violations = TruckRoute::calculate_waiting_time_violations(
+                    truck_routes[i][j].customers(),
+                    truck_time_segments[i][j]);
+                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
+            }
+        }
+        for (auto &routes : drone_routes)
+        {
+            for (auto &route : routes)
+            {
+                const std::vector<double> &waiting_time_violations = route.waiting_time_violations();
+                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
+            }
+        }
 
         return result;
     }
