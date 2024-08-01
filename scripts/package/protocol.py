@@ -17,6 +17,7 @@ class SolutionJSON(TypedDict):
     truck_paths: List[List[List[int]]]
     drone_paths: List[List[List[int]]]
     feasible: bool
+    last_improved: int
     real: float
     user: float
     sys: float

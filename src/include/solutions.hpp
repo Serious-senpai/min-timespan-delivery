@@ -143,7 +143,7 @@ namespace d2d
 
         static std::shared_ptr<Solution> initial();
         static std::shared_ptr<Solution> post_optimization(const std::shared_ptr<Solution> &solution);
-        static std::shared_ptr<Solution> tabu_search();
+        static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
     };
 
     double Solution::A1 = 1;
@@ -328,7 +328,7 @@ namespace d2d
         return solution;
     }
 
-    std::shared_ptr<Solution> Solution::tabu_search()
+    std::shared_ptr<Solution> Solution::tabu_search(std::size_t *last_improved_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -337,6 +337,11 @@ namespace d2d
         {
             return ptr->feasible && ptr->cost() < result->cost();
         };
+
+        if (last_improved_ptr != nullptr)
+        {
+            *last_improved_ptr = 0;
+        }
 
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
@@ -370,6 +375,10 @@ namespace d2d
                 if (neighbor->feasible && neighbor->cost() < result->cost())
                 {
                     result = neighbor;
+                    if (last_improved_ptr != nullptr)
+                    {
+                        *last_improved_ptr = iteration;
+                    }
                 }
             }
 

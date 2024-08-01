@@ -7,7 +7,7 @@ void debug_display(const std::shared_ptr<d2d::Solution> &ptr)
     std::cout << ptr->cost() << std::endl;
 }
 
-void display(const std::shared_ptr<d2d::Solution> &ptr)
+void display(const std::shared_ptr<d2d::Solution> &ptr, const std::size_t &last_improved)
 {
     std::cout << ptr->cost() << std::endl;
 
@@ -32,16 +32,18 @@ void display(const std::shared_ptr<d2d::Solution> &ptr)
 #undef PRINT_ROUTES
 
     std::cout << ptr->feasible << std::endl;
+    std::cout << last_improved << std::endl;
 }
 
 int main()
 {
-    auto ptr = d2d::Solution::tabu_search();
+    std::size_t last_improved;
+    auto ptr = d2d::Solution::tabu_search(&last_improved);
 
 #ifdef DEBUG
     debug_display(ptr);
 #else
-    display(ptr);
+    display(ptr, last_improved);
 #endif
 
     return 0;

@@ -21,7 +21,7 @@ if __name__ == "__main__":
             solutions.append(solution)
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
-        csv.write("Problem,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Truck paths,Drone paths,Feasible,real,user,sys\n")
+        csv.write("Problem,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for solution in solutions:
             segments = [
                 solution["problem"],
@@ -34,6 +34,7 @@ if __name__ == "__main__":
                 wrap(solution["truck_paths"]),
                 wrap(solution["drone_paths"]),
                 str(int(solution["feasible"])),
+                str(solution["last_improved"]),
                 str(solution["real"]),
                 str(solution["user"]),
                 str(solution["sys"]),

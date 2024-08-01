@@ -33,6 +33,7 @@ if __name__ == "__main__":
                 paths[-1].append(customer)
 
     feasible = bool(int(input()))
+    last_improved = int(input())
     real = user = sys = -1.0
 
     for _ in range(3):
@@ -63,6 +64,7 @@ if __name__ == "__main__":
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,
+        "last_improved": last_improved,
         "real": real,
         "user": user,
         "sys": sys,
