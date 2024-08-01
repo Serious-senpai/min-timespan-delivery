@@ -17,6 +17,11 @@ if __name__ == "__main__":
     drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
 
     cost = float(input())
+    capacity_violation = float(input())
+    drone_energy_violation = float(input())
+    waiting_time_violation = float(input())
+    fixed_time_violation = float(input())
+    fixed_distance_violation = float(input())
 
     for paths in itertools.chain(truck_paths, drone_paths):
         new = True
@@ -61,6 +66,11 @@ if __name__ == "__main__":
         "speed_type": namespace.speed_type,
         "range_type": namespace.range_type,
         "cost": cost,
+        "capacity_violation": capacity_violation,
+        "drone_energy_violation": drone_energy_violation,
+        "waiting_time_violation": waiting_time_violation,
+        "fixed_time_violation": fixed_time_violation,
+        "fixed_distance_violation": fixed_distance_violation,
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,
