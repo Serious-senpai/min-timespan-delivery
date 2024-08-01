@@ -213,11 +213,16 @@ namespace d2d
     double Solution::_calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
-        for (auto &routes : drone_routes)
+        auto problem = Problem::get_instance();
+        if (problem->endurance == nullptr)
         {
-            for (auto &route : routes)
+            const double battery = (problem->linear != nullptr) ? problem->linear->battery : problem->nonlinear->battery;
+            for (auto &routes : drone_routes)
             {
-                result += route.energy_violation();
+                for (auto &route : routes)
+                {
+                    result += route.energy_violation() / battery;
+                }
             }
         }
 
@@ -229,14 +234,25 @@ namespace d2d
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
+        auto problem = Problem::get_instance();
 
-#define CALCULATE_D2D_ROUTES(vehicle_routes)      \
-    for (auto &routes : vehicle_routes)           \
-    {                                             \
-        for (auto &route : routes)                \
-        {                                         \
-            result += route.capacity_violation(); \
-        }                                         \
+#define CALCULATE_D2D_ROUTES(vehicle_routes)                                                \
+    for (auto &routes : vehicle_routes)                                                     \
+    {                                                                                       \
+        for (auto &route : routes)                                                          \
+        {                                                                                   \
+            double capacity;                                                                \
+            if constexpr (std::is_same_v<std::remove_cvref_t<decltype(route)>, TruckRoute>) \
+            {                                                                               \
+                capacity = problem->truck->capacity;                                        \
+            }                                                                               \
+            else                                                                            \
+            {                                                                               \
+                capacity = problem->drone->capacity;                                        \
+            }                                                                               \
+                                                                                            \
+            result += route.capacity_violation() / capacity;                                \
+        }                                                                                   \
     }
 
         CALCULATE_D2D_ROUTES(truck_routes);
@@ -252,6 +268,7 @@ namespace d2d
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
+        auto problem = Problem::get_instance();
 
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
@@ -260,7 +277,13 @@ namespace d2d
                 auto waiting_time_violations = TruckRoute::calculate_waiting_time_violations(
                     truck_routes[i][j].customers(),
                     truck_time_segments[i][j]);
-                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
+                result += std::accumulate(
+                    waiting_time_violations.begin(), waiting_time_violations.end(),
+                    0.0,
+                    [&problem](const double &result, const double &violation)
+                    {
+                        return result + violation / problem->maximum_waiting_time;
+                    });
             }
         }
         for (auto &routes : drone_routes)
@@ -268,7 +291,13 @@ namespace d2d
             for (auto &route : routes)
             {
                 const std::vector<double> &waiting_time_violations = route.waiting_time_violations();
-                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
+                result += std::accumulate(
+                    waiting_time_violations.begin(), waiting_time_violations.end(),
+                    0.0,
+                    [&problem](const double &result, const double &violation)
+                    {
+                        return result + violation / problem->maximum_waiting_time;
+                    });
             }
         }
 
@@ -277,15 +306,15 @@ namespace d2d
 
     double Solution::_calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
-        auto problem = Problem::get_instance();
         double result = 0;
+        auto problem = Problem::get_instance();
         if (problem->endurance != nullptr)
         {
             for (auto &routes : drone_routes)
             {
                 for (auto &route : routes)
                 {
-                    result += route.fixed_time_violation();
+                    result += route.fixed_time_violation() / problem->endurance->fixed_time;
                 }
             }
         }
@@ -295,15 +324,15 @@ namespace d2d
 
     double Solution::_calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
-        auto problem = Problem::get_instance();
         double result = 0;
+        auto problem = Problem::get_instance();
         if (problem->endurance != nullptr)
         {
             for (auto &routes : drone_routes)
             {
                 for (auto &route : routes)
                 {
-                    result += route.fixed_distance_violation();
+                    result += route.fixed_distance_violation() / problem->endurance->fixed_distance;
                 }
             }
         }

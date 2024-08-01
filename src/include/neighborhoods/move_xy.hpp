@@ -48,8 +48,8 @@ namespace d2d
                 {                                                                                                                                                 \
                     for (std::size_t j = 1; j + Y < customers_j.size(); j++)                                                                                      \
                     {                                                                                                                                             \
-                        using VehicleRoute_i = std::remove_reference_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                          \
-                        using VehicleRoute_j = std::remove_reference_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                          \
+                        using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                              \
+                        using VehicleRoute_j = std::remove_cvref_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                              \
                         if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                             \
                         {                                                                                                                                         \
                             if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                  \
@@ -171,7 +171,7 @@ namespace d2d
         {                                                                                                                 \
             for (std::size_t route_i = 0; route_i < vehicle_routes[vehicle_i].size(); route_i++)                          \
             {                                                                                                             \
-                using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[vehicle_i][route_i])>;               \
+                using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[vehicle_i][route_i])>;                   \
                 VehicleRoute old_route(vehicle_routes[vehicle_i][route_i]);                                               \
                                                                                                                           \
                 for (std::size_t vehicle_j = 0; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)   \
@@ -310,7 +310,7 @@ namespace d2d
                             std::rotate(new_customers.begin() + i + X, new_customers.begin() + j + X, new_customers.begin() + j + Y); \
                         }                                                                                                             \
                                                                                                                                       \
-                        using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[index][route])>;                         \
+                        using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                             \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                                   \
                                                                                                                                       \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                         \
@@ -373,7 +373,7 @@ namespace d2d
                         std::vector<std::size_t> new_customers(customers);                                                        \
                         std::rotate(new_customers.begin() + j, new_customers.begin() + i, new_customers.begin() + (i + X));       \
                                                                                                                                   \
-                        using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[index][route])>;                     \
+                        using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                         \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                               \
                                                                                                                                   \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                     \
@@ -394,7 +394,7 @@ namespace d2d
                         std::vector<std::size_t> new_customers(customers);                                                        \
                         std::rotate(new_customers.begin() + i, new_customers.begin() + (i + X), new_customers.begin() + (j + 1)); \
                                                                                                                                   \
-                        using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[index][route])>;                     \
+                        using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                         \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                               \
                                                                                                                                   \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                     \

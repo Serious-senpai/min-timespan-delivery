@@ -30,7 +30,7 @@ namespace d2d
                 {                                                                                                    \
                     for (std::size_t j = i + 1; j + 1 < customers.size(); j++)                                       \
                     {                                                                                                \
-                        using VehicleRoute = std::remove_reference_t<decltype(vehicle_routes[index][route])>;        \
+                        using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;            \
                                                                                                                      \
                         /* Temporary reverse segment [i, j] */                                                       \
                         std::vector<std::size_t> new_customers(vehicle_routes[index][route].customers());            \
@@ -89,8 +89,8 @@ namespace d2d
                 {                                                                                                                                                 \
                     for (std::size_t j = 0; j + 1 < customers_j.size(); j++)                                                                                      \
                     {                                                                                                                                             \
-                        using VehicleRoute_i = std::remove_reference_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                          \
-                        using VehicleRoute_j = std::remove_reference_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                          \
+                        using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                              \
+                        using VehicleRoute_j = std::remove_cvref_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                              \
                         if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                             \
                         {                                                                                                                                         \
                             if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                  \
