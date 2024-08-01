@@ -351,7 +351,7 @@ namespace d2d
                 std::cerr << prefix;
                 try
                 {
-                    auto width = utils::get_console_size().first;
+                    auto width = utils::get_console_size(false).first;
                     const std::size_t excess = 10;
                     if (prefix.size() + excess < width)
                     {
