@@ -367,11 +367,11 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial()
     {
-        auto result = initial_12(true);
-        auto r = initial_12(false);
+        auto result = initial_12<Solution, true>();
+        auto r = initial_12<Solution, false>();
         result = result->cost() < r->cost() ? result : r;
 
-        r = initial_3();
+        r = initial_3<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
         return result;

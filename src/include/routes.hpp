@@ -448,6 +448,13 @@ namespace d2d
         void push_back(const std::size_t &customer)
         {
             auto problem = Problem::get_instance();
+#ifdef DEBUG
+            if (!problem->customers[customer].dronable)
+            {
+                throw NonDronable(customer);
+            }
+#endif
+
             auto drone = problem->drone;
 
             _customers.back() = customer;

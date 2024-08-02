@@ -5,8 +5,6 @@
 
 namespace d2d
 {
-    class Solution; // forward declaration
-
     bool _truck_try_insert(TruckRoute &route, const std::size_t &customer)
     {
         TruckRoute old(route);
@@ -67,7 +65,8 @@ namespace d2d
         }                                                                                                \
     }
 
-    std::shared_ptr<Solution> initial_12(const bool &nearest)
+    template <typename ST, bool Nearest>
+    std::shared_ptr<ST> initial_12()
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
@@ -80,10 +79,10 @@ namespace d2d
             std::iota(first_phase.begin(), first_phase.end(), 1);
             std::sort(
                 first_phase.begin(), first_phase.end(),
-                [&nearest, &problem](const std::size_t &first, const std::size_t &second)
+                [&problem](const std::size_t &first, const std::size_t &second)
                 {
                     bool nearer = problem->distances[0][first] < problem->distances[0][second];
-                    return nearest ? nearer : !nearer;
+                    return Nearest ? nearer : !nearer;
                 });
 
             auto truck_iter = truck_routes.begin();
@@ -169,10 +168,11 @@ namespace d2d
         INITIAL_12_PHASE_3(problem, third_phase, truck_routes, drone_routes);
         // End third phase
 
-        return std::make_shared<Solution>(truck_routes, drone_routes);
+        return std::make_shared<ST>(truck_routes, drone_routes);
     }
 
-    std::shared_ptr<Solution> initial_3()
+    template <typename ST>
+    std::shared_ptr<ST> initial_3()
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
@@ -216,7 +216,7 @@ namespace d2d
 
         INITIAL_12_PHASE_3(problem, next_phase, truck_routes, drone_routes);
 
-        return std::make_shared<Solution>(truck_routes, drone_routes);
+        return std::make_shared<ST>(truck_routes, drone_routes);
     }
 
 #undef INITIAL_12_PHASE_3
