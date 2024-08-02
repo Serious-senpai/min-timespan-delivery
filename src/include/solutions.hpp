@@ -169,14 +169,17 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> result(truck_routes.size());
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
-            std::vector<std::size_t> merged = {0};
-            for (auto &route : truck_routes[i])
+            if (!truck_routes[i].empty())
             {
-                merged.insert(merged.end(), route.customers().begin() + 1, route.customers().end() - 1);
-            }
-            merged.push_back(0);
+                std::vector<std::size_t> merged = {0};
+                for (auto &route : truck_routes[i])
+                {
+                    merged.insert(merged.end(), route.customers().begin() + 1, route.customers().end() - 1);
+                }
+                merged.push_back(0);
 
-            result[i].emplace_back(merged);
+                result[i].emplace_back(merged);
+            }
         }
 
         return result;
