@@ -101,7 +101,10 @@ namespace d2d
             update(same_route(solution, aspiration_criteria));
             update(multi_route(solution, aspiration_criteria));
 
-            this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+            if (result != nullptr)
+            {
+                this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+            }
 
             return result;
         }
