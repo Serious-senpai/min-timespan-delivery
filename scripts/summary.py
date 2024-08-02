@@ -21,10 +21,11 @@ if __name__ == "__main__":
             solutions.append(solution)
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
-        csv.write("Problem,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
-        for solution in solutions:
+        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        for row, solution in enumerate(solutions, start=2):
             segments = [
                 solution["problem"],
+                wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
                 str(solution["iterations"]),
                 str(solution["tabu_size"]),
                 solution["config"],
