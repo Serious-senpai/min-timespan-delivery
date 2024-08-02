@@ -376,7 +376,7 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf) ", iteration + 1, problem->iterations, result->cost());
+                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf/%.2lf) ", iteration + 1, problem->iterations, current->cost(), result->cost());
                 std::cerr << prefix;
                 try
                 {
@@ -408,10 +408,21 @@ namespace d2d
                     {
                         *last_improved_ptr = iteration;
                     }
+
+                    for (auto &neighborhood : neighborhoods)
+                    {
+                        auto neighbor = neighborhood->move(current, aspiration_criteria);
+                        if (neighbor != nullptr && neighbor->feasible && neighbor->cost() < result->cost())
+                        {
+                            result = neighbor;
+                        }
+                    }
+
+                    current = result;
                 }
             }
 
-            if (result->drone_energy_violation > 0)
+            if (current->drone_energy_violation > 0)
             {
                 Solution::A1 *= 1.0 + B;
             }
@@ -420,7 +431,7 @@ namespace d2d
                 Solution::A1 /= 1.0 + B;
             }
 
-            if (result->capacity_violation > 0)
+            if (current->capacity_violation > 0)
             {
                 Solution::A2 *= 1.0 + B;
             }
@@ -429,7 +440,7 @@ namespace d2d
                 Solution::A2 /= 1.0 + B;
             }
 
-            if (result->waiting_time_violation > 0)
+            if (current->waiting_time_violation > 0)
             {
                 Solution::A3 *= 1.0 + B;
             }
@@ -438,7 +449,7 @@ namespace d2d
                 Solution::A3 /= 1.0 + B;
             }
 
-            if (result->fixed_time_violation > 0)
+            if (current->fixed_time_violation > 0)
             {
                 Solution::A4 *= 1.0 + B;
             }
@@ -447,7 +458,7 @@ namespace d2d
                 Solution::A4 /= 1.0 + B;
             }
 
-            if (result->fixed_distance_violation > 0)
+            if (current->fixed_distance_violation > 0)
             {
                 Solution::A5 *= 1.0 + B;
             }

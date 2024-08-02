@@ -35,6 +35,7 @@ namespace d2d
                         /* Temporary reverse segment [i, j] */                                                       \
                         std::vector<std::size_t> new_customers(vehicle_routes[index][route].customers());            \
                         std::reverse(new_customers.begin() + i, new_customers.begin() + (j + 1));                    \
+                                                                                                                     \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                  \
                                                                                                                      \
                         auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                        \

@@ -20,7 +20,7 @@ namespace utils
         void report(const std::string &message) const
         {
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-            std::cout << message << " " << duration.count() << "ms\n";
+            std::cerr << message << " " << duration.count() << "ms\n";
         }
     };
 
