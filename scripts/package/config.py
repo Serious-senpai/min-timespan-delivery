@@ -180,7 +180,7 @@ class Problem:
         dronable: List[bool] = []
         truck_service_time: List[float] = []
         drone_service_time: List[float] = []
-        for match in re.finditer(r"([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\t([\d\.]+)\s+([\d\.]+)", data):
+        for match in re.finditer(r"([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)", data):
             _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
             x.append(float(_x))
             y.append(float(_y))
