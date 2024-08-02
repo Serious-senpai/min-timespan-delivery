@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("problem", type=str, help="the problem name in the archive")
 parser.add_argument("-i", "--iterations", default=500, type=int, help="the number of iterations to run the algorithm for")
 parser.add_argument("-t", "--tabu-size", default=10, type=int, help="the tabu size for each neighborhood")
-parser.add_argument("-c", "--config", default="linear", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
+parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
