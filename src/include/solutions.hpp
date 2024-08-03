@@ -401,16 +401,7 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format(
-                    "\rIteration #%lu/%lu(%s/%s) ",
-                    iteration + 1,
-                    problem->iterations,
-                    current->feasible
-                        ? utils::format("%.2lf", current->cost()).c_str()
-                        : utils::format("\e[31m%.2lf\e[0m", current->cost()).c_str(),
-                    result->feasible
-                        ? utils::format("%.2lf", result->cost()).c_str()
-                        : utils::format("\e[31m%.2lf\e[0m", result->cost()).c_str());
+                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf/%.2lf) ", iteration + 1, problem->iterations, current->cost(), result->cost());
                 std::cerr << prefix;
                 try
                 {
