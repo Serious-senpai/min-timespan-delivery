@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
-parser.add_argument("-i", "--iterations", default=1000, type=int, help="the number of iterations to run the algorithm for")
+parser.add_argument("-i", "--iterations", default=1200, type=int, help="the number of iterations to run the algorithm for")
 parser.add_argument(
     "-t", "--tabu-size-coefficient",
     default=2,
