@@ -3,12 +3,50 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from typing import Any, DefaultDict, List, TypedDict
+from typing import Any, DefaultDict, Dict, List, TypedDict
 
 from package import SolutionJSON, ROOT
 
 
-DSAASolution = TypedDict("DSAASolution", {"best feasible": str, "best feasible score": str})
+TSSolution = TypedDict("TSSolution", {"best feasible": str, "best feasible score": str})
+
+
+def read_tabu_search() -> DefaultDict[str, float]:
+    result: DefaultDict[str, float] = defaultdict(lambda: float("inf"))
+    for file in ROOT.joinpath("problems", "solution", "tabu-search").iterdir():
+        if file.is_file() and file.suffix == ".json":
+            with file.open("r") as f:
+                data = json.load(f)
+
+            assert isinstance(data, dict)
+            for key, value in data.items():
+                dsaa = TSSolution(**value)  # type: ignore  # will throw at runtime if fields are incompatible
+                assert isinstance(key, str)
+
+                matcher = re.fullmatch(r"(\d+\.\d+\.\d+)\.txt\.\d+", key)
+                assert matcher is not None
+
+                problem = matcher.group(1)
+                result[problem] = min(result[problem], 60 * float(dsaa["best feasible score"]))
+
+    return result
+
+
+def read_multilevel() -> Dict[str, float]:
+    result: Dict[str, float] = {}
+    path = ROOT.joinpath("problems", "solution", "multilevel", "result.json")
+    with path.open("r") as file:
+        data = json.load(file)
+
+    for key, value in data.items():
+        assert isinstance(key, str)
+        matcher = re.fullmatch(r"(\d+\.\d+\.\d+) \| Best: ", key)
+        if matcher is not None:
+            problem = matcher.group(1)
+            assert isinstance(value, float)
+            result[problem] = 60 * value
+
+    return result
 
 
 def wrap(value: Any) -> str:
@@ -25,25 +63,11 @@ if __name__ == "__main__":
             solution = SolutionJSON(**data)  # type: ignore  # will throw at runtime if fields are incompatible
             solutions.append(solution)
 
-    compare: DefaultDict[str, float] = defaultdict(lambda: float("inf"))
-    for file in ROOT.joinpath("problems", "solution").iterdir():
-        if file.is_file() and file.suffix == ".json":
-            with file.open("r") as f:
-                data = json.load(f)
-
-            assert isinstance(data, dict)
-            for key, value in data.items():
-                dsaa = DSAASolution(**value)  # type: ignore  # will throw at runtime if fields are incompatible
-                assert isinstance(key, str)
-
-                matcher = re.fullmatch(r"(\d+\.\d+\.\d+)\.txt\.\d+", key)
-                assert matcher is not None
-
-                problem = matcher.group(1)
-                compare[problem] = min(compare[problem], 60 * float(dsaa["best feasible score"]))
+    tabu_search = read_tabu_search()
+    multilevel = read_multilevel()
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
-        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,DSAA,Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Tabu search,Improved to tabu search [%],Multilevel,Improved to multilevel [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, solution in enumerate(solutions, start=2):
             segments = [
                 solution["problem"],
@@ -54,8 +78,10 @@ if __name__ == "__main__":
                 solution["speed_type"],
                 solution["range_type"],
                 str(solution["cost"]),
-                str(compare.get(solution["problem"], "")),
-                wrap(f"=ROUND(100 * (I{row} - H{row}) / I{row}, 2)") if solution["problem"] in compare else "",
+                str(tabu_search.get(solution["problem"], "")),
+                wrap(f"=ROUND(100 * (I{row} - H{row}) / I{row}, 2)") if solution["problem"] in tabu_search else "",
+                str(multilevel.get(solution["problem"], "")),
+                wrap(f"=ROUND(100 * (K{row} - H{row}) / K{row}, 2)") if solution["problem"] in multilevel else "",
                 str(solution["capacity_violation"]),
                 str(solution["drone_energy_violation"]),
                 str(solution["waiting_time_violation"]),
