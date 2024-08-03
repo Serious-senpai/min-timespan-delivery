@@ -24,8 +24,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Compile to executable in debug mode
+      - name: Compile to executable in debug mode (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: scripts/build.sh debug
+
+      - name: Compile to executable in debug mode (windows-latest)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: scripts\build debug
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
