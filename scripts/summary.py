@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, TypedDict
+from typing import Any, DefaultDict, Dict, List, Tuple, TypedDict
 
 from package import SolutionJSON, ROOT
 
@@ -32,21 +32,28 @@ def read_tabu_search() -> DefaultDict[str, float]:
     return result
 
 
-def read_multilevel() -> Dict[str, float]:
-    result: Dict[str, float] = {}
+def read_multilevel() -> Tuple[Dict[str, float], Dict[str, float]]:
+    cost: Dict[str, float] = {}
+    time: Dict[str, float] = {}
+
     path = ROOT.joinpath("problems", "solution", "multilevel", "result.json")
     with path.open("r") as file:
         data = json.load(file)
 
     for key, value in data.items():
         assert isinstance(key, str)
-        matcher = re.fullmatch(r"(\d+\.\d+\.\d+) \| Best: ", key)
-        if matcher is not None:
+
+        if matcher := re.fullmatch(r"(\d+\.\d+\.\d+) \| Best: ", key):
             problem = matcher.group(1)
             assert isinstance(value, float)
-            result[problem] = 60 * value
+            cost[problem] = 60 * value
 
-    return result
+        elif matcher := re.fullmatch(r"(\d+\.\d+\.\d+) \| Average Time: ", key):
+            problem = matcher.group(1)
+            assert isinstance(value, float)
+            time[problem] = value
+
+    return cost, time
 
 
 def wrap(value: Any) -> str:
@@ -64,10 +71,10 @@ if __name__ == "__main__":
             solutions.append(solution)
 
     tabu_search = read_tabu_search()
-    multilevel = read_multilevel()
+    multilevel, multilevel_time = read_multilevel()
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
-        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Tabu search,Improved to tabu search [%],Multilevel,Improved to multilevel [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Tabu search,Improved to tabu search [%],Multilevel,Improved to multilevel [%],Multilevel time,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, solution in enumerate(solutions, start=2):
             segments = [
                 solution["problem"],
@@ -82,6 +89,7 @@ if __name__ == "__main__":
                 wrap(f"=ROUND(100 * (I{row} - H{row}) / I{row}, 2)") if solution["problem"] in tabu_search else "",
                 str(multilevel.get(solution["problem"], "")),
                 wrap(f"=ROUND(100 * (K{row} - H{row}) / K{row}, 2)") if solution["problem"] in multilevel else "",
+                str(multilevel_time.get(solution["problem"], "")),
                 str(solution["capacity_violation"]),
                 str(solution["drone_energy_violation"]),
                 str(solution["waiting_time_violation"]),
