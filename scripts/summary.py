@@ -27,7 +27,7 @@ if __name__ == "__main__":
                 solution["problem"],
                 wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
                 str(solution["iterations"]),
-                str(solution["tabu_size"]),
+                f"={solution['tabu_size_coefficient']} * FLOOR(SQRT(B{row}), 1)",
                 solution["config"],
                 solution["speed_type"],
                 solution["range_type"],

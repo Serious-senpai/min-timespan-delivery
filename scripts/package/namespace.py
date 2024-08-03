@@ -26,7 +26,7 @@ parser.add_argument("problem", type=str, help="the problem name in the archive")
 parser.add_argument("-i", "--iterations", default=1200, type=int, help="the number of iterations to run the algorithm for")
 parser.add_argument(
     "-t", "--tabu-size-coefficient",
-    default=2,
+    default=1,
     type=int,
     help="the tabu size coefficient each neighborhood, the final tabu size will be the product of this coefficient and the square root of customers count",
 )

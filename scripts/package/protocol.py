@@ -9,7 +9,7 @@ __all__ = ("SolutionJSON",)
 class SolutionJSON(TypedDict):
     problem: str
     iterations: int
-    tabu_size: int
+    tabu_size_coefficient: int
     config: str
     speed_type: str
     range_type: str
