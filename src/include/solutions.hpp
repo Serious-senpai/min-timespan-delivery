@@ -372,6 +372,7 @@ namespace d2d
             *last_improved_ptr = 0;
         }
 
+        std::size_t neighborhood = 0;
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
@@ -405,8 +406,7 @@ namespace d2d
                 std::cerr << std::flush;
             }
 
-            auto neighborhood = utils::random_element(neighborhoods);
-            auto neighbor = neighborhood->move(current, aspiration_criteria);
+            auto neighbor = neighborhoods[(neighborhood++) % neighborhoods.size()]->move(current, aspiration_criteria);
             if (neighbor != nullptr)
             {
                 current = neighbor;
