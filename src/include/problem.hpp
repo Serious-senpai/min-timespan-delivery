@@ -243,7 +243,7 @@ namespace d2d
 
             _instance = new Problem(
                 iterations,
-                tabu_size_coeff * customers_count,
+                tabu_size_coeff * utils::sqrt(customers_count),
                 verbose,
                 trucks_count,
                 drones_count,

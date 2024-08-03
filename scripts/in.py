@@ -24,7 +24,7 @@ if __name__ == "__main__":
     print(*problem.drone_service_time)
 
     print(namespace.iterations)
-    print(namespace.tabu_size)
+    print(namespace.tabu_size_coefficient)
     print(int(namespace.verbose))
 
     truck = TruckConfig.import_data()
