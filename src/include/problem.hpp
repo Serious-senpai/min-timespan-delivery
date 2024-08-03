@@ -156,9 +156,9 @@ namespace d2d
                 }
             }
 
-            std::size_t iterations, tabu_size;
+            std::size_t iterations, tabu_size_coeff;
             bool verbose;
-            std::cin >> iterations >> tabu_size >> verbose;
+            std::cin >> iterations >> tabu_size_coeff >> verbose;
 
             double truck_maximum_velocity, truck_capacity;
             std::cin >> truck_maximum_velocity >> truck_capacity;
@@ -243,7 +243,7 @@ namespace d2d
 
             _instance = new Problem(
                 iterations,
-                tabu_size,
+                tabu_size_coeff * customers_count,
                 verbose,
                 trucks_count,
                 drones_count,
