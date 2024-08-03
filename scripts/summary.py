@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
             assert isinstance(data, dict)
             for key, value in data.items():
-                dsaa = DSAASolution(**value)
+                dsaa = DSAASolution(**value)  # type: ignore  # will throw at runtime if fields are incompatible
                 assert isinstance(key, str)
 
                 matcher = re.fullmatch(r"(\d+\.\d+\.\d+)\.txt\.\d+", key)
