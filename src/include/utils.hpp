@@ -45,36 +45,36 @@ namespace utils
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T sqrt(const T &value)
     {
-        if (value < 0)
+        if (value < static_cast<T>(0))
         {
             throw std::out_of_range(format("Attempted to calculate square root of %s < 0", std::to_string(value).c_str()));
         }
 
-        if (value == 0)
-        {
-            return 0;
-        }
-
-        T low = 0, high = std::max(static_cast<T>(1), value), accuracy = 1;
+        T low = 0, high = std::max(static_cast<T>(1), value), error = 1;
         if constexpr (std::is_floating_point_v<T>)
         {
-            accuracy = 1.0e-7;
+            error = 1.0e-7;
         }
 
-        while (high - low > accuracy)
+        if (high * high == value)
+        {
+            return high;
+        }
+
+        while (high - low > error)
         {
             double mid = (low + high) / 2;
-            if (mid * mid < value)
-            {
-                low = mid;
-            }
-            else
+            if (mid * mid > value)
             {
                 high = mid;
             }
+            else
+            {
+                low = mid;
+            }
         }
 
-        return high;
+        return low;
     }
 
     template <typename T>
