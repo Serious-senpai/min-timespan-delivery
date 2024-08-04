@@ -453,7 +453,11 @@ namespace d2d
                 neighborhood = (neighborhood + 1) % neighborhoods.size();
                 if (neighborhood == 0)
                 {
-                    current = utils::random_element(neighborhoods)->move(current, aspiration_criteria);
+                    auto neighbor = utils::random_element(neighborhoods)->move(current, aspiration_criteria);
+                    if (neighbor != nullptr)
+                    {
+                        current = neighbor;
+                    }
                 }
             }
 
