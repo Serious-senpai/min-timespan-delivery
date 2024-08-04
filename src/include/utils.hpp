@@ -124,15 +124,15 @@ namespace utils
      * [`GetConsoleScreenBufferInfo`](https://learn.microsoft.com/en-us/windows/console/getconsolescreenbufferinfo)
      * or [`ioctl`](https://man7.org/linux/man-pages/man2/ioctl.2.html).
      *
-     * @param stdout Whether to get the size of the standard output or standard error.
+     * @param _stdout Whether to get the size of the standard output or standard error.
      * @note In case it is not possible to get the console size, `std::runtime_error` is thrown.
      * @return The number of columns and rows, respectively.
      */
-    std::pair<unsigned short, unsigned short> get_console_size(const bool &stdout = true)
+    std::pair<unsigned short, unsigned short> get_console_size(const bool &_stdout = true)
     {
 #if defined(WIN32)
         CONSOLE_SCREEN_BUFFER_INFO info;
-        if (!GetConsoleScreenBufferInfo(GetStdHandle(stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), &info))
+        if (!GetConsoleScreenBufferInfo(GetStdHandle(_stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), &info))
         {
             throw std::runtime_error("GetConsoleScreenBufferInfo ERROR");
         }
@@ -144,7 +144,7 @@ namespace utils
 
 #elif defined(__linux__)
         struct winsize w;
-        if (ioctl(stdout ? STDOUT_FILENO : STDERR_FILENO, TIOCGWINSZ, &w) == -1)
+        if (ioctl(_stdout ? STDOUT_FILENO : STDERR_FILENO, TIOCGWINSZ, &w) == -1)
         {
             throw std::runtime_error("ioctl ERROR");
         }

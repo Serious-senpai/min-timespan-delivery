@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import itertools
 import json
+import random
 import re
+import string
 from typing import List
 
 from package import parser, Namespace, Problem, SolutionJSON, ROOT
+
+
+def random_str(length: int) -> str:
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
 if __name__ == "__main__":
@@ -81,9 +87,9 @@ if __name__ == "__main__":
     }
     print(data)
 
-    index = 0
+    index = random_str(8)
     while ROOT.joinpath("result", f"{namespace.problem}-{index}.json").exists():
-        index += 1
+        index = random_str(8)
 
     with ROOT.joinpath("result", f"{namespace.problem}-{index}.json").open("w") as file:
         json.dump(data, file)
