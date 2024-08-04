@@ -45,36 +45,36 @@ namespace utils
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T sqrt(const T &value)
     {
-        if (value < 0)
+        if (value < static_cast<T>(0))
         {
             throw std::out_of_range(format("Attempted to calculate square root of %s < 0", std::to_string(value).c_str()));
         }
 
-        if (value == 0)
-        {
-            return 0;
-        }
-
-        T low = 0, high = std::max(static_cast<T>(1), value), accuracy = 1;
+        T low = 0, high = std::max(static_cast<T>(1), value), error = 1;
         if constexpr (std::is_floating_point_v<T>)
         {
-            accuracy = 1.0e-7;
+            error = 1.0e-7;
         }
 
-        while (high - low > accuracy)
+        if (high * high == value)
+        {
+            return high;
+        }
+
+        while (high - low > error)
         {
             double mid = (low + high) / 2;
-            if (mid * mid < value)
-            {
-                low = mid;
-            }
-            else
+            if (mid * mid > value)
             {
                 high = mid;
             }
+            else
+            {
+                low = mid;
+            }
         }
 
-        return high;
+        return low;
     }
 
     template <typename T>
@@ -124,15 +124,15 @@ namespace utils
      * [`GetConsoleScreenBufferInfo`](https://learn.microsoft.com/en-us/windows/console/getconsolescreenbufferinfo)
      * or [`ioctl`](https://man7.org/linux/man-pages/man2/ioctl.2.html).
      *
-     * @param stdout Whether to get the size of the standard output or standard error.
+     * @param _stdout Whether to get the size of the standard output or standard error.
      * @note In case it is not possible to get the console size, `std::runtime_error` is thrown.
      * @return The number of columns and rows, respectively.
      */
-    std::pair<unsigned short, unsigned short> get_console_size(const bool &stdout = true)
+    std::pair<unsigned short, unsigned short> get_console_size(const bool &_stdout = true)
     {
 #if defined(WIN32)
         CONSOLE_SCREEN_BUFFER_INFO info;
-        if (!GetConsoleScreenBufferInfo(GetStdHandle(stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), &info))
+        if (!GetConsoleScreenBufferInfo(GetStdHandle(_stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE), &info))
         {
             throw std::runtime_error("GetConsoleScreenBufferInfo ERROR");
         }
@@ -144,7 +144,7 @@ namespace utils
 
 #elif defined(__linux__)
         struct winsize w;
-        if (ioctl(stdout ? STDOUT_FILENO : STDERR_FILENO, TIOCGWINSZ, &w) == -1)
+        if (ioctl(_stdout ? STDOUT_FILENO : STDERR_FILENO, TIOCGWINSZ, &w) == -1)
         {
             throw std::runtime_error("ioctl ERROR");
         }
