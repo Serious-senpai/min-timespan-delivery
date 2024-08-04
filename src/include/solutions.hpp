@@ -154,10 +154,10 @@ namespace d2d
     double Solution::B = 0.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
-        // std::make_shared<MoveXY<Solution, 3, 0>>(),
+        std::make_shared<MoveXY<Solution, 3, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 0>>(),
-        std::make_shared<MoveXY<Solution, 2, 2>>(),
+        // std::make_shared<MoveXY<Solution, 2, 2>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
