@@ -11,7 +11,7 @@ from package import parser, Namespace, Problem, SolutionJSON, ROOT
 
 
 def random_str(length: int) -> str:
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 if __name__ == "__main__":
