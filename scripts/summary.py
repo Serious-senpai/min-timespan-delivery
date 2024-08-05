@@ -74,11 +74,13 @@ if __name__ == "__main__":
     multilevel, multilevel_time = read_multilevel()
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
-        csv.write("Problem,Customers count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Tabu search,Improved to tabu search [%],Multilevel,Improved to multilevel [%],Multilevel time,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Tabu search,Improved to tabu search [%],Multilevel,Improved to multilevel [%],Multilevel time,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, solution in enumerate(solutions, start=2):
             segments = [
                 solution["problem"],
                 wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
+                str(solution["trucks_count"]),
+                str(solution["drones_count"]),
                 str(solution["iterations"]),
                 str(solution["tabu_size"]),
                 solution["config"],
@@ -86,9 +88,9 @@ if __name__ == "__main__":
                 solution["range_type"],
                 str(solution["cost"]),
                 str(tabu_search.get(solution["problem"], "")),
-                wrap(f"=ROUND(100 * (I{row} - H{row}) / I{row}, 2)") if solution["problem"] in tabu_search else "",
+                wrap(f"=ROUND(100 * (K{row} - J{row}) / K{row}, 2)") if solution["problem"] in tabu_search else "",
                 str(multilevel.get(solution["problem"], "")),
-                wrap(f"=ROUND(100 * (K{row} - H{row}) / K{row}, 2)") if solution["problem"] in multilevel else "",
+                wrap(f"=ROUND(100 * (M{row} - J{row}) / M{row}, 2)") if solution["problem"] in multilevel else "",
                 str(multilevel_time.get(solution["problem"], "")),
                 str(solution["capacity_violation"]),
                 str(solution["drone_energy_violation"]),

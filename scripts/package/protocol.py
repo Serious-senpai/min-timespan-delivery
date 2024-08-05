@@ -8,6 +8,8 @@ __all__ = ("SolutionJSON",)
 
 class SolutionJSON(TypedDict):
     problem: str
+    trucks_count: int
+    drones_count: int
     iterations: int
     tabu_size: int
     config: str
