@@ -63,7 +63,7 @@ def wrap(value: Any) -> str:
 if __name__ == "__main__":
     solutions: List[SolutionJSON] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
-        if file.is_file() and file.suffix == ".json":
+        if file.is_file() and re.fullmatch(r"\d+\.\d+\.\d+-\w{8}\.json", file.name) is not None:
             with file.open("r") as f:
                 data = json.load(f)
 
@@ -106,3 +106,6 @@ if __name__ == "__main__":
                 str(solution["sys"]),
             ]
             csv.write(",".join(segments) + "\n")
+
+    with ROOT.joinpath("result", "summary.json").open("w") as f:
+        json.dump(solutions, f, indent=4)
