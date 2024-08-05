@@ -66,6 +66,8 @@ if __name__ == "__main__":
 
     data: SolutionJSON = {
         "problem": namespace.problem,
+        "trucks_count": problem.trucks_count,
+        "drones_count": problem.drones_count,
         "iterations": namespace.iterations,
         "tabu_size": namespace.tabu_size,
         "config": namespace.config,
