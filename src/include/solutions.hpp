@@ -372,6 +372,7 @@ namespace d2d
             *last_improved_ptr = 0;
         }
 
+        std::size_t neighborhood = 0;
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
@@ -396,8 +397,8 @@ namespace d2d
                 std::cerr << std::flush;
             }
 
-            auto neighborhood = utils::random_element(neighborhoods);
-            auto neighbor = neighborhood->move(current, aspiration_criteria);
+            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
+            auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
                 current = neighbor;
@@ -419,6 +420,19 @@ namespace d2d
                     }
 
                     current = result;
+                }
+            }
+
+            if (neighbor == nullptr || current_cost <= current->cost())
+            {
+                neighborhood = (neighborhood + 1) % neighborhoods.size();
+                if (neighborhood == 0)
+                {
+                    auto neighbor = utils::random_element(neighborhoods)->move(current, aspiration_criteria);
+                    if (neighbor != nullptr)
+                    {
+                        current = neighbor;
+                    }
                 }
             }
 
