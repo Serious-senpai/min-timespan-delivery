@@ -18,8 +18,9 @@ namespace d2d
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
 
-        static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
-            const std::vector<std::vector<TruckRoute>> &truck_routes);
+        static std::vector<std::vector<DroneRoute>> _split_routes(
+            const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(const std::vector<std::vector<TruckRoute>> &truck_routes);
         static double _calculate_working_time(
             const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
@@ -34,6 +35,7 @@ namespace d2d
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
 
+        const std::vector<std::vector<DroneRoute>> _temp_drone_routes;
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
     public:
@@ -67,15 +69,16 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
-            : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
-              working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
-              drone_energy_violation(_calculate_energy_violation(drone_routes)),
-              capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
-              fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
-              fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
+            : _temp_drone_routes(_split_routes(drone_routes)),
+              _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              working_time(_calculate_working_time(_temp_truck_time_segments, _temp_drone_routes)),
+              drone_energy_violation(_calculate_energy_violation(_temp_drone_routes)),
+              capacity_violation(_calculate_capacity_violation(truck_routes, _temp_drone_routes)),
+              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, _temp_drone_routes)),
+              fixed_time_violation(_calculate_fixed_time_violation(_temp_drone_routes)),
+              fixed_distance_violation(_calculate_fixed_distance_violation(_temp_drone_routes)),
               truck_routes(truck_routes),
-              drone_routes(drone_routes),
+              drone_routes(_temp_drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
@@ -176,6 +179,25 @@ namespace d2d
                     truck_routes[i][j].customers(),
                     coefficients_index,
                     current_within_timespan);
+            }
+        }
+
+        return result;
+    }
+
+    std::vector<std::vector<DroneRoute>> Solution::_split_routes(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        std::vector<std::vector<DroneRoute>> result;
+        for (auto &routes : drone_routes)
+        {
+            result.emplace_back();
+            for (auto &route : routes)
+            {
+                const std::vector<std::size_t> &customers = route.customers();
+                for (auto iter = customers.begin() + 1; iter != customers.end() - 1; iter++)
+                {
+                    result.back().push_back(DroneRoute({0, *iter, 0}));
+                }
             }
         }
 
