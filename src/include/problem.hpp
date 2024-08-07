@@ -31,11 +31,6 @@ namespace d2d
         static Customer depot();
     };
 
-    Customer Customer::depot()
-    {
-        return Customer(0, 0, 0, true, 0, 0);
-    }
-
     class Problem
     {
     private:
@@ -100,47 +95,46 @@ namespace d2d
             std::size_t customers_count, trucks_count, drones_count;
             std::cin >> customers_count >> trucks_count >> drones_count;
 
-            std::vector<double> x(customers_count);
-            for (std::size_t i = 0; i < customers_count; i++)
+            std::vector<double> x(customers_count + 1);
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 std::cin >> x[i];
             }
 
-            std::vector<double> y(customers_count);
-            for (std::size_t i = 0; i < customers_count; i++)
+            std::vector<double> y(customers_count + 1);
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 std::cin >> y[i];
             }
 
-            std::vector<double> demands(customers_count);
-            for (std::size_t i = 0; i < customers_count; i++)
+            std::vector<double> demands(customers_count + 1);
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 std::cin >> demands[i];
             }
 
             std::vector<bool> dronable;
-            for (std::size_t i = 0; i < customers_count; i++)
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 bool b;
                 std::cin >> b;
                 dronable.push_back(b);
             }
 
-            std::vector<double> truck_service_time(customers_count);
-            for (std::size_t i = 0; i < customers_count; i++)
+            std::vector<double> truck_service_time(customers_count + 1);
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 std::cin >> truck_service_time[i];
             }
 
-            std::vector<double> drone_service_time(customers_count);
-            for (std::size_t i = 0; i < customers_count; i++)
+            std::vector<double> drone_service_time(customers_count + 1);
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 std::cin >> drone_service_time[i];
             }
 
             std::vector<Customer> customers;
-            customers.push_back(Customer::depot());
-            for (std::size_t i = 0; i < customers_count; i++)
+            for (std::size_t i = 0; i < customers_count + 1; i++)
             {
                 customers.emplace_back(x[i], y[i], demands[i], dronable[i], truck_service_time[i], drone_service_time[i]);
             }
