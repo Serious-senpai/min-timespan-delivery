@@ -52,7 +52,7 @@ namespace d2d
 #endif
         }
 
-        template <typename T, std::enable_if_t<std::is_base_of_v<_BaseRoute, T> && std::is_constructible_v<T, const std::vector<std::size_t> &>, bool> = true>
+        template <typename T, std::enable_if_t<std::conjunction_v<std::is_base_of<_BaseRoute, T>, std::is_constructible<T, const std::vector<std::size_t> &>>, bool> = true>
         void _verify() const
         {
             _verify<T>(T(_customers));
