@@ -169,17 +169,16 @@ class Problem:
         with open(ROOT / "problems" / "data" / f"{problem}.txt", "r") as file:
             data = file.read()
 
-        problem = problem
         customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
         trucks_count = int(re.search(r"number_staff (\d+)", data).group(1))  # type: ignore
         drones_count = int(re.search(r"number_drone (\d+)", data).group(1))  # type: ignore
 
-        x: List[float] = []
-        y: List[float] = []
-        demands: List[float] = []
-        dronable: List[bool] = []
-        truck_service_time: List[float] = []
-        drone_service_time: List[float] = []
+        x = [0.0]
+        y = [0.0]
+        demands = [0.0]
+        dronable = [True]
+        truck_service_time = [0.0]
+        drone_service_time = [0.0]
         for match in re.finditer(r"([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)", data):
             _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
             x.append(float(_x))
