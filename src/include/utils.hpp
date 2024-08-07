@@ -25,13 +25,13 @@ namespace utils
     };
 
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-    T __attribute_pure__ pow2(const T &value)
+    T pow2(const T &value)
     {
         return value * value;
     }
 
     template <typename T>
-    T __attribute_pure__ pow3(const T &value)
+    T pow3(const T &value)
     {
         return value * pow2(value);
     }
@@ -43,7 +43,7 @@ namespace utils
     using is_input_iterator_t = std::enable_if_t<std::is_convertible_v<_iterator_category_t<_InputIterator>, std::input_iterator_tag>, bool>;
 
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-    T __attribute_pure__ sqrt(const T &value)
+    T sqrt(const T &value)
     {
         if (value < static_cast<T>(0))
         {
@@ -78,31 +78,31 @@ namespace utils
     }
 
     template <typename T>
-    T __attribute_pure__ distance(const T &dx, const T &dy)
+    T distance(const T &dx, const T &dy)
     {
         return sqrt(pow2(dx) + pow2(dy));
     }
 
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-    T __attribute_pure__ abs(const T &value)
+    T abs(const T &value)
     {
         return value > 0 ? value : -value;
     }
 
     template <typename T, std::enable_if_t<std::negation_v<std::is_floating_point<T>>, bool> = true>
-    bool __attribute_pure__ approximate(const T &first, const T &second)
+    bool approximate(const T &first, const T &second)
     {
         return first == second;
     }
 
     template <typename T1, typename T2, std::enable_if_t<std::conjunction_v<std::is_floating_point<T1>, std::is_floating_point<T2>>, bool> = true>
-    bool __attribute_pure__ approximate(const T1 &first, const T2 &second)
+    bool approximate(const T1 &first, const T2 &second)
     {
         return abs(first - second) < 1.0e-6;
     }
 
     template <typename T>
-    bool __attribute_pure__ approximate(const std::vector<T> &first, const std::vector<T> &second)
+    bool approximate(const std::vector<T> &first, const std::vector<T> &second)
     {
         return std::equal(
             first.begin(), first.end(),
