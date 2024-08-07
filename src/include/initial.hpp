@@ -81,7 +81,7 @@ namespace d2d
                 first_phase.begin(), first_phase.end(),
                 [&problem](const std::size_t &first, const std::size_t &second)
                 {
-                    bool nearer = problem->distances[0][first] < problem->distances[0][second];
+                    bool nearer = problem->euc_distances[0][first] < problem->euc_distances[0][second];
                     return Nearest ? nearer : !nearer;
                 });
 

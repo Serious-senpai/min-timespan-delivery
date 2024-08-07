@@ -8,7 +8,9 @@ namespace d2d
     class _BaseRoute
     {
     protected:
-        static double _calculate_distance(const std::vector<std::size_t> &customers);
+        static double _calculate_distance(
+            const std::vector<std::size_t> &customers,
+            const std::function<double(const std::size_t &, const std::size_t &)> &distance);
         static double _calculate_weight(const std::vector<std::size_t> &customers);
 
         std::vector<std::size_t> _customers;
@@ -92,16 +94,17 @@ namespace d2d
         }
     };
 
-    double _BaseRoute::_calculate_distance(const std::vector<std::size_t> &customers)
+    double _BaseRoute::_calculate_distance(
+        const std::vector<std::size_t> &customers,
+        const std::function<double(const std::size_t &, const std::size_t &)> &distance)
     {
-        auto problem = Problem::get_instance();
-        double distance = 0;
-        for (std::size_t i = 1; i < customers.size(); i++)
+        double result = 0;
+        for (std::size_t i = 0; i + 1 < customers.size(); i++)
         {
-            distance += problem->distances[customers[i - 1]][customers[i]];
+            result += distance(customers[i], customers[i + 1]);
         }
 
-        return distance;
+        return result;
     }
 
     double _BaseRoute::_calculate_weight(const std::vector<std::size_t> &customers)
@@ -140,6 +143,8 @@ namespace d2d
     class TruckRoute : public _BaseRoute
     {
     protected:
+        static double _calculate_distance(const std::vector<std::size_t> &customers);
+
         void _verify()
         {
 #ifdef DEBUG
@@ -186,14 +191,25 @@ namespace d2d
             _customers.push_back(0); // Done updating _customers
 
             std::size_t old_last_index = _customers.size() - 3;
-            _distance += problem->distances[_customers[old_last_index]][_customers[old_last_index + 1]] +
-                         problem->distances[_customers[old_last_index + 1]][0] -
-                         problem->distances[_customers[old_last_index]][0]; // Done updating _distance
-            _weight += problem->customers[customer].demand;                 // Done updating _weight
+            _distance += problem->man_distances[_customers[old_last_index]][_customers[old_last_index + 1]] +
+                         problem->man_distances[_customers[old_last_index + 1]][0] -
+                         problem->man_distances[_customers[old_last_index]][0]; // Done updating _distance
+            _weight += problem->customers[customer].demand;                     // Done updating _weight
 
             _verify();
         }
     };
+
+    double TruckRoute::_calculate_distance(const std::vector<std::size_t> &customers)
+    {
+        auto problem = Problem::get_instance();
+        return _BaseRoute::_calculate_distance(
+            customers,
+            [&problem](const std::size_t &first, const std::size_t &second)
+            {
+                return problem->man_distances[first][second];
+            });
+    }
 
     std::vector<double> TruckRoute::calculate_time_segments(
         const std::vector<std::size_t> &customers,
@@ -217,7 +233,7 @@ namespace d2d
         time_segments.reserve(customers.size() - 1);
         for (std::size_t i = 0; i + 1 < customers.size(); i++)
         {
-            double time_segment = 0, distance = problem->distances[customers[i]][customers[i + 1]];
+            double time_segment = 0, distance = problem->man_distances[customers[i]][customers[i + 1]];
 
             shift(&time_segment, problem->customers[customers[i]].truck_service_time);
             while (distance > 0)
@@ -269,6 +285,8 @@ namespace d2d
         double _fixed_distance_violation;
 
     protected:
+        static double _calculate_distance(const std::vector<std::size_t> &customers);
+
         void _verify()
         {
 #ifdef DEBUG
@@ -464,15 +482,15 @@ namespace d2d
 
             std::size_t old_last_index = _customers.size() - 3;
 
-            _distance -= problem->distances[_customers[old_last_index]][0];
+            _distance -= problem->euc_distances[_customers[old_last_index]][0];
             _energy_consumption -= drone->takeoff_time() * drone->takeoff_power(_weight) +
                                    drone->landing_time() * drone->landing_power(_weight) +
-                                   drone->cruise_time(problem->distances[_customers[old_last_index]][0]) * drone->cruise_power(_weight);
+                                   drone->cruise_time(problem->euc_distances[_customers[old_last_index]][0]) * drone->cruise_power(_weight);
             _weight -= problem->customers[_customers[old_last_index]].demand;
 
             for (std::size_t i = old_last_index; i + 1 < _customers.size(); i++)
             {
-                double distance = problem->distances[_customers[i]][_customers[i + 1]];
+                double distance = problem->euc_distances[_customers[i]][_customers[i + 1]];
                 _time_segments.push_back(
                     problem->customers[_customers[i]].drone_service_time +
                     drone->takeoff_time() +
@@ -505,7 +523,7 @@ namespace d2d
             time_segments.push_back(
                 problem->customers[customers[i]].drone_service_time +
                 drone->takeoff_time() +
-                drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) +
+                drone->cruise_time(problem->euc_distances[customers[i]][customers[i + 1]]) +
                 drone->landing_time());
         }
 
@@ -536,7 +554,7 @@ namespace d2d
         {
             weight += problem->customers[customers[i]].demand;
             energy += drone->takeoff_time() * drone->takeoff_power(weight) +
-                      drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight) +
+                      drone->cruise_time(problem->euc_distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight) +
                       drone->landing_time() * drone->landing_power(weight);
         }
 
@@ -563,6 +581,17 @@ namespace d2d
         }
 
         return 0;
+    }
+
+    double DroneRoute::_calculate_distance(const std::vector<std::size_t> &customers)
+    {
+        auto problem = Problem::get_instance();
+        return _BaseRoute::_calculate_distance(
+            customers,
+            [&problem](const std::size_t &first, const std::size_t &second)
+            {
+                return problem->euc_distances[first][second];
+            });
     }
 }
 

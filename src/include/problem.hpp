@@ -43,7 +43,8 @@ namespace d2d
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
-            const std::vector<std::vector<double>> &distances,
+            const std::vector<std::vector<double>> &man_distances,
+            const std::vector<std::vector<double>> &euc_distances,
             const double &total_demand,
             const TruckConfig *const truck,
             const _BaseDroneConfig *const drone,
@@ -56,7 +57,8 @@ namespace d2d
               trucks_count(trucks_count),
               drones_count(drones_count),
               customers(customers),
-              distances(distances),
+              man_distances(man_distances),
+              euc_distances(euc_distances),
               total_demand(total_demand),
               truck(truck),
               drone(drone),
@@ -75,7 +77,7 @@ namespace d2d
         const bool verbose;
         const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
-        const std::vector<std::vector<double>> distances;
+        const std::vector<std::vector<double>> man_distances, euc_distances;
         const double maximum_waiting_time = 3600; // hard-coded value
         const double total_demand;
         const TruckConfig *const truck;
@@ -139,12 +141,22 @@ namespace d2d
                 customers.emplace_back(x[i], y[i], demands[i], dronable[i], truck_service_time[i], drone_service_time[i]);
             }
 
-            std::vector<std::vector<double>> distances(customers.size(), std::vector<double>(customers.size()));
+            std::vector<std::vector<double>> man_distances(customers.size(), std::vector<double>(customers.size()));
             for (std::size_t i = 0; i < customers.size(); i++)
             {
                 for (std::size_t j = i + 1; j < customers.size(); j++)
                 {
-                    distances[i][j] = distances[j][i] = utils::distance(
+                    man_distances[i][j] = man_distances[j][i] = utils::man_distance(
+                        customers[i].x - customers[j].x,
+                        customers[i].y - customers[j].y);
+                }
+            }
+            std::vector<std::vector<double>> euc_distances(customers.size(), std::vector<double>(customers.size()));
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                for (std::size_t j = i + 1; j < customers.size(); j++)
+                {
+                    euc_distances[i][j] = euc_distances[j][i] = utils::euc_distance(
                         customers[i].x - customers[j].x,
                         customers[i].y - customers[j].y);
                 }
@@ -242,7 +254,8 @@ namespace d2d
                 trucks_count,
                 drones_count,
                 customers,
-                distances,
+                man_distances,
+                euc_distances,
                 std::accumulate(
                     customers.begin(), customers.end(), 0.0,
                     [](const double &sum, const Customer &customer)
