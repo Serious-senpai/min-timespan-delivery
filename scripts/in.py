@@ -28,7 +28,7 @@ if __name__ == "__main__":
     print(int(namespace.verbose))
 
     truck = TruckConfig.import_data()
-    print(truck.maximum_velocity, truck.capacity)
+    print(truck.maximum_velocity, problem.truck_capacity)
     print(len(truck.coefficients), *truck.coefficients)
 
     models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
