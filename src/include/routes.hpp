@@ -101,7 +101,7 @@ namespace d2d
         double result = 0;
         for (std::size_t i = 0; i + 1 < customers.size(); i++)
         {
-            result += distance(customers[i - 1], customers[i]);
+            result += distance(customers[i], customers[i + 1]);
         }
 
         return result;
