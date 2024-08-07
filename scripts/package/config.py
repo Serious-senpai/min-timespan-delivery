@@ -165,28 +165,50 @@ class Problem:
 
     @staticmethod
     def import_data(problem: str, /) -> Problem:
-        problem = problem.removesuffix(".txt")
-        with open(ROOT / "problems" / "data" / f"{problem}.txt", "r") as file:
+        problem = problem.removesuffix(".vrp")
+
+        customers_count = 0
+        trucks_count = drones_count = 1
+        if problem == "CMT1":
+            customers_count = 50
+            trucks_count = 3
+            drones_count = 2
+
+        elif problem == "CMT2":
+            customers_count = 75
+            trucks_count = drones_count = 5
+
+        elif problem == "CMT3":
+            customers_count = 100
+            trucks_count = drones_count = 4
+
+        elif problem == "CMT4":
+            customers_count = 150
+            trucks_count = drones_count = 6
+
+        elif problem == "CMT5":
+            customers_count = 199
+            trucks_count = 9
+            drones_count = 8
+
+        with ROOT.joinpath("problems", "cvrplib", f"{problem}.vrp").open("r") as file:
             data = file.read()
 
-        customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
-        trucks_count = int(re.search(r"number_staff (\d+)", data).group(1))  # type: ignore
-        drones_count = int(re.search(r"number_drone (\d+)", data).group(1))  # type: ignore
+        x: List[float] = []
+        y: List[float] = []
+        demands: List[float] = []
+        dronable = [True] * (1 + customers_count)
+        truck_service_time = [0.0] * (1 + customers_count)
+        drone_service_time = [0.0] * (1 + customers_count)
 
-        x = [0.0]
-        y = [0.0]
-        demands = [0.0]
-        dronable = [True]
-        truck_service_time = [0.0]
-        drone_service_time = [0.0]
-        for match in re.finditer(r"([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)", data):
-            _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
+        for match in re.finditer(r"^(\d+)\s+(\d+(?:\.\d*)?)\s+(\d+(?:\.\d*)?)$", data, re.MULTILINE):
+            _, _x, _y = match.groups()
             x.append(float(_x))
             y.append(float(_y))
-            demands.append(float(demand))
-            dronable.append(truck_only == "0")
-            truck_service_time.append(float(_truck_service_time))
-            drone_service_time.append(float(_drone_service_time))
+
+        for match in re.finditer(r"^(\d+)\s+(\d+(?:\.\d*)?)$", data, re.MULTILINE):
+            _, _demand = match.groups()
+            demands.append(float(_demand))
 
         return Problem(
             problem=problem,
