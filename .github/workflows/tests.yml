@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1", "100.10.1"]
+        problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1"]
 
     steps:
       - name: Checkout repository

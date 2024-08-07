@@ -166,7 +166,7 @@ class Problem:
     @staticmethod
     def import_data(problem: str, /) -> Problem:
         problem = problem.removesuffix(".txt")
-        with open(ROOT / "problems" / "data" / f"{problem}.txt", "r") as file:
+        with ROOT.joinpath("problems", "data", f"{problem}.txt").open("r") as file:
             data = file.read()
 
         customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
@@ -179,7 +179,7 @@ class Problem:
         dronable = [True]
         truck_service_time = [0.0]
         drone_service_time = [0.0]
-        for match in re.finditer(r"([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)", data):
+        for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
             _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
             x.append(float(_x))
             y.append(float(_y))
