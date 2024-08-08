@@ -166,16 +166,16 @@ namespace d2d
         std::vector<std::vector<std::vector<double>>> result(truck_routes.size());
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
-            result[i].resize(truck_routes[i].size());
+            result[i].reserve(truck_routes[i].size());
 
             std::size_t coefficients_index = 0;
             double current_within_timespan = 0;
             for (std::size_t j = 0; j < truck_routes[i].size(); j++)
             {
-                result[i][j] = TruckRoute::calculate_time_segments(
+                result[i].push_back(TruckRoute::calculate_time_segments(
                     truck_routes[i][j].customers(),
                     coefficients_index,
-                    current_within_timespan);
+                    current_within_timespan));
             }
         }
 
