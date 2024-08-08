@@ -372,7 +372,7 @@ namespace d2d
             *last_improved_ptr = 0;
         }
 
-        std::size_t neighborhood = 0;
+        std::size_t neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
@@ -426,14 +426,10 @@ namespace d2d
             if (neighbor == nullptr || current_cost <= current->cost())
             {
                 neighborhood = (neighborhood + 1) % neighborhoods.size();
-                if (neighborhood == 0)
-                {
-                    auto neighbor = utils::random_element(neighborhoods)->move(current, aspiration_criteria);
-                    if (neighbor != nullptr)
-                    {
-                        current = neighbor;
-                    }
-                }
+            }
+            else
+            {
+                neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
             }
 
             if (current->drone_energy_violation > 0)
