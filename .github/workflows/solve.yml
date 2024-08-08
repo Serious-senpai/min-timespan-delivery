@@ -80,7 +80,7 @@ jobs:
           for i in $(seq $begin $end)
           do
             echo "RUN #$i"
-            out=$(python scripts/in.py ${{ matrix.problem }}) && echo "$out" | out2=$(time -po /dev/stdout build/main.exe) && echo "$out2" | python scripts/out.py ${{ matrix.problem }}
+            out=$(python scripts/in.py ${{ matrix.problem }}) && echo "$out" | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
             this_exitcode=$?
 
             if [ $this_exitcode -ne 0 ]
