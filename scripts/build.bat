@@ -15,7 +15,6 @@ if "%1"=="debug" (
 )
 
 if not exist %root%\build mkdir %root%\build
-if not exist %root%\result mkdir %root%\result
 echo Compiling %root%/src/main.cpp to %root%/build/main.exe
 echo Running "g++ %params% %root%/src/main.cpp -o %root%/build/main.exe"
 g++ %params% %root%/src/main.cpp -o %root%/build/main.exe
