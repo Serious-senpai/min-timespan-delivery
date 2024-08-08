@@ -193,7 +193,7 @@ class Problem:
             trucks_count = 9
             drones_count = 8
 
-        with ROOT.joinpath("problems", "cvrplib", f"{problem}.vrp").open("r") as file:
+        with ROOT.joinpath("problems", "[7]", f"{problem}.vrp").open("r") as file:
             data = file.read()
 
         x: List[float] = []
