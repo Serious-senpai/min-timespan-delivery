@@ -75,7 +75,7 @@ jobs:
           chmod +x build/main.exe
 
       - name: Run executable in debug mode
-        run: python scripts/in.py ${{ matrix.problem }} -v | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe
+        run: out=$(python scripts/in.py ${{ matrix.problem }} -v) && echo "$out" | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe
 
   test-windows:
     name: Run in debug mode (windows)
