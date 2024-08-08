@@ -71,7 +71,7 @@ namespace d2d
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
             : _temp_truck_routes(_merge_truck_routes(truck_routes)),
-              _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              _temp_truck_time_segments(_calculate_truck_time_segments(_temp_truck_routes)),
               working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(_temp_truck_routes, drone_routes)),
@@ -89,7 +89,7 @@ namespace d2d
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
-            if (truck_routes.size() != problem->trucks_count)
+            if (_temp_truck_routes.size() != problem->trucks_count)
             {
                 throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
             }
