@@ -18,6 +18,8 @@ namespace d2d
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
 
+        static std::vector<std::vector<TruckRoute>> _merge_truck_routes(
+            const std::vector<std::vector<TruckRoute>> &truck_routes);
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
         static double _calculate_working_time(
@@ -34,6 +36,7 @@ namespace d2d
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
 
+        const std::vector<std::vector<TruckRoute>> _temp_truck_routes;
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
     public:
@@ -67,14 +70,15 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
-            : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+            : _temp_truck_routes(_merge_truck_routes(truck_routes)),
+              _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
-              capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
+              capacity_violation(_calculate_capacity_violation(_temp_truck_routes, drone_routes)),
+              waiting_time_violation(_calculate_waiting_time_violation(_temp_truck_routes, _temp_truck_time_segments, drone_routes)),
               fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
               fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
-              truck_routes(truck_routes),
+              truck_routes(_temp_truck_routes),
               drone_routes(drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
@@ -159,6 +163,27 @@ namespace d2d
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
+
+    std::vector<std::vector<TruckRoute>> Solution::_merge_truck_routes(const std::vector<std::vector<TruckRoute>> &truck_routes)
+    {
+        std::vector<std::vector<TruckRoute>> result(truck_routes.size());
+        for (std::size_t i = 0; i < truck_routes.size(); i++)
+        {
+            if (!truck_routes[i].empty())
+            {
+                std::vector<std::size_t> merged = {0};
+                for (auto &route : truck_routes[i])
+                {
+                    merged.insert(merged.end(), route.customers().begin() + 1, route.customers().end() - 1);
+                }
+                merged.push_back(0);
+
+                result[i].emplace_back(merged);
+            }
+        }
+
+        return result;
+    }
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
