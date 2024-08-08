@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any, List
 
 from package import SolutionJSON, ROOT
@@ -12,9 +11,11 @@ def wrap(value: Any) -> str:
 
 
 if __name__ == "__main__":
+    ROOT.joinpath("result", "summary.json").unlink(missing_ok=True)
+
     solutions: List[SolutionJSON] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
-        if file.is_file() and re.fullmatch(r"\d+\.\d+\.\d+-\w{8}\.json", file.name) is not None:
+        if file.is_file() and file.name.endswith(".json"):
             with file.open("r") as f:
                 data = json.load(f)
 
@@ -25,7 +26,7 @@ if __name__ == "__main__":
         csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, solution in enumerate(solutions, start=2):
             segments = [
-                solution["problem"],
+                wrap(solution["problem"]),
                 wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
                 str(solution["trucks_count"]),
                 str(solution["drones_count"]),
