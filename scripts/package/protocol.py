@@ -18,7 +18,6 @@ class SolutionJSON(TypedDict):
     cost: float
     capacity_violation: float
     drone_energy_violation: float
-    waiting_time_violation: float
     fixed_time_violation: float
     fixed_distance_violation: float
     truck_paths: List[List[List[int]]]

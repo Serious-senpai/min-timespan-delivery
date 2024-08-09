@@ -12,7 +12,6 @@ void display(const std::shared_ptr<d2d::Solution> &ptr, const std::size_t &last_
     std::cout << ptr->cost() << std::endl;
     std::cout << ptr->capacity_violation << std::endl;
     std::cout << ptr->drone_energy_violation << std::endl;
-    std::cout << ptr->waiting_time_violation << std::endl;
     std::cout << ptr->fixed_time_violation << std::endl;
     std::cout << ptr->fixed_distance_violation << std::endl;
 

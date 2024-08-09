@@ -24,8 +24,7 @@ namespace d2d
         DroneRoute old(route);
         route.push_back(customer);
 
-        const std::vector<double> &wtv = route.waiting_time_violations();
-        if (std::accumulate(wtv.begin(), wtv.end(), 0.0) > 0 || route.capacity_violation() > 0 || route.energy_violation() > 0)
+        if (route.capacity_violation() > 0 || route.energy_violation() > 0)
         {
             route = old;
             return false;
