@@ -18,7 +18,7 @@ namespace d2d
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
 
-        static std::vector<std::vector<DroneRoute>> _split_routes(
+        static std::vector<std::vector<DroneRoute>> _split_drone_routes(
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(const std::vector<std::vector<TruckRoute>> &truck_routes);
         static double _calculate_working_time(
@@ -69,7 +69,7 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
-            : _temp_drone_routes(_split_routes(drone_routes)),
+            : _temp_drone_routes(_split_drone_routes(drone_routes)),
               _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               working_time(_calculate_working_time(_temp_truck_time_segments, _temp_drone_routes)),
               drone_energy_violation(_calculate_energy_violation(_temp_drone_routes)),
@@ -92,9 +92,9 @@ namespace d2d
             {
                 throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
             }
-            if (drone_routes.size() != problem->drones_count)
+            if (_temp_drone_routes.size() != problem->drones_count)
             {
-                throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
+                throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, _temp_drone_routes.size()));
             }
 
             std::vector<bool> exists(problem->customers.size());
@@ -117,7 +117,7 @@ namespace d2d
     }
 
             CHECK_ROUTES(truck_routes);
-            CHECK_ROUTES(drone_routes);
+            CHECK_ROUTES(_temp_drone_routes);
 #undef CHECK_ROUTES
 
             for (std::size_t i = 0; i < exists.size(); i++)
@@ -185,7 +185,7 @@ namespace d2d
         return result;
     }
 
-    std::vector<std::vector<DroneRoute>> Solution::_split_routes(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    std::vector<std::vector<DroneRoute>> Solution::_split_drone_routes(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         std::vector<std::vector<DroneRoute>> result;
         for (auto &routes : drone_routes)
