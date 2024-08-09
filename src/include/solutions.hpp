@@ -151,7 +151,7 @@ namespace d2d
     double Solution::A3 = 1;
     double Solution::A4 = 1;
     double Solution::A5 = 1;
-    double Solution::B = 0.5;
+    double Solution::B = 1.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 2, 0>>(),
@@ -434,47 +434,47 @@ namespace d2d
 
             if (current->drone_energy_violation > 0)
             {
-                Solution::A1 *= 1.0 + B;
+                A1 *= B;
             }
             else
             {
-                Solution::A1 /= 1.0 + B;
+                A1 /= B;
             }
 
             if (current->capacity_violation > 0)
             {
-                Solution::A2 *= 1.0 + B;
+                A2 *= B;
             }
             else
             {
-                Solution::A2 /= 1.0 + B;
+                A2 /= B;
             }
 
             if (current->waiting_time_violation > 0)
             {
-                Solution::A3 *= 1.0 + B;
+                A3 *= B;
             }
             else
             {
-                Solution::A3 /= 1.0 + B;
+                A3 /= B;
             }
 
             if (current->fixed_time_violation > 0)
             {
-                Solution::A4 *= 1.0 + B;
+                A4 *= B;
             }
             else
             {
-                Solution::A4 /= 1.0 + B;
+                A4 /= B;
             }
 
             if (current->fixed_distance_violation > 0)
             {
-                Solution::A5 *= 1.0 + B;
+                A5 *= B;
             }
             else
             {
-                Solution::A5 /= 1.0 + B;
+                A5 /= B;
             }
         }
 
