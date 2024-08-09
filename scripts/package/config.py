@@ -163,8 +163,6 @@ class Problem:
     truck_service_time: Tuple[float, ...]
     drone_service_time: Tuple[float, ...]
 
-    truck_capacity: float
-
     @staticmethod
     def import_data(problem: str, /) -> Problem:
         problem = problem.removesuffix(".vrp")
@@ -208,8 +206,6 @@ class Problem:
             x.append(float(_x))
             y.append(float(_y))
 
-        truck_capacity = float(re.search(r"^CAPACITY : (\d+(?:\.\d*)?)$", data, re.MULTILINE).group(1))  # type: ignore
-
         return Problem(
             problem=problem,
             customers_count=customers_count,
@@ -221,5 +217,4 @@ class Problem:
             dronable=tuple(dronable),
             truck_service_time=tuple(truck_service_time),
             drone_service_time=tuple(drone_service_time),
-            truck_capacity=truck_capacity,
         )
