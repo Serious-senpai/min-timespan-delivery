@@ -83,7 +83,7 @@ namespace d2d
             auto problem = Problem::get_instance();
             if (_temp_truck_routes.size() != problem->trucks_count)
             {
-                throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
+                throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, _temp_truck_routes.size()));
             }
             if (drone_routes.size() != problem->drones_count)
             {
@@ -109,7 +109,7 @@ namespace d2d
         }                                                                                                        \
     }
 
-            CHECK_ROUTES(truck_routes);
+            CHECK_ROUTES(_temp_truck_routes);
             CHECK_ROUTES(drone_routes);
 #undef CHECK_ROUTES
 
