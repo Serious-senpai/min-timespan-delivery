@@ -198,7 +198,7 @@ class Problem:
 
         x: List[float] = []
         y: List[float] = []
-        demands: List[float] = []
+        demands: List[float] = [0.0] * (1 + customers_count)
         dronable = [True] * (1 + customers_count)
         truck_service_time = [0.0] * (1 + customers_count)
         drone_service_time = [0.0] * (1 + customers_count)
@@ -207,10 +207,6 @@ class Problem:
             _, _x, _y = match.groups()
             x.append(float(_x))
             y.append(float(_y))
-
-        for match in re.finditer(r"^(\d+)\s+(\d+(?:\.\d*)?)$", data, re.MULTILINE):
-            _, _demand = match.groups()
-            demands.append(float(_demand))
 
         truck_capacity = float(re.search(r"^CAPACITY : (\d+(?:\.\d*)?)$", data, re.MULTILINE).group(1))  # type: ignore
 
