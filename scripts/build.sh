@@ -11,11 +11,23 @@ if [ "$1" == "debug" ]
 then
     params="$params -g -D DEBUG"
     echo "Building in debug mode"
+
+elif [ "$1" == "profile-generate" ]
+then
+    params="$params -O3 -fprofile-generate"
+    echo "Building in profile mode"
+
+elif [ "$1" == "profile-use" ]
+then
+    params="$params -O3 -fprofile-use"
+    echo "Building using generated profile data"
+
 else
     params="$params -O3"
+    echo "Building normally"
 fi
 
-mkdir -p build result
+mkdir -p build
 echo "Compiling $ROOT_DIR/src/main.cpp to $ROOT_DIR/build/main.exe"
 echo "Running \"g++ $params $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/main.exe\""
 g++ $params $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/main.exe

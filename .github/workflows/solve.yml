@@ -20,8 +20,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Compile to executable
-        run: scripts/build.sh
+      - name: Compile in profile mode
+        run: scripts/build.sh profile-generate
+
+      - name: Run in profile mode
+        run: python scripts/in.py 50.40.4 | time -p build/main.exe
+
+      - name: Compile in release mode
+        run: scripts/build.sh profile-use
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
@@ -70,7 +76,7 @@ jobs:
           for i in $(seq $begin $end)
           do
             echo "RUN #$i"
-            python scripts/in.py ${{ matrix.problem }} | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
+            out=$(python scripts/in.py ${{ matrix.problem }}) && echo "$out" | time -po /dev/stdout build/main.exe | python scripts/out.py ${{ matrix.problem }}
             this_exitcode=$?
 
             if [ $this_exitcode -ne 0 ]

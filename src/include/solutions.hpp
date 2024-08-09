@@ -169,16 +169,16 @@ namespace d2d
         std::vector<std::vector<std::vector<double>>> result(truck_routes.size());
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
-            result[i].resize(truck_routes[i].size());
+            result[i].reserve(truck_routes[i].size());
 
             std::size_t coefficients_index = 0;
             double current_within_timespan = 0;
             for (std::size_t j = 0; j < truck_routes[i].size(); j++)
             {
-                result[i][j] = TruckRoute::calculate_time_segments(
+                result[i].push_back(TruckRoute::calculate_time_segments(
                     truck_routes[i][j].customers(),
                     coefficients_index,
-                    current_within_timespan);
+                    current_within_timespan));
             }
         }
 
@@ -394,7 +394,7 @@ namespace d2d
             *last_improved_ptr = 0;
         }
 
-        std::size_t neighborhood = 0;
+        std::size_t neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
@@ -448,14 +448,10 @@ namespace d2d
             if (neighbor == nullptr || current_cost <= current->cost())
             {
                 neighborhood = (neighborhood + 1) % neighborhoods.size();
-                if (neighborhood == 0)
-                {
-                    auto neighbor = utils::random_element(neighborhoods)->move(current, aspiration_criteria);
-                    if (neighbor != nullptr)
-                    {
-                        current = neighbor;
-                    }
-                }
+            }
+            else
+            {
+                neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
             }
 
             if (current->drone_energy_violation > 0)
