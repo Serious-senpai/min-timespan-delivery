@@ -24,7 +24,7 @@ jobs:
         run: scripts/build.sh profile-generate
 
       - name: Run in profile mode
-        run: python scripts/in.py 50.40.4 | time -p build/main.exe
+        run: python scripts/in.py CMT1 | time -p build/main.exe
 
       - name: Compile in release mode
         run: scripts/build.sh profile-use
