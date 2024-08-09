@@ -14,7 +14,7 @@ namespace d2d
     class Solution
     {
     private:
-        static double A1, A2, A3, A4, A5, B;
+        static double A1, A2, A4, A5, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
 
@@ -29,10 +29,6 @@ namespace d2d
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<DroneRoute>> &drone_routes);
-        static double _calculate_waiting_time_violation(
-            const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
@@ -50,9 +46,6 @@ namespace d2d
 
         /** @brief Total capacity violation */
         const double capacity_violation;
-
-        /** @brief Total waiting time violation */
-        const double waiting_time_violation;
 
         /** @brief Total fixed time violation */
         const double fixed_time_violation;
@@ -72,21 +65,17 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes)
-            : _temp_truck_routes(_merge_truck_routes(truck_routes)),
-              _temp_drone_routes(_split_routes(drone_routes)),
-              _temp_truck_time_segments(_calculate_truck_time_segments(_temp_truck_routes)),
-              working_time(_calculate_working_time(_temp_truck_time_segments, _temp_drone_routes)),
-              drone_energy_violation(_calculate_energy_violation(_temp_drone_routes)),
-              capacity_violation(_calculate_capacity_violation(_temp_truck_routes, _temp_drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(_temp_truck_routes, _temp_truck_time_segments, _temp_drone_routes)),
-              fixed_time_violation(_calculate_fixed_time_violation(_temp_drone_routes)),
-              fixed_distance_violation(_calculate_fixed_distance_violation(_temp_drone_routes)),
-              truck_routes(_temp_truck_routes),
-              drone_routes(_temp_drone_routes),
+            : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
+              drone_energy_violation(_calculate_energy_violation(drone_routes)),
+              capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
+              fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
+              fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
+              truck_routes(truck_routes),
+              drone_routes(drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
-                  utils::approximate(waiting_time_violation, 0.0) &&
                   utils::approximate(fixed_time_violation, 0.0) &&
                   utils::approximate(fixed_distance_violation, 0.0))
         {
@@ -141,7 +130,6 @@ namespace d2d
             double result = working_time;
             result += A1 * drone_energy_violation;
             result += A2 * capacity_violation;
-            result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
             result += A5 * fixed_distance_violation;
 
@@ -155,7 +143,6 @@ namespace d2d
 
     double Solution::A1 = 1;
     double Solution::A2 = 1;
-    double Solution::A3 = 1;
     double Solution::A4 = 1;
     double Solution::A5 = 1;
     double Solution::B = 0.5;
@@ -309,48 +296,6 @@ namespace d2d
         return result;
     }
 
-    double Solution::_calculate_waiting_time_violation(
-        const std::vector<std::vector<TruckRoute>> &truck_routes,
-        const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
-        const std::vector<std::vector<DroneRoute>> &drone_routes)
-    {
-        double result = 0;
-        auto problem = Problem::get_instance();
-
-        for (std::size_t i = 0; i < truck_routes.size(); i++)
-        {
-            for (std::size_t j = 0; j < truck_routes[i].size(); j++)
-            {
-                auto waiting_time_violations = TruckRoute::calculate_waiting_time_violations(
-                    truck_routes[i][j].customers(),
-                    truck_time_segments[i][j]);
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
-            }
-        }
-        for (auto &routes : drone_routes)
-        {
-            for (auto &route : routes)
-            {
-                const std::vector<double> &waiting_time_violations = route.waiting_time_violations();
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
-            }
-        }
-
-        return result;
-    }
-
     double Solution::_calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
@@ -495,15 +440,6 @@ namespace d2d
             else
             {
                 Solution::A2 /= 1.0 + B;
-            }
-
-            if (current->waiting_time_violation > 0)
-            {
-                Solution::A3 *= 1.0 + B;
-            }
-            else
-            {
-                Solution::A3 /= 1.0 + B;
             }
 
             if (current->fixed_time_violation > 0)

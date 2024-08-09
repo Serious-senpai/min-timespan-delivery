@@ -38,7 +38,6 @@ if __name__ == "__main__":
                 str(solution["cost"]),
                 str(solution["capacity_violation"]),
                 str(solution["drone_energy_violation"]),
-                str(solution["waiting_time_violation"]),
                 str(solution["fixed_time_violation"]),
                 str(solution["fixed_distance_violation"]),
                 wrap(solution["truck_paths"]),
