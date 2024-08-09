@@ -377,7 +377,13 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf/%.2lf) ", iteration + 1, problem->iterations, current->cost(), result->cost());
+                std::string format_string = "\rIteration #%lu/%lu(";
+                format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += "/";
+                format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += ") ";
+
+                auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
                 std::cerr << prefix;
                 try
                 {
