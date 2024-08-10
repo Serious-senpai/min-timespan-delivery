@@ -10,7 +10,7 @@ if not exist %root%\build mkdir %root%\build
 if "%1"=="alglib" (
     echo Building ALGLIB
     for %%f in (%root%\extern\alglib-cpp\src\*.cpp) do (
-        set command=g++ -c -O3 -D AE_CPU=AE_INTEL -m avx2 -m fma -std=c++20 %%f -o %root%/build/%%~nf.o
+        set command=g++ -c -O3 -D AE_CPU=AE_INTEL -mavx2 -mfma -std=c++20 %%f -o %root%/build/%%~nf.o
         echo Running "!command!"
         !command!
     )
@@ -25,11 +25,11 @@ if "%1"=="alglib" (
     ) else (
         set params=!params! -O3
         if "%1"=="profile-generate" (
-            set params=!params! -f profile-generate
+            set params=!params! -fprofile-generate
             echo Building in profile mode
 
         ) else if "%1"=="profile-use" (
-            set params=!params! -f profile-use
+            set params=!params! -fprofile-use
             echo Building using generated profile data
 
         ) else echo Building normally

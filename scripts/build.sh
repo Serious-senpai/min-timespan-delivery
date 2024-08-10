@@ -14,7 +14,7 @@ then
     #! https://stackoverflow.com/a/9612560
     find $ROOT_DIR/extern/alglib-cpp/src/*.cpp -print0 | while read -d $'\0' file
     do
-        command="g++ -c -O3 -D AE_CPU=AE_INTEL -m avx2 -m fma -std=c++20 $file -o $ROOT_DIR/build/$(basename ${file%.cpp}).o"
+        command="g++ -c -O3 -D AE_CPU=AE_INTEL -mavx2 -mfma -std=c++20 $file -o $ROOT_DIR/build/$(basename ${file%.cpp}).o"
         echo "Running \"$command\""
         $command
     done
@@ -31,12 +31,12 @@ else
         params="$params -O3"
         if [ "$1" == "profile-generate" ]
         then
-            params="$params -f profile-generate"
+            params="$params -fprofile-generate"
             echo "Building in profile mode"
 
         elif [ "$1" == "profile-use" ]
         then
-            params="$params -f profile-use"
+            params="$params -fprofile-use"
             echo "Building using generated profile data"
 
         else
