@@ -26,6 +26,8 @@
 #include <sys/ioctl.h>
 #endif
 
+#include <dataanalysis.h>
+
 namespace std
 {
     /**

@@ -349,6 +349,9 @@ namespace d2d
         r = initial_3<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
+        r = initial_4<Solution>();
+        result = result->cost() < r->cost() ? result : r;
+
         return result;
     }
 
