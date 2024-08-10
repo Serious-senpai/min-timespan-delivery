@@ -5,7 +5,7 @@ SCRIPT_DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 ROOT_DIR=$(realpath $SCRIPT_DIR/..)
 
 echo "Got root of directory: $ROOT_DIR"
-mkdir -p ROOT_DIR/build
+mkdir -p $ROOT_DIR/build
 
 if [ "$1" == "alglib" ]
 then
