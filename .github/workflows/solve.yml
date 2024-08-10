@@ -20,6 +20,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Compile ALGLIB
+        run: scripts/build.sh alglib
+
       - name: Compile in profile mode
         run: scripts/build.sh profile-generate
 
