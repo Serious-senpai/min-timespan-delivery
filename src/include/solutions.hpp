@@ -147,7 +147,7 @@ namespace d2d
     double Solution::A2 = 1;
     double Solution::A4 = 1;
     double Solution::A5 = 1;
-    double Solution::B = 0.5;
+    double Solution::B = 1.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 2, 0>>(),
@@ -343,6 +343,9 @@ namespace d2d
         r = initial_3<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
+        r = initial_4<Solution>();
+        result = result->cost() < r->cost() ? result : r;
+
         return result;
     }
 
@@ -371,7 +374,13 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf/%.2lf) ", iteration + 1, problem->iterations, current->cost(), result->cost());
+                std::string format_string = "\rIteration #%lu/%lu(";
+                format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += "/";
+                format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += ") ";
+
+                auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
                 std::cerr << prefix;
                 try
                 {
@@ -428,38 +437,38 @@ namespace d2d
 
             if (current->drone_energy_violation > 0)
             {
-                Solution::A1 *= 1.0 + B;
+                A1 *= B;
             }
             else
             {
-                Solution::A1 /= 1.0 + B;
+                A1 /= B;
             }
 
             if (current->capacity_violation > 0)
             {
-                Solution::A2 *= 1.0 + B;
+                A2 *= B;
             }
             else
             {
-                Solution::A2 /= 1.0 + B;
+                A2 /= B;
             }
 
             if (current->fixed_time_violation > 0)
             {
-                Solution::A4 *= 1.0 + B;
+                A4 *= B;
             }
             else
             {
-                Solution::A4 /= 1.0 + B;
+                A4 /= B;
             }
 
             if (current->fixed_distance_violation > 0)
             {
-                Solution::A5 *= 1.0 + B;
+                A5 *= B;
             }
             else
             {
-                Solution::A5 /= 1.0 + B;
+                A5 /= B;
             }
         }
 

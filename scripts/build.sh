@@ -5,29 +5,49 @@ SCRIPT_DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 ROOT_DIR=$(realpath $SCRIPT_DIR/..)
 
 echo "Got root of directory: $ROOT_DIR"
+mkdir -p $ROOT_DIR/build
 
-params="-Wall -I src/include -std=c++20"
-if [ "$1" == "debug" ]
+if [ "$1" == "alglib" ]
 then
-    params="$params -g -D DEBUG"
-    echo "Building in debug mode"
+    echo "Building ALGLIB"
 
-elif [ "$1" == "profile-generate" ]
-then
-    params="$params -O3 -fprofile-generate"
-    echo "Building in profile mode"
-
-elif [ "$1" == "profile-use" ]
-then
-    params="$params -O3 -fprofile-use"
-    echo "Building using generated profile data"
+    #! https://stackoverflow.com/a/9612560
+    find $ROOT_DIR/extern/alglib-cpp/src/*.cpp -print0 | while read -d $'\0' file
+    do
+        command="g++ -c -O3 -D AE_CPU=AE_INTEL -mavx2 -mfma -std=c++20 $file -o $ROOT_DIR/build/$(basename ${file%.cpp}).o"
+        echo "Running \"$command\""
+        $command
+    done
 
 else
-    params="$params -O3"
-    echo "Building normally"
-fi
+    echo "Building main.exe"
+    params="-Wall -I src/include -I extern/alglib-cpp/src -std=c++20"
+    if [ "$1" == "debug" ]
+    then
+        params="$params -g -D DEBUG"
+        echo "Building in debug mode"
 
-mkdir -p build
-echo "Compiling $ROOT_DIR/src/main.cpp to $ROOT_DIR/build/main.exe"
-echo "Running \"g++ $params $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/main.exe\""
-g++ $params $ROOT_DIR/src/main.cpp -o $ROOT_DIR/build/main.exe
+    else
+        params="$params -O3"
+        if [ "$1" == "profile-generate" ]
+        then
+            params="$params -fprofile-generate"
+            echo "Building in profile mode"
+
+        elif [ "$1" == "profile-use" ]
+        then
+            params="$params -fprofile-use"
+            echo "Building using generated profile data"
+
+        else
+            echo "Building normally"
+
+        fi
+
+    fi
+
+    command="g++ $params $ROOT_DIR/src/main.cpp $ROOT_DIR/build/*.o -o $ROOT_DIR/build/main.exe"
+    echo "Running \"$command\""
+    $command
+
+fi

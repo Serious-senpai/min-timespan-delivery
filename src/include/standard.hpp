@@ -20,11 +20,14 @@
 #endif
 
 #if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN // otherwise "rad1" macro in dlgs.h clashes with "rad1" variable in ALGLIB optimization.h
 #include <windows.h>
 #elif defined(__linux__)
 #include <unistd.h>
 #include <sys/ioctl.h>
 #endif
+
+#include <dataanalysis.h>
 
 namespace std
 {
