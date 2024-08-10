@@ -24,6 +24,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Compile ALGLIB (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: scripts/build.sh alglib
+
+      - name: Compile ALGLIB (windows-latest)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: scripts\build alglib
+
       - name: Compile to executable in debug mode (ubuntu-latest)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: scripts/build.sh debug
