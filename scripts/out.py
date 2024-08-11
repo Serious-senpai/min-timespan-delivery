@@ -118,10 +118,13 @@ if __name__ == "__main__":
             dronable = {problem.dronable}
             customers_count = {problem.customers_count}
 
+            truck_paths: List[List[List[int]]] = {truck_paths}
+            drone_paths: List[List[List[int]]] = {drone_paths}
+
             _, ax = pyplot.subplots()
             assert isinstance(ax, axes.Axes)
 
-            for paths in {drone_paths}:
+            for paths in drone_paths:
                 drone_x: List[float] = []
                 drone_y: List[float] = []
                 drone_u: List[float] = []
@@ -148,7 +151,7 @@ if __name__ == "__main__":
                     width=0.004,
                 )
 
-            for paths in {truck_paths}:
+            for paths in truck_paths:
                 truck_x: List[float] = []
                 truck_y: List[float] = []
                 truck_u: List[float] = []
