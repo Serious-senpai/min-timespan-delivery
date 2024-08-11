@@ -20,7 +20,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Get cached ALGLIB object files
+        id: alglib-cache
+        uses: actions/cache@v4
+        with:
+          key: ALGLIB-ubuntu-latest-${{ hashFiles('extern/alglib-cpp/**') }}
+          path: build/*.o
+
       - name: Compile ALGLIB
+        if: ${{ steps.alglib-cache.outputs.cache-hit != 'true' }}
         run: scripts/build.sh alglib
 
       - name: Compile in profile mode
