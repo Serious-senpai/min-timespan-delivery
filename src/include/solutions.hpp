@@ -367,7 +367,13 @@ namespace d2d
 
         const auto aspiration_criteria = [&result](const std::shared_ptr<Solution> &ptr)
         {
-            return ptr->feasible && ptr->cost() < result->cost();
+            if (ptr->feasible && ptr->cost() < result->cost())
+            {
+                result = ptr;
+                return true;
+            }
+
+            return false;
         };
 
         if (last_improved_ptr != nullptr)
