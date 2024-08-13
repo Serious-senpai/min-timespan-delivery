@@ -54,12 +54,13 @@ jobs:
           path: build/main.exe
 
   test-ubuntu:
-    name: Run in debug mode (ubuntu)
-    runs-on: ubuntu-latest
+    name: Run in debug mode
+    runs-on: ${{ matrix.os }}
     needs: build
     strategy:
       fail-fast: false
       matrix:
+        os: ["ubuntu-latest", "windows-latest"]
         problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1"]
 
     steps:
@@ -73,50 +74,28 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install gdb
-        run: |
-          sudo apt update
-          sudo apt install gdb -y
-
       - name: Download executable
         uses: actions/download-artifact@v4
         with:
           name: executable-ubuntu-latest
           path: build/
 
-      - name: Initialize working space
+      - name: Install gdb (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt update
+          sudo apt install gdb -y
+
+      - name: Initialize working space (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           mkdir result
           chmod +x build/main.exe
 
-      - name: Run executable in debug mode
+      - name: Run executable in debug mode (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: out=$(python scripts/in.py ${{ matrix.problem }} -v) && echo "$out" | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe
 
-  test-windows:
-    name: Run in debug mode (windows)
-    runs-on: windows-latest
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1", "100.10.1"]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Download executable
-        uses: actions/download-artifact@v4
-        with:
-          name: executable-windows-latest
-          path: build/
-
-      - name: Run executable in debug mode
+      - name: Run executable in debug mode (windows-latest)
+        if: ${{ matrix.os == 'windows-latest' }}
         run: python scripts/in.py ${{ matrix.problem }} -v | gdb --command=scripts/gdb.txt --return-child-result build\main
