@@ -404,17 +404,6 @@ namespace d2d
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
 
-        const auto aspiration_criteria = [&result](const std::shared_ptr<Solution> &ptr)
-        {
-            if (ptr->feasible && ptr->cost() < result->cost())
-            {
-                result = ptr;
-                return true;
-            }
-
-            return false;
-        };
-
         if (last_improved_ptr != nullptr)
         {
             *last_improved_ptr = 0;
@@ -450,6 +439,22 @@ namespace d2d
                 }
                 std::cerr << std::flush;
             }
+
+            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](const std::shared_ptr<Solution> &ptr)
+            {
+                if (ptr->feasible && ptr->cost() < result->cost())
+                {
+                    result = ptr;
+                    if (last_improved_ptr != nullptr)
+                    {
+                        *last_improved_ptr = iteration;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            };
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
             auto current_cost = current->cost();
