@@ -28,19 +28,19 @@ namespace d2d
     class TabuPairNeighborhood : public Neighborhood<ST>
     {
     private:
-        using tabu_pair = std::pair<std::size_t, std::size_t>;
+        using _tabu_pair = std::pair<std::size_t, std::size_t>;
 
         /**
          * @brief Tabu list is usually small in size, therefore cache friendliness can outweigh
          * algorithm complexity
          */
-        std::vector<tabu_pair> tabu_list;
+        std::vector<_tabu_pair> tabu_list;
 
     protected:
         void add_to_tabu(const std::size_t &first, const std::size_t &second)
         {
             auto problem = Problem::get_instance();
-            tabu_pair p = std::minmax(first, second);
+            _tabu_pair p = std::minmax(first, second);
             auto tabu_iter = std::find(tabu_list.begin(), tabu_list.end(), p);
             if (tabu_iter == tabu_list.end())
             {
@@ -58,8 +58,13 @@ namespace d2d
 
         bool is_tabu(const std::size_t &first, const std::size_t &second) const
         {
-            tabu_pair p = std::minmax(first, second);
+            _tabu_pair p = std::minmax(first, second);
             return std::find(tabu_list.begin(), tabu_list.end(), p) != tabu_list.end();
+        }
+
+        const std::vector<_tabu_pair> &tabu_list_view()
+        {
+            return tabu_list;
         }
     };
 
@@ -76,6 +81,8 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) = 0;
 
         virtual std::string performance_message() const = 0;
+
+        using TabuPairNeighborhood<ST>::tabu_list_view;
 
     public:
         virtual std::shared_ptr<ST> move(
@@ -103,7 +110,23 @@ namespace d2d
 
             if (result != nullptr)
             {
+#ifdef DEBUG
+                std::cerr << "Current solution:\n";
+                std::cerr << "cost = " << solution->cost() << "\n";
+                std::cerr << "truck_routes = " << solution->truck_routes << "\n";
+                std::cerr << "drone_routes = " << solution->drone_routes << "\n";
+                std::cerr << "New solution:\n";
+                std::cerr << "cost = " << result->cost() << "\n";
+                std::cerr << "truck_routes = " << result->truck_routes << "\n";
+                std::cerr << "drone_routes = " << result->drone_routes << "\n";
+                std::cerr << "Old tabu list = " << tabu_list_view() << "\n";
+#endif
+
                 this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+
+#ifdef DEBUG
+                std::cerr << "New tabu list = " << tabu_list_view() << "\n";
+#endif
             }
 
             return result;
