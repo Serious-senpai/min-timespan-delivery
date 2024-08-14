@@ -93,7 +93,10 @@ namespace utils
 
         BitVector operator^(const BitVector &other) const
         {
-            auto [l, r] = std::minmax(_arr.size(), other._arr.size());
+            // Most likely a compiler bug? See https://godbolt.org/z/rbqsnhEsP for an example
+            // const auto [l, r] = std::minmax(_arr.size(), other._arr.size());
+            const std::size_t l = std::min(_arr.size(), other._arr.size()),
+                              r = std::max(_arr.size(), other._arr.size());
             std::vector<uint64_t> result(r);
 
             for (std::size_t i = 0; i < l; i++)
