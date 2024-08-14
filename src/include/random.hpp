@@ -91,13 +91,13 @@ namespace utils
      * @return An iterator to the selected element
      */
     template <typename T>
-    const std::vector<T>::iterator &random_element(const std::vector<T> &v)
+    std::vector<T>::const_iterator random_element(const std::vector<T> &v)
     {
         if (v.empty())
         {
             throw std::runtime_error("Cannot select an element from an empty vector");
         }
 
-        return v.begin() + random<std::size_t>(0, v.size() - 1);
+        return v.cbegin() + random<std::size_t>(0, v.size() - 1);
     }
 }
