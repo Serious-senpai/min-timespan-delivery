@@ -9,6 +9,30 @@ void debug_display(const std::shared_ptr<d2d::Solution> &ptr)
 
 void display(const std::shared_ptr<d2d::Solution> &ptr, const std::size_t &last_improved)
 {
+    auto problem = d2d::Problem::get_instance();
+    std::cout << problem->iterations << std::endl;
+    std::cout << problem->tabu_size << std::endl;
+
+    if (problem->linear != nullptr)
+    {
+        std::cout << "linear" << std::endl;
+    }
+    else if (problem->nonlinear != nullptr)
+    {
+        std::cout << "nonlinear" << std::endl;
+    }
+    else if (problem->endurance != nullptr)
+    {
+        std::cout << "endurance" << std::endl;
+    }
+    else
+    {
+        throw std::runtime_error("No drone configuration was found. This should never happen.");
+    }
+
+    std::cout << (problem->drone->speed_type == d2d::StatsType::low ? "low" : "high") << std::endl;
+    std::cout << (problem->drone->range_type == d2d::StatsType::low ? "low" : "high") << std::endl;
+
     std::cout << ptr->cost() << std::endl;
     std::cout << ptr->capacity_violation << std::endl;
     std::cout << ptr->drone_energy_violation << std::endl;

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import os
@@ -9,11 +10,22 @@ import string
 import textwrap
 from typing import List
 
-from package import parser, Namespace, Problem, SolutionJSON, ROOT
+from package import Problem, SolutionJSON, ROOT
 
 
 def random_str(length: int) -> str:
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+class Namespace(argparse.Namespace):
+    problem: str
+
+
+parser = argparse.ArgumentParser(
+    description="The min-timespan parallel technician-and-drone scheduling in door-to-door sampling service system.\nAlgorithm output transformer.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser.add_argument("problem", type=str, help="the problem name in the archive")
 
 
 if __name__ == "__main__":
@@ -22,9 +34,13 @@ if __name__ == "__main__":
     namespace = Namespace()
     parser.parse_args(namespace=namespace)
 
+    iterations = int(input())
+    tabu_size = int(input())
+    config = input()
+    speed_type = input()
+    range_type = input()
+
     problem = Problem.import_data(namespace.problem)
-    truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
-    drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
 
     cost = float(input())
     capacity_violation = float(input())
@@ -33,6 +49,8 @@ if __name__ == "__main__":
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
 
+    truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
+    drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
     for paths in itertools.chain(truck_paths, drone_paths):
         new = True
         for customer in map(int, input().split()):
@@ -72,11 +90,11 @@ if __name__ == "__main__":
         "problem": namespace.problem,
         "trucks_count": problem.trucks_count,
         "drones_count": problem.drones_count,
-        "iterations": namespace.iterations,
-        "tabu_size": namespace.tabu_size,
-        "config": namespace.config,
-        "speed_type": namespace.speed_type,
-        "range_type": namespace.range_type,
+        "iterations": iterations,
+        "tabu_size": tabu_size,
+        "config": config,
+        "speed_type": speed_type,
+        "range_type": range_type,
         "cost": cost,
         "capacity_violation": capacity_violation,
         "drone_energy_violation": drone_energy_violation,
