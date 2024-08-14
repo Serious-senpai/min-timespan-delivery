@@ -1,9 +1,9 @@
 #pragma once
 
+#include "bitvector.hpp"
 #include "held_karp.hpp"
 #include "initial.hpp"
 #include "problem.hpp"
-#include "random.hpp"
 #include "routes.hpp"
 #include "neighborhoods/move_xy.hpp"
 #include "neighborhoods/two_opt.hpp"
@@ -141,6 +141,45 @@ namespace d2d
             return result;
         }
 
+        double hamming_distance(const std::shared_ptr<Solution> &other) const
+        {
+            auto problem = Problem::get_instance();
+            const std::size_t n = problem->customers.size() - 1,
+                              bitvector_size = n * (n - 1) / 2;
+
+#define OPERATION(vehicle_routes, bitvector)                                                                               \
+    {                                                                                                                      \
+        for (auto &routes : vehicle_routes)                                                                                \
+        {                                                                                                                  \
+            for (auto &route : routes)                                                                                     \
+            {                                                                                                              \
+                const std::vector<std::size_t> &customers = route.customers();                                             \
+                for (std::size_t i = 1; i + 2 < customers.size(); i++)                                                     \
+                {                                                                                                          \
+                    auto current = customers[i], next = customers[i + 1];                                                  \
+                    if (current < next)                                                                                    \
+                    {                                                                                                      \
+                        bitvector.set((current - 1) * (n - current) + current * (current - 1) / 2 + (next - current - 1)); \
+                    }                                                                                                      \
+                }                                                                                                          \
+            }                                                                                                              \
+        }                                                                                                                  \
+    }
+
+            utils::BitVector self_repr(bitvector_size);
+            OPERATION(truck_routes, self_repr);
+            OPERATION(drone_routes, self_repr);
+
+            utils::BitVector other_repr(bitvector_size);
+            OPERATION(other->truck_routes, other_repr);
+            OPERATION(other->drone_routes, other_repr);
+
+#undef OPERATION
+
+            auto x = self_repr ^ other_repr;
+            return static_cast<double>(x.popcount()) / static_cast<double>(bitvector_size);
+        }
+
         static std::shared_ptr<Solution> initial();
         static std::shared_ptr<Solution> post_optimization(const std::shared_ptr<Solution> &solution);
         static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
@@ -154,9 +193,9 @@ namespace d2d
     double Solution::B = 1.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
-        std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
+        std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
@@ -381,7 +420,7 @@ namespace d2d
             *last_improved_ptr = 0;
         }
 
-        std::size_t neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
+        std::size_t neighborhood = 0;
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
@@ -444,7 +483,7 @@ namespace d2d
             }
             else
             {
-                neighborhood = utils::random<std::size_t>(0, neighborhoods.size() - 1);
+                neighborhood = 0;
             }
 
             if (current->drone_energy_violation > 0)
