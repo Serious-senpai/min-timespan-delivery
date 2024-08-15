@@ -144,40 +144,44 @@ namespace d2d
         double hamming_distance(const std::shared_ptr<Solution> &other) const
         {
             auto problem = Problem::get_instance();
-            const std::size_t n = problem->customers.size() - 1,
-                              bitvector_size = n * (n - 1) / 2;
+            const std::size_t n = problem->customers.size() - 1;
 
-#define OPERATION(vehicle_routes, bitvector)                                                                               \
-    {                                                                                                                      \
-        for (auto &routes : vehicle_routes)                                                                                \
-        {                                                                                                                  \
-            for (auto &route : routes)                                                                                     \
-            {                                                                                                              \
-                const std::vector<std::size_t> &customers = route.customers();                                             \
-                for (std::size_t i = 1; i + 2 < customers.size(); i++)                                                     \
-                {                                                                                                          \
-                    auto current = customers[i], next = customers[i + 1];                                                  \
-                    if (current < next)                                                                                    \
-                    {                                                                                                      \
-                        bitvector.set((current - 1) * (n - current) + current * (current - 1) / 2 + (next - current - 1)); \
-                    }                                                                                                      \
-                }                                                                                                          \
-            }                                                                                                              \
-        }                                                                                                                  \
+#define OPERATION(vehicle_routes, repr)                                        \
+    {                                                                          \
+        for (auto &routes : vehicle_routes)                                    \
+        {                                                                      \
+            for (auto &route : routes)                                         \
+            {                                                                  \
+                const std::vector<std::size_t> &customers = route.customers(); \
+                for (std::size_t i = 1; i + 2 < customers.size(); i++)         \
+                {                                                              \
+                    auto current = customers[i], next = customers[i + 1];      \
+                    repr[current] = next;                                      \
+                }                                                              \
+            }                                                                  \
+        }                                                                      \
     }
 
-            utils::BitVector self_repr(bitvector_size);
+            std::vector<std::size_t> self_repr(n);
             OPERATION(truck_routes, self_repr);
             OPERATION(drone_routes, self_repr);
 
-            utils::BitVector other_repr(bitvector_size);
+            std::vector<std::size_t> other_repr(n);
             OPERATION(other->truck_routes, other_repr);
             OPERATION(other->drone_routes, other_repr);
 
 #undef OPERATION
 
-            auto x = self_repr ^ other_repr;
-            return static_cast<double>(x.popcount()) / static_cast<double>(bitvector_size);
+            std::size_t result = 0;
+            for (std::size_t i = 0; i < n; i++)
+            {
+                if (self_repr[i] != other_repr[i])
+                {
+                    result++;
+                }
+            }
+
+            return result;
         }
 
         static std::shared_ptr<Solution> initial();
