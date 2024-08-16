@@ -141,7 +141,7 @@ namespace d2d
             return result;
         }
 
-        double hamming_distance(const std::shared_ptr<Solution> &other) const
+        double hamming_distance(std::shared_ptr<Solution> other) const
         {
             auto problem = Problem::get_instance();
             const std::size_t n = problem->customers.size() - 1;
@@ -184,8 +184,52 @@ namespace d2d
             return result;
         }
 
+        std::shared_ptr<Solution> post_optimization()
+        {
+            for (auto &neighborhood : neighborhoods)
+            {
+                neighborhood->clear();
+            }
+
+            std::vector<std::shared_ptr<Neighborhood<Solution>>> _neighborhoods(neighborhoods);
+            std::shuffle(_neighborhoods.begin(), _neighborhoods.end(), utils::rng);
+
+            auto result = std::make_shared<Solution>(*this);
+            bool improved = true;
+            auto aspiration_criteria = [&result, &improved](std::shared_ptr<Solution> s)
+            {
+                if (s->feasible && s->cost() < result->cost())
+                {
+                    result = s;
+                    improved = true;
+                }
+
+                return true; // Accept all solutions in post-optimization
+            };
+
+            while (improved)
+            {
+                improved = false;
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    auto neighbor = neighborhood->multi_route(result, aspiration_criteria);
+                }
+            }
+
+            improved = true;
+            while (improved)
+            {
+                improved = false;
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    auto neighbor = neighborhood->same_route(result, aspiration_criteria);
+                }
+            }
+
+            return result;
+        }
+
         static std::shared_ptr<Solution> initial();
-        static std::shared_ptr<Solution> post_optimization(const std::shared_ptr<Solution> &solution);
         static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
     };
 
@@ -398,11 +442,6 @@ namespace d2d
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::post_optimization(const std::shared_ptr<Solution> &solution)
-    {
-        return solution;
-    }
-
     std::shared_ptr<Solution> Solution::tabu_search(std::size_t *last_improved_ptr)
     {
         auto problem = Problem::get_instance();
@@ -444,7 +483,7 @@ namespace d2d
                 std::cerr << std::flush;
             }
 
-            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](const std::shared_ptr<Solution> &ptr)
+            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](std::shared_ptr<Solution> ptr)
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
@@ -546,6 +585,6 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        return post_optimization(result);
+        return result->post_optimization();
     }
 }
