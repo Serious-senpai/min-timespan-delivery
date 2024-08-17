@@ -242,12 +242,13 @@ namespace d2d
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 1, 0>>(),
-        // std::make_shared<MoveXY<Solution, 2, 2>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
-        std::make_shared<TwoOpt<Solution>>()};
+        std::make_shared<MoveXY<Solution, 2, 2>>(),
+        std::make_shared<TwoOpt<Solution>>(),
+    };
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
