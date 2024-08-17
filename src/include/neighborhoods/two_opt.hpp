@@ -5,12 +5,12 @@
 namespace d2d
 {
     template <typename ST>
-    class TwoOpt : public CommonRouteNeighborhood<ST>
+    class TwoOpt : public Neighborhood<ST>
     {
     private:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -63,8 +63,8 @@ namespace d2d
         }
 
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;

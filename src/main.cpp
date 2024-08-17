@@ -1,13 +1,13 @@
 #include <solutions.hpp>
 
-void debug_display(const std::shared_ptr<d2d::Solution> &ptr)
+void debug_display(std::shared_ptr<d2d::Solution> ptr)
 {
     std::cout << ptr->truck_routes << std::endl;
     std::cout << ptr->drone_routes << std::endl;
     std::cout << ptr->cost() << std::endl;
 }
 
-void display(const std::shared_ptr<d2d::Solution> &ptr, const std::size_t &last_improved)
+void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improved)
 {
     auto problem = d2d::Problem::get_instance();
     std::cout << problem->iterations << std::endl;

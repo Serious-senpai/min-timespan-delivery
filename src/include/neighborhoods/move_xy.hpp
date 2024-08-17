@@ -5,8 +5,10 @@
 namespace d2d
 {
     template <typename ST, std::size_t X, std::size_t Y>
-    class _BaseMoveXY : public CommonRouteNeighborhood<ST>
+    class _BaseMoveXY : public Neighborhood<ST>
     {
+        static_assert(X >= Y && X != 0);
+
     protected:
         std::string performance_message() const
         {
@@ -14,8 +16,8 @@ namespace d2d
         }
 
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -277,8 +279,8 @@ namespace d2d
     {
     protected:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -349,8 +351,8 @@ namespace d2d
     {
     protected:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const std::shared_ptr<ST> &)> &aspiration_criteria) override
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
@@ -420,18 +422,6 @@ namespace d2d
 #undef MODIFY_ROUTES
 
             return std::make_pair(result, tabu_pair);
-        }
-    };
-
-    template <typename ST>
-    class MoveXY<ST, 0, 0> : public TabuPairNeighborhood<ST>
-    {
-    public:
-        std::shared_ptr<ST> move(
-            const std::shared_ptr<ST> &solution,
-            const std::function<bool(const ST &)> &aspiration_criteria)
-        {
-            return nullptr;
         }
     };
 }
