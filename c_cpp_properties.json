@@ -4,6 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/src/include",
+                "${workspaceFolder}/extern/alglib-cpp/src",
                 "${default}"
             ],
             "cppStandard": "c++20",

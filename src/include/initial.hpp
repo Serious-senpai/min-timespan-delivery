@@ -220,4 +220,80 @@ namespace d2d
     }
 
 #undef INITIAL_12_PHASE_3
+
+    template <typename ST>
+    std::shared_ptr<ST> initial_4()
+    {
+        auto problem = Problem::get_instance();
+
+        alglib::clusterizerstate state;
+        alglib::clusterizercreate(state);
+
+        alglib::real_2d_array matrix;
+        std::vector<double> xy;
+        xy.reserve(2 * (problem->customers.size() - 1));
+        for (std::size_t i = 1; i < problem->customers.size(); i++)
+        {
+            xy.push_back(problem->customers[i].x);
+            xy.push_back(problem->customers[i].y);
+        }
+        matrix.setcontent(problem->customers.size() - 1, 2, xy.data());
+
+        alglib::clusterizersetpoints(state, matrix, 2);
+        alglib::clusterizersetkmeanslimits(state, 1, 100);
+
+        alglib::kmeansreport report;
+        alglib::clusterizerrunkmeans(state, problem->trucks_count, report);
+
+        std::vector<std::vector<std::size_t>> clusters(problem->trucks_count);
+        for (std::size_t i = 0; i + 1 < problem->customers.size(); i++)
+        {
+            clusters[report.cidx[i]].push_back(i + 1);
+        }
+
+        for (auto &cluster : clusters)
+        {
+            cluster.push_back(0);
+
+            if (cluster.size() < 20)
+            {
+                auto [_, order] = utils::held_karp_algorithm(
+                    cluster.size(),
+                    [&problem, &cluster](const std::size_t &i, const std::size_t &j)
+                    {
+                        return problem->distances[cluster[i]][cluster[j]];
+                    });
+
+                std::vector<std::size_t> cluster_ordered(cluster.size());
+                for (std::size_t i = 0; i < cluster.size(); i++)
+                {
+                    cluster_ordered[i] = cluster[order[i]];
+                }
+
+                std::rotate(
+                    cluster_ordered.begin(),
+                    std::find(cluster_ordered.begin(), cluster_ordered.end(), 0),
+                    cluster_ordered.end());
+                cluster = cluster_ordered;
+            }
+            else
+            {
+                std::rotate(
+                    cluster.begin(),
+                    std::find(cluster.begin(), cluster.end(), 0),
+                    cluster.end());
+            }
+
+            cluster.push_back(0);
+        }
+
+        std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
+        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
+        for (std::size_t truck = 0; truck < problem->trucks_count; truck++)
+        {
+            truck_routes[truck].push_back(TruckRoute(clusters[truck]));
+        }
+
+        return std::make_shared<ST>(truck_routes, drone_routes);
+    }
 }

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "bitvector.hpp"
 #include "held_karp.hpp"
 #include "initial.hpp"
 #include "problem.hpp"
-#include "random.hpp"
 #include "routes.hpp"
 #include "neighborhoods/move_xy.hpp"
 #include "neighborhoods/two_opt.hpp"
@@ -141,8 +141,95 @@ namespace d2d
             return result;
         }
 
+        double hamming_distance(std::shared_ptr<Solution> other) const
+        {
+            auto problem = Problem::get_instance();
+            const std::size_t n = problem->customers.size() - 1;
+
+#define OPERATION(vehicle_routes, repr)                                        \
+    {                                                                          \
+        for (auto &routes : vehicle_routes)                                    \
+        {                                                                      \
+            for (auto &route : routes)                                         \
+            {                                                                  \
+                const std::vector<std::size_t> &customers = route.customers(); \
+                for (std::size_t i = 1; i + 2 < customers.size(); i++)         \
+                {                                                              \
+                    auto current = customers[i], next = customers[i + 1];      \
+                    repr[current] = next;                                      \
+                }                                                              \
+            }                                                                  \
+        }                                                                      \
+    }
+
+            std::vector<std::size_t> self_repr(n);
+            OPERATION(truck_routes, self_repr);
+            OPERATION(drone_routes, self_repr);
+
+            std::vector<std::size_t> other_repr(n);
+            OPERATION(other->truck_routes, other_repr);
+            OPERATION(other->drone_routes, other_repr);
+
+#undef OPERATION
+
+            std::size_t result = 0;
+            for (std::size_t i = 0; i < n; i++)
+            {
+                if (self_repr[i] != other_repr[i])
+                {
+                    result++;
+                }
+            }
+
+            return result;
+        }
+
+        std::shared_ptr<Solution> post_optimization()
+        {
+            for (auto &neighborhood : neighborhoods)
+            {
+                neighborhood->clear();
+            }
+
+            std::vector<std::shared_ptr<Neighborhood<Solution>>> _neighborhoods(neighborhoods);
+            std::shuffle(_neighborhoods.begin(), _neighborhoods.end(), utils::rng);
+
+            auto result = std::make_shared<Solution>(*this);
+            bool improved = true;
+            auto aspiration_criteria = [&result, &improved](std::shared_ptr<Solution> s)
+            {
+                if (s->feasible && s->cost() < result->cost())
+                {
+                    result = s;
+                    improved = true;
+                }
+
+                return true; // Accept all solutions in post-optimization
+            };
+
+            while (improved)
+            {
+                improved = false;
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    auto neighbor = neighborhood->multi_route(result, aspiration_criteria);
+                }
+            }
+
+            improved = true;
+            while (improved)
+            {
+                improved = false;
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    auto neighbor = neighborhood->same_route(result, aspiration_criteria);
+                }
+            }
+
+            return result;
+        }
+
         static std::shared_ptr<Solution> initial();
-        static std::shared_ptr<Solution> post_optimization(const std::shared_ptr<Solution> &solution);
         static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
     };
 
@@ -151,15 +238,15 @@ namespace d2d
     double Solution::A3 = 1;
     double Solution::A4 = 1;
     double Solution::A5 = 1;
-    double Solution::B = 0.5;
+    double Solution::B = 1.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
-        std::make_shared<MoveXY<Solution, 3, 0>>(),
-        std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 0>>(),
         // std::make_shared<MoveXY<Solution, 2, 2>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
+        std::make_shared<MoveXY<Solution, 2, 0>>(),
+        std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
@@ -168,16 +255,16 @@ namespace d2d
         std::vector<std::vector<std::vector<double>>> result(truck_routes.size());
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
-            result[i].resize(truck_routes[i].size());
+            result[i].reserve(truck_routes[i].size());
 
             std::size_t coefficients_index = 0;
             double current_within_timespan = 0;
             for (std::size_t j = 0; j < truck_routes[i].size(); j++)
             {
-                result[i][j] = TruckRoute::calculate_time_segments(
+                result[i].push_back(TruckRoute::calculate_time_segments(
                     truck_routes[i][j].customers(),
                     coefficients_index,
-                    current_within_timespan);
+                    current_within_timespan));
             }
         }
 
@@ -351,12 +438,10 @@ namespace d2d
         r = initial_3<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
-        return result;
-    }
+        r = initial_4<Solution>();
+        result = result->cost() < r->cost() ? result : r;
 
-    std::shared_ptr<Solution> Solution::post_optimization(const std::shared_ptr<Solution> &solution)
-    {
-        return solution;
+        return result;
     }
 
     std::shared_ptr<Solution> Solution::tabu_search(std::size_t *last_improved_ptr)
@@ -364,21 +449,23 @@ namespace d2d
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
 
-        const auto aspiration_criteria = [&result](const std::shared_ptr<Solution> &ptr)
-        {
-            return ptr->feasible && ptr->cost() < result->cost();
-        };
-
         if (last_improved_ptr != nullptr)
         {
             *last_improved_ptr = 0;
         }
 
+        std::size_t neighborhood = 0;
         for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
         {
             if (problem->verbose)
             {
-                auto prefix = utils::format("\rIteration #%lu/%lu(%.2lf/%.2lf) ", iteration + 1, problem->iterations, current->cost(), result->cost());
+                std::string format_string = "\rIteration #%lu/%lu(";
+                format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += "/";
+                format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += ") ";
+
+                auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
                 std::cerr << prefix;
                 try
                 {
@@ -398,8 +485,24 @@ namespace d2d
                 std::cerr << std::flush;
             }
 
-            auto neighborhood = utils::random_element(neighborhoods);
-            auto neighbor = neighborhood->move(current, aspiration_criteria);
+            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](std::shared_ptr<Solution> ptr)
+            {
+                if (ptr->feasible && ptr->cost() < result->cost())
+                {
+                    result = ptr;
+                    if (last_improved_ptr != nullptr)
+                    {
+                        *last_improved_ptr = iteration;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            };
+
+            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
+            auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
                 current = neighbor;
@@ -424,49 +527,58 @@ namespace d2d
                 }
             }
 
-            if (current->drone_energy_violation > 0)
+            if (neighbor == nullptr || current_cost <= current->cost())
             {
-                Solution::A1 *= 1.0 + B;
+                neighborhood = (neighborhood + 1) % neighborhoods.size();
             }
             else
             {
-                Solution::A1 /= 1.0 + B;
+                neighborhood = 0;
+            }
+
+            if (current->drone_energy_violation > 0)
+            {
+                A1 *= B;
+            }
+            else
+            {
+                A1 /= B;
             }
 
             if (current->capacity_violation > 0)
             {
-                Solution::A2 *= 1.0 + B;
+                A2 *= B;
             }
             else
             {
-                Solution::A2 /= 1.0 + B;
+                A2 /= B;
             }
 
             if (current->waiting_time_violation > 0)
             {
-                Solution::A3 *= 1.0 + B;
+                A3 *= B;
             }
             else
             {
-                Solution::A3 /= 1.0 + B;
+                A3 /= B;
             }
 
             if (current->fixed_time_violation > 0)
             {
-                Solution::A4 *= 1.0 + B;
+                A4 *= B;
             }
             else
             {
-                Solution::A4 /= 1.0 + B;
+                A4 /= B;
             }
 
             if (current->fixed_distance_violation > 0)
             {
-                Solution::A5 *= 1.0 + B;
+                A5 *= B;
             }
             else
             {
-                Solution::A5 /= 1.0 + B;
+                A5 /= B;
             }
         }
 
@@ -475,6 +587,6 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        return post_optimization(result);
+        return result->post_optimization();
     }
 }

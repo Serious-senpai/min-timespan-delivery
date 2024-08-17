@@ -10,8 +10,7 @@ namespace utils
         const std::size_t &bitmask,
         const std::size_t &city,
         const std::function<double(const std::size_t &, const std::size_t &)> &distance,
-        std::vector<std::vector<std::pair<double, std::size_t>>> &dp,
-        const std::size_t &level = 0)
+        std::vector<std::vector<std::pair<double, std::size_t>>> &dp)
     {
         if (dp[bitmask][city].first != -1.0)
         {
@@ -33,7 +32,7 @@ namespace utils
         {
             if (bitmask & (1u << i))
             {
-                auto before = __held_karp_solve(n, bitmask & ~(1u << i), i, distance, dp, level + 1);
+                auto before = __held_karp_solve(n, bitmask & ~(1u << i), i, distance, dp);
                 double d = before.first + distance(i, city);
                 if (d < result.first || result.first == -1.0)
                 {
