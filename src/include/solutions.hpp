@@ -5,6 +5,7 @@
 #include "initial.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
+#include "neighborhoods/cross.hpp"
 #include "neighborhoods/move_xy.hpp"
 #include "neighborhoods/two_opt.hpp"
 
@@ -191,8 +192,8 @@ namespace d2d
                 neighborhood->clear();
             }
 
-            std::vector<std::shared_ptr<Neighborhood<Solution>>> _neighborhoods(neighborhoods);
-            std::shuffle(_neighborhoods.begin(), _neighborhoods.end(), utils::rng);
+            std::vector<std::shared_ptr<Neighborhood<Solution>>> inter_route(neighborhoods), intra_route(neighborhoods);
+            inter_route.push_back(std::make_shared<CrossExchange<Solution>>());
 
             auto result = std::make_shared<Solution>(*this);
             bool improved = true;
@@ -210,9 +211,10 @@ namespace d2d
             while (improved)
             {
                 improved = false;
-                for (auto &neighborhood : _neighborhoods)
+                std::shuffle(inter_route.begin(), inter_route.end(), utils::rng);
+                for (auto &neighborhood : inter_route)
                 {
-                    auto neighbor = neighborhood->multi_route(result, aspiration_criteria);
+                    neighborhood->multi_route(result, aspiration_criteria);
                 }
             }
 
@@ -220,9 +222,10 @@ namespace d2d
             while (improved)
             {
                 improved = false;
-                for (auto &neighborhood : _neighborhoods)
+                std::shuffle(intra_route.begin(), intra_route.end(), utils::rng);
+                for (auto &neighborhood : intra_route)
                 {
-                    auto neighbor = neighborhood->same_route(result, aspiration_criteria);
+                    neighborhood->same_route(result, aspiration_criteria);
                 }
             }
 

@@ -9,8 +9,8 @@ namespace d2d
     {
         static_assert(X >= Y && X != 0);
 
-    protected:
-        std::string performance_message() const
+    public:
+        std::string performance_message() const override
         {
             return utils::format("Move (%d, %d)", X, Y);
         }
