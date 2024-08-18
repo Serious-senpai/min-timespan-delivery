@@ -8,7 +8,27 @@ namespace d2d
      * @brief Base class for local search neighborhoods
      */
     template <typename ST>
-    class Neighborhood
+    class BaseNeighborhood
+    {
+    public:
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
+
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
+            std::shared_ptr<ST> solution,
+            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
+
+        virtual std::string performance_message() const = 0;
+    };
+
+    template <typename ST, bool _EnableTabuList>
+    class Neighborhood : public BaseNeighborhood<ST>
+    {
+    };
+
+    template <typename ST>
+    class Neighborhood<ST, true> : public BaseNeighborhood<ST>
     {
     private:
         using _tabu_pair = std::pair<std::size_t, std::size_t>;
@@ -50,16 +70,6 @@ namespace d2d
             _tabu_list.clear();
         }
 
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
-
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
-
-        virtual std::string performance_message() const = 0;
-
         /**
          * @brief Perform a local search to find the best solution in the neighborhood.
          *
@@ -73,7 +83,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria)
         {
 #ifdef DEBUG
-            utils::PerformanceBenchmark _perf(performance_message());
+            utils::PerformanceBenchmark _perf(this->performance_message());
 #endif
 
             std::shared_ptr<ST> result;
@@ -88,8 +98,8 @@ namespace d2d
                 }
             };
 
-            update(same_route(solution, aspiration_criteria));
-            update(multi_route(solution, aspiration_criteria));
+            update(this->same_route(solution, aspiration_criteria));
+            update(this->multi_route(solution, aspiration_criteria));
 
             if (result != nullptr)
             {

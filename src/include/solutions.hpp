@@ -5,6 +5,8 @@
 #include "initial.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
+#include "neighborhoods/cross.hpp"
+#include "neighborhoods/ejection_chain.hpp"
 #include "neighborhoods/move_xy.hpp"
 #include "neighborhoods/two_opt.hpp"
 
@@ -16,7 +18,7 @@ namespace d2d
     private:
         static double A1, A2, A3, A4, A5, B;
 
-        static const std::vector<std::shared_ptr<Neighborhood<Solution>>> neighborhoods;
+        static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> neighborhoods;
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
@@ -186,13 +188,14 @@ namespace d2d
 
         std::shared_ptr<Solution> post_optimization()
         {
+            std::vector<std::shared_ptr<BaseNeighborhood<Solution>>> inter_route, intra_route;
             for (auto &neighborhood : neighborhoods)
             {
-                neighborhood->clear();
+                inter_route.push_back(neighborhood);
+                intra_route.push_back(neighborhood);
             }
-
-            std::vector<std::shared_ptr<Neighborhood<Solution>>> _neighborhoods(neighborhoods);
-            std::shuffle(_neighborhoods.begin(), _neighborhoods.end(), utils::rng);
+            inter_route.push_back(std::make_shared<CrossExchange<Solution>>());
+            inter_route.push_back(std::make_shared<EjectionChain<Solution>>());
 
             auto result = std::make_shared<Solution>(*this);
             bool improved = true;
@@ -210,9 +213,16 @@ namespace d2d
             while (improved)
             {
                 improved = false;
-                for (auto &neighborhood : _neighborhoods)
+                std::shuffle(inter_route.begin(), inter_route.end(), utils::rng);
+                for (auto &neighborhood : inter_route)
                 {
-                    auto neighbor = neighborhood->multi_route(result, aspiration_criteria);
+                    auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
+                    if (ptr != nullptr)
+                    {
+                        ptr->clear();
+                    }
+
+                    neighborhood->multi_route(result, aspiration_criteria);
                 }
             }
 
@@ -220,9 +230,16 @@ namespace d2d
             while (improved)
             {
                 improved = false;
-                for (auto &neighborhood : _neighborhoods)
+                std::shuffle(intra_route.begin(), intra_route.end(), utils::rng);
+                for (auto &neighborhood : intra_route)
                 {
-                    auto neighbor = neighborhood->same_route(result, aspiration_criteria);
+                    auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
+                    if (ptr != nullptr)
+                    {
+                        ptr->clear();
+                    }
+
+                    neighborhood->same_route(result, aspiration_criteria);
                 }
             }
 
@@ -240,7 +257,7 @@ namespace d2d
     double Solution::A5 = 1;
     double Solution::B = 1.5;
 
-    const std::vector<std::shared_ptr<Neighborhood<Solution>>> Solution::neighborhoods = {
+    const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> Solution::neighborhoods = {
         std::make_shared<MoveXY<Solution, 1, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 0>>(),
@@ -534,50 +551,23 @@ namespace d2d
                 neighborhood = 0;
             }
 
-            if (current->drone_energy_violation > 0)
+            const auto violation_update = [](double &A, const double &violation)
             {
-                A1 *= B;
-            }
-            else
-            {
-                A1 /= B;
-            }
+                if (violation > 0)
+                {
+                    A *= B;
+                }
+                else
+                {
+                    A /= B;
+                }
+            };
 
-            if (current->capacity_violation > 0)
-            {
-                A2 *= B;
-            }
-            else
-            {
-                A2 /= B;
-            }
-
-            if (current->waiting_time_violation > 0)
-            {
-                A3 *= B;
-            }
-            else
-            {
-                A3 /= B;
-            }
-
-            if (current->fixed_time_violation > 0)
-            {
-                A4 *= B;
-            }
-            else
-            {
-                A4 /= B;
-            }
-
-            if (current->fixed_distance_violation > 0)
-            {
-                A5 *= B;
-            }
-            else
-            {
-                A5 /= B;
-            }
+            violation_update(A1, current->drone_energy_violation);
+            violation_update(A2, current->capacity_violation);
+            violation_update(A3, current->waiting_time_violation);
+            violation_update(A4, current->fixed_time_violation);
+            violation_update(A5, current->fixed_distance_violation);
         }
 
         if (problem->verbose)
