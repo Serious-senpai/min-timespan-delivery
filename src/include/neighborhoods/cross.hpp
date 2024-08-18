@@ -5,7 +5,7 @@
 namespace d2d
 {
     template <typename ST>
-    class CrossExchange : public Neighborhood<ST>
+    class CrossExchange : public Neighborhood<ST, false>
     {
     public:
         std::string performance_message() const override
@@ -26,7 +26,6 @@ namespace d2d
         {
             auto problem = Problem::get_instance();
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
@@ -111,11 +110,9 @@ namespace d2d
                                 }                                                                                                                                         \
                                                                                                                                                                           \
                                 auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                                     \
-                                if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i - 1], customers_j[j - 1])) &&                                      \
-                                    (result == nullptr || new_solution->cost() < result->cost()))                                                                         \
+                                if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                                    \
                                 {                                                                                                                                         \
                                     result.swap(new_solution);                                                                                                            \
-                                    tabu_pair = std::make_pair(customers_i[i - 1], customers_j[j - 1]);                                                                   \
                                 }                                                                                                                                         \
                                                                                                                                                                           \
                                 /* Restore */                                                                                                                             \
@@ -162,7 +159,7 @@ namespace d2d
                 }
             }
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, std::make_pair(0, 0));
         }
     };
 }
