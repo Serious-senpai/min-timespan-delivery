@@ -127,6 +127,9 @@ namespace d2d
                                     rj.erase(rj.begin() + jy);                                                                                            \
                                     rk.insert(rk.begin() + k, customers_j[jy - (jy > jx)]);                                                               \
                                                                                                                                                           \
+                                    /* Perform assignment first before doing any deletion */                                                              \
+                                    vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                           \
+                                    vehicle_routes_k[_vehicle_k][route_k] = VehicleRoute_k(rk);                                                           \
                                     if (ri.size() == 2)                                                                                                   \
                                     {                                                                                                                     \
                                         vehicle_routes_i[_vehicle_i].erase(vehicle_routes_i[_vehicle_i].begin() + route_i);                               \
@@ -136,9 +139,6 @@ namespace d2d
                                         vehicle_routes_i[_vehicle_i][route_i] = VehicleRoute_i(ri);                                                       \
                                     }                                                                                                                     \
                                                                                                                                                           \
-                                    vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                           \
-                                    vehicle_routes_k[_vehicle_k][route_k] = VehicleRoute_k(rk);                                                           \
-                                                                                                                                                          \
                                     auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                 \
                                     if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                \
                                     {                                                                                                                     \
@@ -147,8 +147,14 @@ namespace d2d
                                                                                                                                                           \
                                     /* Restore */                                                                                                         \
                                     vehicle_routes_i[_vehicle_i] = solution->vehicle_routes_i[_vehicle_i];                                                \
-                                    vehicle_routes_j[_vehicle_j] = solution->vehicle_routes_j[_vehicle_j];                                                \
-                                    vehicle_routes_k[_vehicle_k] = solution->vehicle_routes_k[_vehicle_k];                                                \
+                                    if (vehicle_i != vehicle_j)                                                                                           \
+                                    {                                                                                                                     \
+                                        vehicle_routes_j[_vehicle_j][route_j] = solution->vehicle_routes_j[_vehicle_j][route_j];                          \
+                                    }                                                                                                                     \
+                                    if (vehicle_i != vehicle_k)                                                                                           \
+                                    {                                                                                                                     \
+                                        vehicle_routes_k[_vehicle_k][route_k] = solution->vehicle_routes_k[_vehicle_k][route_k];                          \
+                                    }                                                                                                                     \
                                 }                                                                                                                         \
                             }                                                                                                                             \
                         }                                                                                                                                 \
