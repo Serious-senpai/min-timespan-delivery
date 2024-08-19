@@ -102,20 +102,21 @@ namespace d2d
                 using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                               \
                 using VehicleRoute_j = std::remove_cvref_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                               \
                                                                                                                                                            \
+                if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                              \
+                {                                                                                                                                          \
+                    if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                   \
+                    {                                                                                                                                      \
+                        continue;                                                                                                                          \
+                    }                                                                                                                                      \
+                }                                                                                                                                          \
+                                                                                                                                                           \
                 const std::vector<std::size_t> &customers_i = solution->vehicle_routes_i[_vehicle_i][route_i].customers();                                 \
                 const std::vector<std::size_t> &customers_j = solution->vehicle_routes_j[_vehicle_j][route_j].customers();                                 \
+                                                                                                                                                           \
                 for (std::size_t i = 0; i + 1 < customers_i.size(); i++)                                                                                   \
                 {                                                                                                                                          \
                     for (std::size_t j = 0; j + 1 < customers_j.size(); j++)                                                                               \
                     {                                                                                                                                      \
-                        if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                      \
-                        {                                                                                                                                  \
-                            if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                           \
-                            {                                                                                                                              \
-                                continue;                                                                                                                  \
-                            }                                                                                                                              \
-                        }                                                                                                                                  \
-                                                                                                                                                           \
                         std::vector<std::size_t> ri(customers_i.begin(), customers_i.begin() + (i + 1)),                                                   \
                             rj(customers_j.begin(), customers_j.begin() + (j + 1));                                                                        \
                                                                                                                                                            \
