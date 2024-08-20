@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
-        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Propagation costs,Last improved,real,user,sys\n")
         for row, solution in enumerate(solutions, start=2):
             segments = [
                 wrap(solution["problem"]),
@@ -45,6 +45,7 @@ if __name__ == "__main__":
                 wrap(solution["truck_paths"]),
                 wrap(solution["drone_paths"]),
                 str(int(solution["feasible"])),
+                wrap(solution["costs"]),
                 str(solution["last_improved"]),
                 str(solution["real"]),
                 str(solution["user"]),

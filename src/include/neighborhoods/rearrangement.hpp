@@ -192,7 +192,7 @@ namespace d2d
                                 auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                            \
                                 if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                           \
                                 {                                                                                                                                \
-                                    result.swap(new_solution);                                                                                                   \
+                                    result = new_solution;                                                                                                       \
                                 }                                                                                                                                \
                                                                                                                                                                  \
                                 /* Restore */                                                                                                                    \

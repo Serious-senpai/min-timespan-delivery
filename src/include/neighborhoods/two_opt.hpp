@@ -47,7 +47,7 @@ namespace d2d
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
                             (result == nullptr || new_solution->cost() < result->cost()))                            \
                         {                                                                                            \
-                            result.swap(new_solution);                                                               \
+                            result = new_solution;                                                                   \
                             tabu_pair = std::make_pair(customers[i - 1], customers[j]);                              \
                         }                                                                                            \
                                                                                                                      \
@@ -160,7 +160,7 @@ namespace d2d
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                       \
                             (result == nullptr || new_solution->cost() < result->cost()))                                                                  \
                         {                                                                                                                                  \
-                            result.swap(new_solution);                                                                                                     \
+                            result = new_solution;                                                                                                         \
                             tabu_pair = std::make_pair(customers_i[i], customers_j[j]);                                                                    \
                         }                                                                                                                                  \
                                                                                                                                                            \

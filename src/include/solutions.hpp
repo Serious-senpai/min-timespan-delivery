@@ -38,6 +38,8 @@ namespace d2d
 
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
+        std::shared_ptr<Solution> _parent;
+
     public:
         /** @brief System working time */
         const double working_time;
@@ -130,6 +132,12 @@ namespace d2d
 #endif
         }
 
+        /** @brief The parent solution propagating this solution in the result tree */
+        std::shared_ptr<Solution> parent() const
+        {
+            return _parent;
+        }
+
         /** @brief Objective function evaluation, including penalties. */
         double cost() const
         {
@@ -188,6 +196,9 @@ namespace d2d
 
         std::shared_ptr<Solution> post_optimization()
         {
+            auto problem = Problem::get_instance();
+            std::size_t iteration = 0;
+
             std::vector<std::shared_ptr<BaseNeighborhood<Solution>>> inter_route, intra_route;
             for (auto &neighborhood : neighborhoods)
             {
@@ -216,6 +227,11 @@ namespace d2d
                 std::shuffle(inter_route.begin(), inter_route.end(), utils::rng);
                 for (auto &neighborhood : inter_route)
                 {
+                    if (problem->verbose)
+                    {
+                        std::cerr << utils::format("\rPost-optimize #%lu(%.2lf)", ++iteration, result->cost()) << std::flush;
+                    }
+
                     auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
                     if (ptr != nullptr)
                     {
@@ -233,6 +249,11 @@ namespace d2d
                 std::shuffle(intra_route.begin(), intra_route.end(), utils::rng);
                 for (auto &neighborhood : intra_route)
                 {
+                    if (problem->verbose)
+                    {
+                        std::cerr << utils::format("\rPost-optimize #%lu(%.2lf)", ++iteration, result->cost()) << std::flush;
+                    }
+
                     auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
                     if (ptr != nullptr)
                     {
@@ -241,6 +262,11 @@ namespace d2d
 
                     neighborhood->same_route(result, aspiration_criteria);
                 }
+            }
+
+            if (problem->verbose)
+            {
+                std::cerr << std::endl;
             }
 
             return result;
@@ -504,6 +530,7 @@ namespace d2d
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
+                    ptr->_parent = result;
                     result = ptr;
                     if (last_improved_ptr != nullptr)
                     {
@@ -523,22 +550,12 @@ namespace d2d
                 current = neighbor;
                 if (neighbor->feasible && neighbor->cost() < result->cost())
                 {
+                    neighbor->_parent = result;
                     result = neighbor;
                     if (last_improved_ptr != nullptr)
                     {
                         *last_improved_ptr = iteration;
                     }
-
-                    for (auto &neighborhood : neighborhoods)
-                    {
-                        auto neighbor = neighborhood->move(current, aspiration_criteria);
-                        if (neighbor != nullptr && neighbor->feasible && neighbor->cost() < result->cost())
-                        {
-                            result = neighbor;
-                        }
-                    }
-
-                    current = result;
                 }
             }
 
@@ -575,6 +592,8 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        return result->post_optimization();
+        auto post_opt = result->post_optimization();
+        post_opt->_parent = result;
+        return post_opt;
     }
 }

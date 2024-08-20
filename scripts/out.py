@@ -8,7 +8,7 @@ import random
 import re
 import string
 import textwrap
-from typing import List
+from typing import List, Tuple
 
 from package import Problem, SolutionJSON, ROOT
 
@@ -19,6 +19,26 @@ def random_str(length: int) -> str:
 
 class Namespace(argparse.Namespace):
     problem: str
+
+
+def read_routes(problem: Problem) -> Tuple[List[List[List[int]]], List[List[List[int]]]]:
+    truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
+    drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
+    for paths in itertools.chain(truck_paths, drone_paths):
+        new = True
+        for customer in map(int, input().split()):
+            if customer == 0:
+                if new:
+                    paths.append([0])
+                else:
+                    paths[-1].append(0)
+
+                new = not new
+
+            else:
+                paths[-1].append(customer)
+
+    return truck_paths, drone_paths
 
 
 parser = argparse.ArgumentParser(
@@ -49,21 +69,15 @@ if __name__ == "__main__":
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
 
-    truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
-    drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
-    for paths in itertools.chain(truck_paths, drone_paths):
-        new = True
-        for customer in map(int, input().split()):
-            if customer == 0:
-                if new:
-                    paths.append([0])
-                else:
-                    paths[-1].append(0)
+    truck_paths, drone_paths = read_routes(problem)
+    costs: List[float] = []
+    chain: List[Tuple[List[List[List[int]]], List[List[List[int]]]]] = []
+    while (_cost := float(input())) != -1:
+        costs.append(_cost)
+        chain.append(read_routes(problem))
 
-                new = not new
-
-            else:
-                paths[-1].append(customer)
+    costs.reverse()
+    chain.reverse()
 
     feasible = bool(int(input()))
     last_improved = int(input())
@@ -104,6 +118,7 @@ if __name__ == "__main__":
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,
+        "costs": costs,
         "last_improved": last_improved,
         "real": real,
         "user": user,
@@ -128,7 +143,7 @@ if __name__ == "__main__":
 
             from typing import List
 
-            from matplotlib import axes, pyplot
+            from matplotlib import pyplot
 
 
             x = {problem.x}
@@ -140,7 +155,6 @@ if __name__ == "__main__":
             drone_paths: List[List[List[int]]] = {drone_paths}
 
             _, ax = pyplot.subplots()
-            assert isinstance(ax, axes.Axes)
 
             for paths in drone_paths:
                 drone_x: List[float] = []

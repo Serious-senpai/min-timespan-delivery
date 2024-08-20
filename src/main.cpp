@@ -7,6 +7,29 @@ void debug_display(std::shared_ptr<d2d::Solution> ptr)
     std::cout << ptr->cost() << std::endl;
 }
 
+void print_routes(std::shared_ptr<d2d::Solution> ptr)
+{
+#define PRINT_ROUTES(vehicle_routes)                     \
+    {                                                    \
+        for (auto &routes : ptr->vehicle_routes)         \
+        {                                                \
+            for (auto &route : routes)                   \
+            {                                            \
+                for (auto &customer : route.customers()) \
+                {                                        \
+                    std::cout << customer << " ";        \
+                }                                        \
+            }                                            \
+            std::cout << std::endl;                      \
+        }                                                \
+    }
+
+    PRINT_ROUTES(truck_routes);
+    PRINT_ROUTES(drone_routes);
+
+#undef PRINT_ROUTES
+}
+
 void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improved)
 {
     auto problem = d2d::Problem::get_instance();
@@ -40,25 +63,15 @@ void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improve
     std::cout << ptr->fixed_time_violation << std::endl;
     std::cout << ptr->fixed_distance_violation << std::endl;
 
-#define PRINT_ROUTES(vehicle_routes)                     \
-    {                                                    \
-        for (auto &routes : ptr->vehicle_routes)         \
-        {                                                \
-            for (auto &route : routes)                   \
-            {                                            \
-                for (auto &customer : route.customers()) \
-                {                                        \
-                    std::cout << customer << " ";        \
-                }                                        \
-            }                                            \
-            std::cout << std::endl;                      \
-        }                                                \
+    print_routes(ptr);
+    std::shared_ptr<d2d::Solution> parent = ptr->parent();
+    while (parent != nullptr)
+    {
+        std::cout << parent->cost() << std::endl;
+        print_routes(parent);
+        parent = parent->parent();
     }
-
-    PRINT_ROUTES(truck_routes);
-    PRINT_ROUTES(drone_routes);
-
-#undef PRINT_ROUTES
+    std::cout << -1 << std::endl; // Signal the end of propagation chain
 
     std::cout << ptr->feasible << std::endl;
     std::cout << last_improved << std::endl;
