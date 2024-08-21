@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing_extensions import Generic, List, TypedDict, TypeVar
 
 
-__all__ = ("SolutionJSON", "PrettySolutionJSON", "PropagationJSON", "ResultJSON", "prettify")
+__all__ = ("SolutionJSON", "PrettySolutionJSON", "PropagationJSON", "HistoryJSON", "ProgressJSON", "ResultJSON", "prettify")
 
 
 class _BaseSolutionJSON(TypedDict):
@@ -35,6 +35,17 @@ class PropagationJSON(Generic[T], TypedDict):
     label: str
 
 
+class HistoryJSON(Generic[T], TypedDict):
+    solution: T
+    iteration: int
+    penalty_coefficients: List[float]
+
+
+class ProgressJSON(Generic[T], TypedDict):
+    solution: T
+    penalty_coefficients: List[float]
+
+
 class ResultJSON(Generic[T], TypedDict):
     problem: str
     trucks_count: int
@@ -46,6 +57,8 @@ class ResultJSON(Generic[T], TypedDict):
     range_type: str
     solution: T
     propagation: List[PropagationJSON[T]]
+    history: List[HistoryJSON[T]]
+    progress: List[ProgressJSON[T]]
     last_improved: int
     real: float
     user: float

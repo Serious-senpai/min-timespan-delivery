@@ -277,7 +277,11 @@ namespace d2d
         }
 
         static std::shared_ptr<Solution> initial();
-        static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
+        static std::shared_ptr<Solution> tabu_search(
+            std::size_t *last_improved_ptr,
+            std::vector<std::shared_ptr<Solution>> *history_ptr,
+            std::vector<std::shared_ptr<Solution>> *progress_ptr,
+            std::vector<std::array<double, 5>> *coefficients_ptr);
     };
 
     double Solution::A1 = 1;
@@ -483,7 +487,11 @@ namespace d2d
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::tabu_search(std::size_t *last_improved_ptr)
+    std::shared_ptr<Solution> Solution::tabu_search(
+        std::size_t *last_improved_ptr,
+        std::vector<std::shared_ptr<Solution>> *history_ptr,
+        std::vector<std::shared_ptr<Solution>> *progress_ptr,
+        std::vector<std::array<double, 5>> *coefficients_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -581,6 +589,21 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
             violation_update(A5, current->fixed_distance_violation);
+
+            if (history_ptr != nullptr)
+            {
+                history_ptr->push_back(result);
+            }
+
+            if (progress_ptr != nullptr)
+            {
+                progress_ptr->push_back(current);
+            }
+
+            if (coefficients_ptr != nullptr)
+            {
+                coefficients_ptr->push_back({A1, A2, A3, A4, A5});
+            }
         }
 
         if (problem->verbose)

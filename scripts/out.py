@@ -9,7 +9,7 @@ import string
 import textwrap
 from typing_extensions import List, Optional
 
-from package import Problem, PrettySolutionJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, prettify
+from package import HistoryJSON, Problem, PrettySolutionJSON, ProgressJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, prettify
 
 
 def random_str(length: int) -> str:
@@ -81,6 +81,19 @@ if __name__ == "__main__":
 
     propagation.reverse()
 
+    history: List[HistoryJSON[SolutionJSON]] = []
+    while (cost := float(input())) != -1:
+        s = read_solution(cost=cost)
+        iteration = int(input())
+        penalty_coefficients: List[float] = eval(input())
+        history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
+
+    progress: List[ProgressJSON[SolutionJSON]] = []
+    while (cost := float(input())) != -1:
+        s = read_solution(cost=cost)
+        penalty_coefficients = eval(input())
+        progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
+
     last_improved = int(input())
     real = user = sys = -1.0
 
@@ -112,12 +125,14 @@ if __name__ == "__main__":
         "range_type": range_type,
         "solution": solution,
         "propagation": propagation,
+        "history": history,
+        "progress": progress,
         "last_improved": last_improved,
         "real": real,
         "user": user,
         "sys": sys,
     }
-    print(data)
+    print(solution)
 
     index = random_str(8)
     while ROOT.joinpath("result", f"{namespace.problem}-{index}.json").exists():
@@ -133,11 +148,13 @@ if __name__ == "__main__":
         **data,
         "solution": prettify(solution),
         "propagation": [{"solution": prettify(p["solution"]), "label": p["label"]} for p in propagation],
+        "history": [{"solution": prettify(h["solution"]), "iteration": h["iteration"], "penalty_coefficients": h["penalty_coefficients"]} for h in history],
+        "progress": [{"solution": prettify(p["solution"]), "penalty_coefficients": p["penalty_coefficients"]} for p in progress],
     }
 
     json_output = ROOT / "result" / f"{namespace.problem}-{index}-pretty.json"
     with json_output.open("w") as file:
-        json.dump(pretty_data, file)
+        json.dump(pretty_data, file, indent=4)
 
     print(f"Generated pretty JSON at {json_output.relative_to(working_dir)}")
 
@@ -146,10 +163,13 @@ if __name__ == "__main__":
         code = f"""
             from __future__ import annotations
 
-            from typing_extensions import List
+            import argparse
+            from typing_extensions import List, Literal, Tuple, TYPE_CHECKING
 
             from matplotlib import pyplot
 
+
+            # Data region
 
             x = {problem.x}
             y = {problem.y}
@@ -158,86 +178,149 @@ if __name__ == "__main__":
 
             truck_paths: List[List[List[int]]] = {solution["truck_paths"]}
             drone_paths: List[List[List[int]]] = {solution["drone_paths"]}
+            history: List[Tuple[float, bool, int]] = {[(h["solution"]["cost"], h["solution"]["feasible"], h["iteration"]) for h in history]}
+            progress: List[Tuple[float, bool]] = {[(p["solution"]["cost"], p["solution"]["feasible"]) for p in progress]}
+            penalty_coefficients: List[List[float]] = {[p["penalty_coefficients"] for p in progress]}
 
-            _, ax = pyplot.subplots()
+            # End of data region
 
-            for paths in drone_paths:
-                drone_x: List[float] = []
-                drone_y: List[float] = []
-                drone_u: List[float] = []
-                drone_v: List[float] = []
-                for path in paths:
-                    for index in range(len(path) - 1):
-                        current = path[index]
-                        after = path[index + 1]
 
-                        drone_x.append(x[current])
-                        drone_y.append(y[current])
-                        drone_u.append(x[after] - x[current])
-                        drone_v.append(y[after] - y[current])
+            class Namespace(argparse.Namespace):
+                if TYPE_CHECKING:
+                    option: Literal["map", "history", "coeff"]
 
-                ax.quiver(
-                    drone_x,
-                    drone_y,
-                    drone_u,
-                    drone_v,
-                    color="cyan",
-                    angles="xy",
-                    scale_units="xy",
-                    scale=1,
-                    width=0.004,
+
+            def main(namespace: Namespace, /) -> None:
+                _, ax = pyplot.subplots()
+                if namespace.option == "map":
+                    for paths in drone_paths:
+                        drone_x: List[float] = []
+                        drone_y: List[float] = []
+                        drone_u: List[float] = []
+                        drone_v: List[float] = []
+                        for path in paths:
+                            for index in range(len(path) - 1):
+                                current = path[index]
+                                after = path[index + 1]
+
+                                drone_x.append(x[current])
+                                drone_y.append(y[current])
+                                drone_u.append(x[after] - x[current])
+                                drone_v.append(y[after] - y[current])
+
+                        ax.quiver(
+                            drone_x,
+                            drone_y,
+                            drone_u,
+                            drone_v,
+                            color="cyan",
+                            angles="xy",
+                            scale_units="xy",
+                            scale=1,
+                            width=0.004,
+                        )
+
+                    for paths in truck_paths:
+                        truck_x: List[float] = []
+                        truck_y: List[float] = []
+                        truck_u: List[float] = []
+                        truck_v: List[float] = []
+                        for path in paths:
+                            for index in range(len(path) - 1):
+                                current = path[index]
+                                after = path[index + 1]
+
+                                truck_x.append(x[current])
+                                truck_y.append(y[current])
+                                truck_u.append(x[after] - x[current])
+                                truck_v.append(y[after] - y[current])
+
+                        ax.quiver(
+                            truck_x,
+                            truck_y,
+                            truck_u,
+                            truck_v,
+                            color="darkviolet",
+                            angles="xy",
+                            scale_units="xy",
+                            scale=1,
+                            width=0.004,
+                        )
+
+                    ax.scatter((0,), (0,), c="black", label="Depot")
+                    ax.scatter(
+                        [x[index] for index in range(1, 1 + customers_count) if dronable[index]],
+                        [y[index] for index in range(1, 1 + customers_count) if dronable[index]],
+                        c="darkblue",
+                        label="Dronable",
+                    )
+                    ax.scatter(
+                        [x[index] for index in range(1, 1 + customers_count) if not dronable[index]],
+                        [y[index] for index in range(1, 1 + customers_count) if not dronable[index]],
+                        c="red",
+                        label="Truck-only",
+                    )
+
+                    ax.annotate("0", (0, 0))
+                    for index in range(1, 1 + customers_count):
+                        ax.annotate(str(index), (x[index], y[index]))
+
+                    ax.grid(True)
+
+                elif namespace.option == "history":
+                    history_costs: List[float] = []
+                    history_feasible: List[bool] = []
+                    for cost, feasible, iteration in history:
+                        while len(history_costs) <= iteration:
+                            history_costs.append(cost)
+
+                        while len(history_feasible) <= iteration:
+                            history_feasible.append(feasible)
+
+                    while len(history_costs) < len(progress):
+                        history_costs.append(history_costs[-1])
+
+                    while len(history_feasible) < len(progress):
+                        history_feasible.append(history_feasible[-1])
+
+                    pyplot.plot(history_costs, label="History")
+                    pyplot.axhline(y=cost, color="black", linestyle="--", label="Best")
+
+                    pyplot.plot([p[0] for p in progress], label="Progress")
+
+                    feasible_x = [i for i, feasible in enumerate(history_feasible) if feasible]
+                    feasible_y = [history_costs[i] for i in feasible_x]
+                    for iteration, (cost, feasible) in enumerate(progress):
+                        if feasible:
+                            feasible_x.append(iteration)
+                            feasible_y.append(cost)
+
+                    ax.scatter(feasible_x, feasible_y, s=7, c="green", label="Feasible")
+
+                elif namespace.option == "coeff":
+                    ax.set_yscale("log")
+                    for i in range(5):
+                        pyplot.plot([c[i] for c in penalty_coefficients], label="A%d" % i)
+
+                else:
+                    return
+
+                pyplot.legend()
+                pyplot.show()
+                pyplot.close()
+
+
+            if __name__ == "__main__":
+                parser = argparse.ArgumentParser(
+                    description="Plotting script for solution to problem {namespace.problem}",
+                    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                 )
+                parser.add_argument("-o", "--option", default="history", choices=["map", "history", "coeff"], help="plotting option")
 
-            for paths in truck_paths:
-                truck_x: List[float] = []
-                truck_y: List[float] = []
-                truck_u: List[float] = []
-                truck_v: List[float] = []
-                for path in paths:
-                    for index in range(len(path) - 1):
-                        current = path[index]
-                        after = path[index + 1]
+                namespace = Namespace()
+                parser.parse_args(namespace=namespace)
 
-                        truck_x.append(x[current])
-                        truck_y.append(y[current])
-                        truck_u.append(x[after] - x[current])
-                        truck_v.append(y[after] - y[current])
-
-                ax.quiver(
-                    truck_x,
-                    truck_y,
-                    truck_u,
-                    truck_v,
-                    color="darkviolet",
-                    angles="xy",
-                    scale_units="xy",
-                    scale=1,
-                    width=0.004,
-                )
-
-            ax.scatter((0,), (0,), c="black", label="Depot")
-            ax.scatter(
-                [x[index] for index in range(1, 1 + customers_count) if dronable[index]],
-                [y[index] for index in range(1, 1 + customers_count) if dronable[index]],
-                c="darkblue",
-                label="Dronable",
-            )
-            ax.scatter(
-                [x[index] for index in range(1, 1 + customers_count) if not dronable[index]],
-                [y[index] for index in range(1, 1 + customers_count) if not dronable[index]],
-                c="red",
-                label="Truck-only",
-            )
-
-            ax.annotate("0", (0, 0))
-            for index in range(1, 1 + customers_count):
-                ax.annotate(str(index), (x[index], y[index]))
-
-            ax.grid(True)
-
-            pyplot.legend()
-            pyplot.show()
-            pyplot.close()
+                main(namespace)
         """
         code = f"# Auto-generated by {__file__}" + textwrap.dedent(code)
         file.write(code)

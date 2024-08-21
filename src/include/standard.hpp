@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -71,6 +73,16 @@ namespace std
                 stream << ", ";
             }
         }
+    }
+
+    template <typename T, std::size_t N>
+    ostream &operator<<(ostream &stream, const array<T, N> &_v)
+    {
+        stream << "[";
+        __list_elements(stream, _v.begin(), _v.end());
+        stream << "]";
+
+        return stream;
     }
 
     template <typename T>
