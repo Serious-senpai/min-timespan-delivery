@@ -8,7 +8,7 @@ namespace d2d
     class EjectionChain : public Neighborhood<ST, false>
     {
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
             return "Ejection chain";
         }
@@ -25,6 +25,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
@@ -139,7 +140,7 @@ namespace d2d
                                         vehicle_routes_i[_vehicle_i][route_i] = VehicleRoute_i(ri);                                                       \
                                     }                                                                                                                     \
                                                                                                                                                           \
-                                    auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                 \
+                                    auto new_solution = this->construct(parent, truck_routes, drone_routes);                                              \
                                     if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                \
                                     {                                                                                                                     \
                                         result = new_solution;                                                                                            \

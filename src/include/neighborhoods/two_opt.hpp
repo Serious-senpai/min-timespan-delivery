@@ -8,7 +8,7 @@ namespace d2d
     class TwoOpt : public Neighborhood<ST, true>
     {
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
             return "2-opt";
         }
@@ -18,6 +18,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -43,7 +44,7 @@ namespace d2d
                                                                                                                      \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                  \
                                                                                                                      \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                        \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                     \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
                             (result == nullptr || new_solution->cost() < result->cost()))                            \
                         {                                                                                            \
@@ -72,6 +73,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -156,7 +158,7 @@ namespace d2d
                             vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                    \
                         }                                                                                                                                  \
                                                                                                                                                            \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                              \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                                           \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                       \
                             (result == nullptr || new_solution->cost() < result->cost()))                                                                  \
                         {                                                                                                                                  \

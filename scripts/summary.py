@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, List
+from typing_extensions import Any, List
 
 from package import ResultJSON, ROOT
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                 wrap(result["solution"]["truck_paths"]),
                 wrap(result["solution"]["drone_paths"]),
                 str(int(result["solution"]["feasible"])),
-                wrap([s["cost"] for s in result["propagation"]]),
+                wrap([s["solution"]["cost"] for s in result["propagation"]]),
                 str(result["last_improved"]),
                 str(result["real"]),
                 str(result["user"]),

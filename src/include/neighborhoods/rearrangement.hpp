@@ -8,9 +8,9 @@ namespace d2d
     class EdgeRearrangement : public Neighborhood<ST, false>
     {
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
-            return "Ejection chain";
+            return "Rearrangement";
         }
 
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
@@ -25,6 +25,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
@@ -189,7 +190,7 @@ namespace d2d
                                     }                                                                                                                            \
                                 }                                                                                                                                \
                                                                                                                                                                  \
-                                auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                            \
+                                auto new_solution = this->construct(parent, truck_routes, drone_routes);                                                         \
                                 if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                           \
                                 {                                                                                                                                \
                                     result = new_solution;                                                                                                       \

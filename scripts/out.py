@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import os
 import random
 import re
 import string
 import textwrap
-from typing import List, Optional
+from typing_extensions import List, Optional
 
-from package import Problem, ResultJSON, SolutionJSON, ROOT
+from package import Problem, PrettySolutionJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, prettify
 
 
 def random_str(length: int) -> str:
@@ -21,7 +20,7 @@ class Namespace(argparse.Namespace):
     problem: str
 
 
-def read_solution(problem: Problem, *, cost: Optional[float] = None) -> SolutionJSON:
+def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
     if cost is None:
         cost = float(input())
 
@@ -31,21 +30,8 @@ def read_solution(problem: Problem, *, cost: Optional[float] = None) -> Solution
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
 
-    truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
-    drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
-    for paths in itertools.chain(truck_paths, drone_paths):
-        new = True
-        for customer in map(int, input().split()):
-            if customer == 0:
-                if new:
-                    paths.append([0])
-                else:
-                    paths[-1].append(0)
-
-                new = not new
-
-            else:
-                paths[-1].append(customer)
+    truck_paths: List[List[List[int]]] = eval(input())
+    drone_paths: List[List[List[int]]] = eval(input())
 
     feasible = bool(int(input()))
 
@@ -83,11 +69,13 @@ if __name__ == "__main__":
 
     problem = Problem.import_data(namespace.problem)
 
-    solution = read_solution(problem)
+    solution = read_solution()
 
-    propagation: List[SolutionJSON] = []
+    propagation: List[PropagationJSON[SolutionJSON]] = []
     while (cost := float(input())) != -1:
-        propagation.append(read_solution(problem, cost=cost))
+        s = read_solution(cost=cost)
+        label = input()
+        propagation.append({"solution": s, "label": label})
 
     propagation.reverse()
 
@@ -111,7 +99,7 @@ if __name__ == "__main__":
             case "sys":
                 sys = value
 
-    data: ResultJSON = {
+    data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
         "trucks_count": problem.trucks_count,
         "drones_count": problem.drones_count,
@@ -139,12 +127,24 @@ if __name__ == "__main__":
 
     print(f"Generated JSON at {json_output.relative_to(working_dir)}")
 
+    pretty_data: ResultJSON[PrettySolutionJSON] = {
+        **data,
+        "solution": prettify(solution),
+        "propagation": [{"solution": prettify(p["solution"]), "label": p["label"]} for p in propagation],
+    }
+
+    json_output = ROOT / "result" / f"{namespace.problem}-{index}-pretty.json"
+    with json_output.open("w") as file:
+        json.dump(pretty_data, file)
+
+    print(f"Generated pretty JSON at {json_output.relative_to(working_dir)}")
+
     pyplot_output = ROOT / "result" / f"{namespace.problem}-{index}-plot.py"
     with pyplot_output.open("w") as file:
         code = f"""
             from __future__ import annotations
 
-            from typing import List
+            from typing_extensions import List
 
             from matplotlib import pyplot
 

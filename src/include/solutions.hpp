@@ -3,6 +3,7 @@
 #include "bitvector.hpp"
 #include "held_karp.hpp"
 #include "initial.hpp"
+#include "parent.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
 #include "neighborhoods/cross.hpp"
@@ -38,7 +39,7 @@ namespace d2d
 
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
-        std::shared_ptr<Solution> _parent;
+        const std::shared_ptr<ParentInfo<Solution>> _parent;
 
     public:
         /** @brief System working time */
@@ -70,8 +71,10 @@ namespace d2d
 
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<DroneRoute>> &drone_routes)
+            const std::vector<std::vector<DroneRoute>> &drone_routes,
+            const std::shared_ptr<ParentInfo<Solution>> parent)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              _parent(parent),
               working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
@@ -133,7 +136,7 @@ namespace d2d
         }
 
         /** @brief The parent solution propagating this solution in the result tree */
-        std::shared_ptr<Solution> parent() const
+        std::shared_ptr<ParentInfo<Solution>> parent() const
         {
             return _parent;
         }
@@ -472,14 +475,8 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial()
     {
-        auto result = initial_12<Solution, true>();
-        auto r = initial_12<Solution, false>();
-        result = result->cost() < r->cost() ? result : r;
-
-        r = initial_3<Solution>();
-        result = result->cost() < r->cost() ? result : r;
-
-        r = initial_4<Solution>();
+        auto result = initial_3<Solution>();
+        auto r = initial_4<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
         return result;
@@ -530,7 +527,6 @@ namespace d2d
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
-                    ptr->_parent = result;
                     result = ptr;
                     if (last_improved_ptr != nullptr)
                     {
@@ -550,7 +546,6 @@ namespace d2d
                 current = neighbor;
                 if (neighbor->feasible && neighbor->cost() < result->cost())
                 {
-                    neighbor->_parent = result;
                     result = neighbor;
                     if (last_improved_ptr != nullptr)
                     {
@@ -593,7 +588,6 @@ namespace d2d
         }
 
         auto post_opt = result->post_optimization();
-        post_opt->_parent = result;
         return post_opt;
     }
 }
