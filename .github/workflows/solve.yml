@@ -149,7 +149,13 @@ jobs:
       - name: Summarize results
         run: python scripts/summary.py
 
-      - name: Upload summary
+      - name: Upload summary table
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-csv
+          path: result/summary.csv
+
+      - name: Upload summary and all results
         uses: actions/upload-artifact@v4
         with:
           name: summary
