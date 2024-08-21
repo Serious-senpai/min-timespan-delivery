@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, List
 
-from package import SolutionJSON, ROOT
+from package import ResultJSON, ROOT
 
 
 def wrap(value: Any) -> str:
@@ -13,45 +13,45 @@ def wrap(value: Any) -> str:
 if __name__ == "__main__":
     ROOT.joinpath("result", "summary.json").unlink(missing_ok=True)
 
-    solutions: List[SolutionJSON] = []
+    results: List[ResultJSON] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
         if file.is_file() and file.name.endswith(".json"):
             with file.open("r") as f:
                 data = json.load(f)
 
-            solution = SolutionJSON(**data)  # type: ignore  # will throw at runtime if fields are incompatible
-            solutions.append(solution)
+            result = ResultJSON(**data)  # type: ignore  # will throw at runtime if fields are incompatible
+            results.append(result)
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
         csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Propagation costs,Last improved,real,user,sys\n")
-        for row, solution in enumerate(solutions, start=2):
+        for row, result in enumerate(results, start=2):
             segments = [
-                wrap(solution["problem"]),
+                wrap(result["problem"]),
                 wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
-                str(solution["trucks_count"]),
-                str(solution["drones_count"]),
-                str(solution["iterations"]),
-                str(solution["tabu_size"]),
-                solution["config"],
-                solution["speed_type"],
-                solution["range_type"],
-                str(solution["cost"]),
-                str(solution["capacity_violation"]),
-                str(solution["drone_energy_violation"]),
-                str(solution["waiting_time_violation"]),
-                str(solution["fixed_time_violation"]),
-                str(solution["fixed_distance_violation"]),
-                wrap(solution["truck_paths"]),
-                wrap(solution["drone_paths"]),
-                str(int(solution["feasible"])),
-                wrap(solution["costs"]),
-                str(solution["last_improved"]),
-                str(solution["real"]),
-                str(solution["user"]),
-                str(solution["sys"]),
+                str(result["trucks_count"]),
+                str(result["drones_count"]),
+                str(result["iterations"]),
+                str(result["tabu_size"]),
+                result["config"],
+                result["speed_type"],
+                result["range_type"],
+                str(result["solution"]["cost"]),
+                str(result["solution"]["capacity_violation"]),
+                str(result["solution"]["drone_energy_violation"]),
+                str(result["solution"]["waiting_time_violation"]),
+                str(result["solution"]["fixed_time_violation"]),
+                str(result["solution"]["fixed_distance_violation"]),
+                wrap(result["solution"]["truck_paths"]),
+                wrap(result["solution"]["drone_paths"]),
+                str(int(result["solution"]["feasible"])),
+                wrap([s["cost"] for s in result["propagation"]]),
+                str(result["last_improved"]),
+                str(result["real"]),
+                str(result["user"]),
+                str(result["sys"]),
             ]
             csv.write(",".join(segments) + "\n")
 
     with ROOT.joinpath("result", "summary.json").open("w") as f:
-        json.dump(solutions, f, indent=4)
+        json.dump(results, f, indent=4)

@@ -3,18 +3,10 @@ from __future__ import annotations
 from typing import List, TypedDict
 
 
-__all__ = ("SolutionJSON",)
+__all__ = ("SolutionJSON", "ResultJSON")
 
 
 class SolutionJSON(TypedDict):
-    problem: str
-    trucks_count: int
-    drones_count: int
-    iterations: int
-    tabu_size: int
-    config: str
-    speed_type: str
-    range_type: str
     cost: float
     capacity_violation: float
     drone_energy_violation: float
@@ -24,7 +16,19 @@ class SolutionJSON(TypedDict):
     truck_paths: List[List[List[int]]]
     drone_paths: List[List[List[int]]]
     feasible: bool
-    costs: List[float]
+
+
+class ResultJSON(TypedDict):
+    problem: str
+    trucks_count: int
+    drones_count: int
+    iterations: int
+    tabu_size: int
+    config: str
+    speed_type: str
+    range_type: str
+    solution: SolutionJSON
+    propagation: List[SolutionJSON]
     last_improved: int
     real: float
     user: float

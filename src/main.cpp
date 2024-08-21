@@ -7,8 +7,15 @@ void debug_display(std::shared_ptr<d2d::Solution> ptr)
     std::cout << ptr->cost() << std::endl;
 }
 
-void print_routes(std::shared_ptr<d2d::Solution> ptr)
+void print_solution(std::shared_ptr<d2d::Solution> ptr)
 {
+    std::cout << ptr->cost() << std::endl;
+    std::cout << ptr->capacity_violation << std::endl;
+    std::cout << ptr->drone_energy_violation << std::endl;
+    std::cout << ptr->waiting_time_violation << std::endl;
+    std::cout << ptr->fixed_time_violation << std::endl;
+    std::cout << ptr->fixed_distance_violation << std::endl;
+
 #define PRINT_ROUTES(vehicle_routes)                     \
     {                                                    \
         for (auto &routes : ptr->vehicle_routes)         \
@@ -28,6 +35,8 @@ void print_routes(std::shared_ptr<d2d::Solution> ptr)
     PRINT_ROUTES(drone_routes);
 
 #undef PRINT_ROUTES
+
+    std::cout << ptr->feasible << std::endl;
 }
 
 void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improved)
@@ -56,30 +65,23 @@ void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improve
     std::cout << (problem->drone->speed_type == d2d::StatsType::low ? "low" : "high") << std::endl;
     std::cout << (problem->drone->range_type == d2d::StatsType::low ? "low" : "high") << std::endl;
 
-    std::cout << ptr->cost() << std::endl;
-    std::cout << ptr->capacity_violation << std::endl;
-    std::cout << ptr->drone_energy_violation << std::endl;
-    std::cout << ptr->waiting_time_violation << std::endl;
-    std::cout << ptr->fixed_time_violation << std::endl;
-    std::cout << ptr->fixed_distance_violation << std::endl;
+    print_solution(ptr);
 
-    print_routes(ptr);
     std::shared_ptr<d2d::Solution> parent = ptr->parent();
     while (parent != nullptr)
     {
-        std::cout << parent->cost() << std::endl;
-        print_routes(parent);
+        print_solution(parent);
         parent = parent->parent();
     }
-    std::cout << -1 << std::endl; // Signal the end of propagation chain
+    std::cout << -1 << std::endl; // cost = -1. Signal the end of propagation chain.
 
-    std::cout << ptr->feasible << std::endl;
     std::cout << last_improved << std::endl;
 }
 
 int main()
 {
     std::size_t last_improved;
+    std::stringstream logger;
     auto ptr = d2d::Solution::tabu_search(&last_improved);
 
 #ifdef DEBUG

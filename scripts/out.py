@@ -8,9 +8,9 @@ import random
 import re
 import string
 import textwrap
-from typing import List, Tuple
+from typing import List, Optional
 
-from package import Problem, SolutionJSON, ROOT
+from package import Problem, ResultJSON, SolutionJSON, ROOT
 
 
 def random_str(length: int) -> str:
@@ -21,7 +21,16 @@ class Namespace(argparse.Namespace):
     problem: str
 
 
-def read_routes(problem: Problem) -> Tuple[List[List[List[int]]], List[List[List[int]]]]:
+def read_solution(problem: Problem, *, cost: Optional[float] = None) -> SolutionJSON:
+    if cost is None:
+        cost = float(input())
+
+    capacity_violation = float(input())
+    drone_energy_violation = float(input())
+    waiting_time_violation = float(input())
+    fixed_time_violation = float(input())
+    fixed_distance_violation = float(input())
+
     truck_paths: List[List[List[int]]] = [[] for _ in range(problem.trucks_count)]
     drone_paths: List[List[List[int]]] = [[] for _ in range(problem.drones_count)]
     for paths in itertools.chain(truck_paths, drone_paths):
@@ -38,7 +47,19 @@ def read_routes(problem: Problem) -> Tuple[List[List[List[int]]], List[List[List
             else:
                 paths[-1].append(customer)
 
-    return truck_paths, drone_paths
+    feasible = bool(int(input()))
+
+    return {
+        "cost": cost,
+        "capacity_violation": capacity_violation,
+        "drone_energy_violation": drone_energy_violation,
+        "waiting_time_violation": waiting_time_violation,
+        "fixed_time_violation": fixed_time_violation,
+        "fixed_distance_violation": fixed_distance_violation,
+        "truck_paths": truck_paths,
+        "drone_paths": drone_paths,
+        "feasible": feasible,
+    }
 
 
 parser = argparse.ArgumentParser(
@@ -62,24 +83,14 @@ if __name__ == "__main__":
 
     problem = Problem.import_data(namespace.problem)
 
-    cost = float(input())
-    capacity_violation = float(input())
-    drone_energy_violation = float(input())
-    waiting_time_violation = float(input())
-    fixed_time_violation = float(input())
-    fixed_distance_violation = float(input())
+    solution = read_solution(problem)
 
-    truck_paths, drone_paths = read_routes(problem)
-    costs: List[float] = []
-    chain: List[Tuple[List[List[List[int]]], List[List[List[int]]]]] = []
-    while (_cost := float(input())) != -1:
-        costs.append(_cost)
-        chain.append(read_routes(problem))
+    propagation: List[SolutionJSON] = []
+    while (cost := float(input())) != -1:
+        propagation.append(read_solution(problem, cost=cost))
 
-    costs.reverse()
-    chain.reverse()
+    propagation.reverse()
 
-    feasible = bool(int(input()))
     last_improved = int(input())
     real = user = sys = -1.0
 
@@ -100,7 +111,7 @@ if __name__ == "__main__":
             case "sys":
                 sys = value
 
-    data: SolutionJSON = {
+    data: ResultJSON = {
         "problem": namespace.problem,
         "trucks_count": problem.trucks_count,
         "drones_count": problem.drones_count,
@@ -109,16 +120,8 @@ if __name__ == "__main__":
         "config": config,
         "speed_type": speed_type,
         "range_type": range_type,
-        "cost": cost,
-        "capacity_violation": capacity_violation,
-        "drone_energy_violation": drone_energy_violation,
-        "waiting_time_violation": waiting_time_violation,
-        "fixed_time_violation": fixed_time_violation,
-        "fixed_distance_violation": fixed_distance_violation,
-        "truck_paths": truck_paths,
-        "drone_paths": drone_paths,
-        "feasible": feasible,
-        "costs": costs,
+        "solution": solution,
+        "propagation": propagation,
         "last_improved": last_improved,
         "real": real,
         "user": user,
@@ -151,8 +154,8 @@ if __name__ == "__main__":
             dronable = {problem.dronable}
             customers_count = {problem.customers_count}
 
-            truck_paths: List[List[List[int]]] = {truck_paths}
-            drone_paths: List[List[List[int]]] = {drone_paths}
+            truck_paths: List[List[List[int]]] = {solution["truck_paths"]}
+            drone_paths: List[List[List[int]]] = {solution["drone_paths"]}
 
             _, ax = pyplot.subplots()
 
