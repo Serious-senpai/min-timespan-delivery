@@ -3,6 +3,7 @@
 void print_solution(std::shared_ptr<d2d::Solution> ptr)
 {
     std::cout << ptr->cost() << std::endl;
+    std::cout << ptr->working_time << std::endl;
     std::cout << ptr->capacity_violation << std::endl;
     std::cout << ptr->drone_energy_violation << std::endl;
     std::cout << ptr->waiting_time_violation << std::endl;

@@ -36,7 +36,7 @@ namespace d2d
     };
 
     template <typename ST>
-    std::shared_ptr<ST> initial_3()
+    std::shared_ptr<ST> initial_1()
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
@@ -105,7 +105,7 @@ namespace d2d
     }
 
     template <typename ST>
-    std::shared_ptr<ST> initial_4()
+    std::shared_ptr<ST> initial_2()
     {
         auto problem = Problem::get_instance();
 

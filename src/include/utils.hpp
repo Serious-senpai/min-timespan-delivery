@@ -2,6 +2,8 @@
 
 #include "format.hpp"
 
+#define TOLERANCE 1e-6
+
 namespace utils
 {
     class PerformanceBenchmark
@@ -95,10 +97,10 @@ namespace utils
         return first == second;
     }
 
-    template <typename T1, typename T2, std::enable_if_t<std::conjunction_v<std::is_floating_point<T1>, std::is_floating_point<T2>>, bool> = true>
-    bool approximate(const T1 &first, const T2 &second)
+    template <typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
+    bool approximate(const T &first, const T &second)
     {
-        return abs(first - second) < 1.0e-6;
+        return abs(first - second) < TOLERANCE;
     }
 
     template <typename T>

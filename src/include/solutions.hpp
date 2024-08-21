@@ -6,6 +6,7 @@
 #include "parent.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
+#include "wrapper.hpp"
 #include "neighborhoods/cross.hpp"
 #include "neighborhoods/ejection_chain.hpp"
 #include "neighborhoods/move_xy.hpp"
@@ -142,7 +143,7 @@ namespace d2d
         }
 
         /** @brief Objective function evaluation, including penalties. */
-        double cost() const
+        utils::FloatingPointWrapper<double> cost() const
         {
             double result = working_time;
             result += A1 * drone_energy_violation;
@@ -475,8 +476,8 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial()
     {
-        auto result = initial_3<Solution>();
-        auto r = initial_4<Solution>();
+        auto result = initial_1<Solution>();
+        auto r = initial_2<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
         return result;
