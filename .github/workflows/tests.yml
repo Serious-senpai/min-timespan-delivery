@@ -80,6 +80,9 @@ jobs:
           name: executable-${{ matrix.os }}
           path: build/
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Install gdb (ubuntu-latest)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |

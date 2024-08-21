@@ -77,6 +77,9 @@ jobs:
           name: executable
           path: build/
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Initialize working space
         run: |
           mkdir result
