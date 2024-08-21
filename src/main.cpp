@@ -81,7 +81,6 @@ void display(std::shared_ptr<d2d::Solution> ptr, const std::size_t &last_improve
 int main()
 {
     std::size_t last_improved;
-    std::stringstream logger;
     auto ptr = d2d::Solution::tabu_search(&last_improved);
 
 #ifdef DEBUG
