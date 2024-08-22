@@ -279,6 +279,8 @@ namespace d2d
         static std::shared_ptr<Solution> initial();
         static std::shared_ptr<Solution> tabu_search(
             std::size_t *last_improved_ptr,
+            std::size_t *iterations_ptr,
+            std::size_t *max_elite_size_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr);
@@ -489,6 +491,8 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::tabu_search(
         std::size_t *last_improved_ptr,
+        std::size_t *iterations_ptr,
+        std::size_t *max_elite_size_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr)
@@ -500,39 +504,59 @@ namespace d2d
         {
             *last_improved_ptr = 0;
         }
+        if (iterations_ptr != nullptr)
+        {
+            *iterations_ptr = 0;
+        }
+        if (max_elite_size_ptr != nullptr)
+        {
+            *max_elite_size_ptr = 0;
+        }
 
         std::size_t neighborhood = 0;
-        for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
+        std::vector<std::shared_ptr<Solution>> elite = {result};
+        auto insert_elite = [&max_elite_size_ptr, &problem, &elite, &result]()
+        {
+            std::sort(
+                elite.begin(), elite.end(),
+                [&result](const std::shared_ptr<Solution> &first, const std::shared_ptr<Solution> &second)
+                {
+                    return result->hamming_distance(first) < result->hamming_distance(second);
+                });
+
+            if (elite.size() == 10 || (!elite.empty() && result->hamming_distance(elite.front()) <= problem->hamming_distance_factor * problem->customers.size()))
+            {
+                elite.erase(elite.begin());
+            }
+            elite.push_back(result);
+
+            if (max_elite_size_ptr != nullptr)
+            {
+                *max_elite_size_ptr = std::max(*max_elite_size_ptr, elite.size());
+            }
+        };
+
+        for (std::size_t iteration = 0;; iteration++)
         {
             if (problem->verbose)
             {
-                std::string format_string = "\rIteration #%lu/%lu(";
+                std::string format_string = "\rIteration #%lu(";
                 format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
                 format_string += "/";
                 format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
                 format_string += ") ";
 
-                auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
+                auto prefix = utils::format(format_string, iteration + 1, current->cost(), result->cost());
                 std::cerr << prefix;
-                try
-                {
-                    auto width = utils::get_console_size(false).first;
-                    const std::size_t excess = 10;
-                    if (prefix.size() + excess < width)
-                    {
-                        auto total = width - prefix.size() - excess,
-                             cover = (iteration * total + problem->iterations - 1) / problem->iterations;
-                        std::cerr << '[' << std::string(cover, '#') << std::string(total - cover, ' ') << ']';
-                    }
-                }
-                catch (std::runtime_error &)
-                {
-                    // pass
-                }
                 std::cerr << std::flush;
             }
 
-            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](std::shared_ptr<Solution> ptr)
+            if (iterations_ptr != nullptr)
+            {
+                *iterations_ptr = iteration + 1;
+            }
+
+            const auto aspiration_criteria = [&last_improved_ptr, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
@@ -541,6 +565,8 @@ namespace d2d
                     {
                         *last_improved_ptr = iteration;
                     }
+
+                    insert_elite();
 
                     return true;
                 }
@@ -560,6 +586,8 @@ namespace d2d
                     {
                         *last_improved_ptr = iteration;
                     }
+
+                    insert_elite();
                 }
             }
 
@@ -570,6 +598,18 @@ namespace d2d
             else
             {
                 neighborhood = 0;
+            }
+
+            if (last_improved_ptr != nullptr && iteration != *last_improved_ptr && (iteration - *last_improved_ptr) % problem->reset_after == 0)
+            {
+                if (elite.empty())
+                {
+                    break;
+                }
+
+                auto iter = utils::random_element(elite);
+                current = *iter;
+                elite.erase(iter);
             }
 
             const auto violation_update = [](double &A, const double &violation)
