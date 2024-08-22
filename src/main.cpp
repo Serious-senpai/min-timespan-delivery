@@ -20,10 +20,10 @@ void display(
     std::shared_ptr<d2d::Solution> ptr,
     const std::size_t &last_improved,
     const std::size_t &iterations,
-    const std::size_t &max_elite_size,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
-    const std::vector<std::array<double, 5>> &coefficients)
+    const std::vector<std::array<double, 5>> &coefficients,
+    const std::vector<std::size_t> &elite_set_size)
 {
     auto problem = d2d::Problem::get_instance();
     std::cout << iterations << "\n";
@@ -86,12 +86,13 @@ void display(
 
 int main()
 {
-    std::size_t last_improved, iterations, max_elite_size;
+    std::size_t last_improved, iterations;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    auto ptr = d2d::Solution::tabu_search(&last_improved, &iterations, &max_elite_size, &history, &progress, &coefficients);
+    std::vector<std::size_t> elite_set_size;
+    auto ptr = d2d::Solution::tabu_search(&last_improved, &iterations, &history, &progress, &coefficients, &elite_set_size);
 
-    display(ptr, last_improved, iterations, max_elite_size, history, progress, coefficients);
+    display(ptr, last_improved, iterations, history, progress, coefficients, elite_set_size);
 
     return 0;
 }

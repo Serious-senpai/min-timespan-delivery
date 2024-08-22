@@ -280,10 +280,10 @@ namespace d2d
         static std::shared_ptr<Solution> tabu_search(
             std::size_t *last_improved_ptr,
             std::size_t *iterations_ptr,
-            std::size_t *max_elite_size_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
-            std::vector<std::array<double, 5>> *coefficients_ptr);
+            std::vector<std::array<double, 5>> *coefficients_ptr,
+            std::vector<std::size_t> *elite_size_ptr);
     };
 
     double Solution::A1 = 1;
@@ -492,10 +492,10 @@ namespace d2d
     std::shared_ptr<Solution> Solution::tabu_search(
         std::size_t *last_improved_ptr,
         std::size_t *iterations_ptr,
-        std::size_t *max_elite_size_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
-        std::vector<std::array<double, 5>> *coefficients_ptr)
+        std::vector<std::array<double, 5>> *coefficients_ptr,
+        std::vector<std::size_t> *elite_size_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -508,14 +508,10 @@ namespace d2d
         {
             *iterations_ptr = 0;
         }
-        if (max_elite_size_ptr != nullptr)
-        {
-            *max_elite_size_ptr = 0;
-        }
 
         std::size_t neighborhood = 0;
         std::vector<std::shared_ptr<Solution>> elite = {result};
-        auto insert_elite = [&max_elite_size_ptr, &problem, &elite, &result]()
+        auto insert_elite = [&problem, &elite, &result]()
         {
             std::sort(
                 elite.begin(), elite.end(),
@@ -529,11 +525,6 @@ namespace d2d
                 elite.erase(elite.begin());
             }
             elite.push_back(result);
-
-            if (max_elite_size_ptr != nullptr)
-            {
-                *max_elite_size_ptr = std::max(*max_elite_size_ptr, elite.size());
-            }
         };
 
         for (std::size_t iteration = 0;; iteration++)
@@ -643,6 +634,11 @@ namespace d2d
             if (coefficients_ptr != nullptr)
             {
                 coefficients_ptr->push_back({A1, A2, A3, A4, A5});
+            }
+
+            if (elite_size_ptr != nullptr)
+            {
+                elite_size_ptr->push_back(elite.size());
             }
         }
 
