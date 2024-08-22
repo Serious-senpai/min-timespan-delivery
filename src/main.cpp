@@ -82,6 +82,7 @@ void display(
     std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
     std::cout << last_improved << "\n";
+    std::cout << elite_set_size << "\n";
 }
 
 int main()

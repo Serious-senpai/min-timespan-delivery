@@ -95,6 +95,7 @@ if __name__ == "__main__":
         progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
 
     last_improved = int(input())
+    elite_set_size: List[int] = eval(input())
     real = user = sys = -1.0
 
     for _ in range(3):
@@ -128,6 +129,7 @@ if __name__ == "__main__":
         "history": history,
         "progress": progress,
         "last_improved": last_improved,
+        "elite_set_size": elite_set_size,
         "real": real,
         "user": user,
         "sys": sys,
