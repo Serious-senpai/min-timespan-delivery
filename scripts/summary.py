@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing_extensions import Any, List
 
-from package import ResultJSON, ROOT
+from package import ResultJSON, SolutionJSON, ROOT
 
 
 def wrap(value: Any) -> str:
@@ -13,13 +13,13 @@ def wrap(value: Any) -> str:
 if __name__ == "__main__":
     ROOT.joinpath("result", "summary.json").unlink(missing_ok=True)
 
-    results: List[ResultJSON] = []
+    results: List[ResultJSON[SolutionJSON]] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
-        if file.is_file() and file.name.endswith(".json"):
+        if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
             with file.open("r") as f:
                 data = json.load(f)
 
-            result = ResultJSON(**data)  # type: ignore  # will throw at runtime if fields are incompatible
+            result = ResultJSON[SolutionJSON](**data)  # type: ignore  # will throw at runtime if fields are incompatible
             results.append(result)
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
