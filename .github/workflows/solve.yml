@@ -27,6 +27,14 @@ jobs:
           key: ALGLIB-ubuntu-latest-${{ hashFiles('extern/alglib-cpp/**') }}
           path: build/*.o
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Compile ALGLIB
         if: ${{ steps.alglib-cache.outputs.cache-hit != 'true' }}
         run: scripts/build.sh alglib
@@ -76,6 +84,9 @@ jobs:
         with:
           name: executable
           path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Initialize working space
         run: |
@@ -132,10 +143,19 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Summarize results
         run: python scripts/summary.py
 
-      - name: Upload summary
+      - name: Upload summary table
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-csv
+          path: result/summary.csv
+
+      - name: Upload summary and all results
         uses: actions/upload-artifact@v4
         with:
           name: summary

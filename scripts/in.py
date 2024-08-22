@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Literal, Tuple, Union, TYPE_CHECKING
+from typing_extensions import Literal, Tuple, Union, TYPE_CHECKING
 
 from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig
 

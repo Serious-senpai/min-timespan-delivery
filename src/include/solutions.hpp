@@ -3,8 +3,10 @@
 #include "bitvector.hpp"
 #include "held_karp.hpp"
 #include "initial.hpp"
+#include "parent.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
+#include "wrapper.hpp"
 #include "neighborhoods/cross.hpp"
 #include "neighborhoods/ejection_chain.hpp"
 #include "neighborhoods/move_xy.hpp"
@@ -38,6 +40,8 @@ namespace d2d
 
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
+        const std::shared_ptr<ParentInfo<Solution>> _parent;
+
     public:
         /** @brief System working time */
         const double working_time;
@@ -68,8 +72,10 @@ namespace d2d
 
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<DroneRoute>> &drone_routes)
+            const std::vector<std::vector<DroneRoute>> &drone_routes,
+            const std::shared_ptr<ParentInfo<Solution>> parent)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
+              _parent(parent),
               working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
@@ -130,8 +136,14 @@ namespace d2d
 #endif
         }
 
+        /** @brief The parent solution propagating this solution in the result tree */
+        std::shared_ptr<ParentInfo<Solution>> parent() const
+        {
+            return _parent;
+        }
+
         /** @brief Objective function evaluation, including penalties. */
-        double cost() const
+        utils::FloatingPointWrapper<double> cost() const
         {
             double result = working_time;
             result += A1 * drone_energy_violation;
@@ -188,6 +200,9 @@ namespace d2d
 
         std::shared_ptr<Solution> post_optimization()
         {
+            auto problem = Problem::get_instance();
+            std::size_t iteration = 0;
+
             std::vector<std::shared_ptr<BaseNeighborhood<Solution>>> inter_route, intra_route;
             for (auto &neighborhood : neighborhoods)
             {
@@ -216,6 +231,11 @@ namespace d2d
                 std::shuffle(inter_route.begin(), inter_route.end(), utils::rng);
                 for (auto &neighborhood : inter_route)
                 {
+                    if (problem->verbose)
+                    {
+                        std::cerr << utils::format("\rPost-optimize #%lu(%.2lf)", ++iteration, result->cost()) << std::flush;
+                    }
+
                     auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
                     if (ptr != nullptr)
                     {
@@ -233,6 +253,11 @@ namespace d2d
                 std::shuffle(intra_route.begin(), intra_route.end(), utils::rng);
                 for (auto &neighborhood : intra_route)
                 {
+                    if (problem->verbose)
+                    {
+                        std::cerr << utils::format("\rPost-optimize #%lu(%.2lf)", ++iteration, result->cost()) << std::flush;
+                    }
+
                     auto ptr = std::dynamic_pointer_cast<Neighborhood<Solution, true>>(neighborhood);
                     if (ptr != nullptr)
                     {
@@ -243,11 +268,20 @@ namespace d2d
                 }
             }
 
+            if (problem->verbose)
+            {
+                std::cerr << std::endl;
+            }
+
             return result;
         }
 
         static std::shared_ptr<Solution> initial();
-        static std::shared_ptr<Solution> tabu_search(std::size_t *last_improved_ptr);
+        static std::shared_ptr<Solution> tabu_search(
+            std::size_t *last_improved_ptr,
+            std::vector<std::shared_ptr<Solution>> *history_ptr,
+            std::vector<std::shared_ptr<Solution>> *progress_ptr,
+            std::vector<std::array<double, 5>> *coefficients_ptr);
     };
 
     double Solution::A1 = 1;
@@ -446,20 +480,18 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial()
     {
-        auto result = initial_12<Solution, true>();
-        auto r = initial_12<Solution, false>();
-        result = result->cost() < r->cost() ? result : r;
-
-        r = initial_3<Solution>();
-        result = result->cost() < r->cost() ? result : r;
-
-        r = initial_4<Solution>();
+        auto result = initial_1<Solution>();
+        auto r = initial_2<Solution>();
         result = result->cost() < r->cost() ? result : r;
 
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::tabu_search(std::size_t *last_improved_ptr)
+    std::shared_ptr<Solution> Solution::tabu_search(
+        std::size_t *last_improved_ptr,
+        std::vector<std::shared_ptr<Solution>> *history_ptr,
+        std::vector<std::shared_ptr<Solution>> *progress_ptr,
+        std::vector<std::array<double, 5>> *coefficients_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -528,17 +560,6 @@ namespace d2d
                     {
                         *last_improved_ptr = iteration;
                     }
-
-                    for (auto &neighborhood : neighborhoods)
-                    {
-                        auto neighbor = neighborhood->move(current, aspiration_criteria);
-                        if (neighbor != nullptr && neighbor->feasible && neighbor->cost() < result->cost())
-                        {
-                            result = neighbor;
-                        }
-                    }
-
-                    current = result;
                 }
             }
 
@@ -568,6 +589,21 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
             violation_update(A5, current->fixed_distance_violation);
+
+            if (history_ptr != nullptr)
+            {
+                history_ptr->push_back(result);
+            }
+
+            if (progress_ptr != nullptr)
+            {
+                progress_ptr->push_back(current);
+            }
+
+            if (coefficients_ptr != nullptr)
+            {
+                coefficients_ptr->push_back({A1, A2, A3, A4, A5});
+            }
         }
 
         if (problem->verbose)
@@ -575,6 +611,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        return result->post_optimization();
+        auto post_opt = result->post_optimization();
+        return post_opt;
     }
 }

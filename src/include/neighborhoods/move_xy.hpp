@@ -10,7 +10,7 @@ namespace d2d
         static_assert(X >= Y && X != 0);
 
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
             return utils::format("Move (%d, %d)", X, Y);
         }
@@ -20,6 +20,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -115,11 +116,11 @@ namespace d2d
                             vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                \
                         }                                                                                                              \
                                                                                                                                        \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                          \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                       \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                   \
                             (result == nullptr || new_solution->cost() < result->cost()))                                              \
                         {                                                                                                              \
-                            result.swap(new_solution);                                                                                 \
+                            result = new_solution;                                                                                     \
                             tabu_pair = std::make_pair(customers_i[i], customers_j[j]);                                                \
                         }                                                                                                              \
                                                                                                                                        \
@@ -229,11 +230,11 @@ namespace d2d
                             drone_routes[vehicle_j - problem->trucks_count].push_back(DroneRoute(detached));              \
                         }                                                                                                 \
                                                                                                                           \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                             \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                          \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], 0)) &&                     \
                             (result == nullptr || new_solution->cost() < result->cost()))                                 \
                         {                                                                                                 \
-                            result.swap(new_solution);                                                                    \
+                            result = new_solution;                                                                        \
                             tabu_pair = std::make_pair(customers[i], 0);                                                  \
                         }                                                                                                 \
                                                                                                                           \
@@ -279,6 +280,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -312,11 +314,11 @@ namespace d2d
                         using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                             \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                                   \
                                                                                                                                       \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                         \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                      \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&                      \
                             (result == nullptr || new_solution->cost() < result->cost()))                                             \
                         {                                                                                                             \
-                            result.swap(new_solution);                                                                                \
+                            result = new_solution;                                                                                    \
                             tabu_pair = std::make_pair(customers[i], customers[j]);                                                   \
                         }                                                                                                             \
                                                                                                                                       \
@@ -351,6 +353,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -375,11 +378,11 @@ namespace d2d
                         using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                         \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                               \
                                                                                                                                   \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                     \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                  \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&                  \
                             (result == nullptr || new_solution->cost() < result->cost()))                                         \
                         {                                                                                                         \
-                            result.swap(new_solution);                                                                            \
+                            result = new_solution;                                                                                \
                             tabu_pair = std::make_pair(customers[i], customers[j]);                                               \
                         }                                                                                                         \
                                                                                                                                   \
@@ -396,11 +399,11 @@ namespace d2d
                         using VehicleRoute = std::remove_cvref_t<decltype(vehicle_routes[index][route])>;                         \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                               \
                                                                                                                                   \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                     \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                  \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&                  \
                             (result == nullptr || new_solution->cost() < result->cost()))                                         \
                         {                                                                                                         \
-                            result.swap(new_solution);                                                                            \
+                            result = new_solution;                                                                                \
                             tabu_pair = std::make_pair(customers[i], customers[j]);                                               \
                         }                                                                                                         \
                                                                                                                                   \

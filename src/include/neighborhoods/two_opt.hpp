@@ -8,7 +8,7 @@ namespace d2d
     class TwoOpt : public Neighborhood<ST, true>
     {
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
             return "2-opt";
         }
@@ -18,6 +18,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -43,11 +44,11 @@ namespace d2d
                                                                                                                      \
                         vehicle_routes[index][route] = VehicleRoute(new_customers);                                  \
                                                                                                                      \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                        \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                     \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) && \
                             (result == nullptr || new_solution->cost() < result->cost()))                            \
                         {                                                                                            \
-                            result.swap(new_solution);                                                               \
+                            result = new_solution;                                                                   \
                             tabu_pair = std::make_pair(customers[i - 1], customers[j]);                              \
                         }                                                                                            \
                                                                                                                      \
@@ -72,6 +73,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
             std::pair<std::size_t, std::size_t> tabu_pair;
 
@@ -102,20 +104,21 @@ namespace d2d
                 using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                               \
                 using VehicleRoute_j = std::remove_cvref_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                               \
                                                                                                                                                            \
+                if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                              \
+                {                                                                                                                                          \
+                    if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                   \
+                    {                                                                                                                                      \
+                        continue;                                                                                                                          \
+                    }                                                                                                                                      \
+                }                                                                                                                                          \
+                                                                                                                                                           \
                 const std::vector<std::size_t> &customers_i = solution->vehicle_routes_i[_vehicle_i][route_i].customers();                                 \
                 const std::vector<std::size_t> &customers_j = solution->vehicle_routes_j[_vehicle_j][route_j].customers();                                 \
+                                                                                                                                                           \
                 for (std::size_t i = 0; i + 1 < customers_i.size(); i++)                                                                                   \
                 {                                                                                                                                          \
                     for (std::size_t j = 0; j + 1 < customers_j.size(); j++)                                                                               \
                     {                                                                                                                                      \
-                        if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                      \
-                        {                                                                                                                                  \
-                            if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                           \
-                            {                                                                                                                              \
-                                continue;                                                                                                                  \
-                            }                                                                                                                              \
-                        }                                                                                                                                  \
-                                                                                                                                                           \
                         std::vector<std::size_t> ri(customers_i.begin(), customers_i.begin() + (i + 1)),                                                   \
                             rj(customers_j.begin(), customers_j.begin() + (j + 1));                                                                        \
                                                                                                                                                            \
@@ -155,11 +158,11 @@ namespace d2d
                             vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                    \
                         }                                                                                                                                  \
                                                                                                                                                            \
-                        auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                              \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                                           \
                         if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&                                       \
                             (result == nullptr || new_solution->cost() < result->cost()))                                                                  \
                         {                                                                                                                                  \
-                            result.swap(new_solution);                                                                                                     \
+                            result = new_solution;                                                                                                         \
                             tabu_pair = std::make_pair(customers_i[i], customers_j[j]);                                                                    \
                         }                                                                                                                                  \
                                                                                                                                                            \

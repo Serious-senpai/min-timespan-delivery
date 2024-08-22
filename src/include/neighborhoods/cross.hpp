@@ -8,7 +8,7 @@ namespace d2d
     class CrossExchange : public Neighborhood<ST, false>
     {
     public:
-        std::string performance_message() const override
+        std::string label() const override
         {
             return "CROSS-exchange";
         }
@@ -25,6 +25,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
+            auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
@@ -45,8 +46,17 @@ namespace d2d
                 using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes_i[_vehicle_i][route_i])>;                                                              \
                 using VehicleRoute_j = std::remove_cvref_t<decltype(vehicle_routes_j[_vehicle_j][route_j])>;                                                              \
                                                                                                                                                                           \
+                if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                                             \
+                {                                                                                                                                                         \
+                    if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                                  \
+                    {                                                                                                                                                     \
+                        continue;                                                                                                                                         \
+                    }                                                                                                                                                     \
+                }                                                                                                                                                         \
+                                                                                                                                                                          \
                 const std::vector<std::size_t> &customers_i = solution->vehicle_routes_i[_vehicle_i][route_i].customers();                                                \
                 const std::vector<std::size_t> &customers_j = solution->vehicle_routes_j[_vehicle_j][route_j].customers();                                                \
+                                                                                                                                                                          \
                 for (std::size_t i = 1; i + 1 < customers_i.size(); i++)                                                                                                  \
                 {                                                                                                                                                         \
                     for (std::size_t j = 1; j + 1 < customers_j.size(); j++)                                                                                              \
@@ -55,14 +65,6 @@ namespace d2d
                         {                                                                                                                                                 \
                             for (std::size_t jx = j; jx < customers_j.size(); jx++)                                                                                       \
                             {                                                                                                                                             \
-                                if constexpr (std::is_same_v<VehicleRoute_i, VehicleRoute_j>)                                                                             \
-                                {                                                                                                                                         \
-                                    if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */                                                                  \
-                                    {                                                                                                                                     \
-                                        continue;                                                                                                                         \
-                                    }                                                                                                                                     \
-                                }                                                                                                                                         \
-                                                                                                                                                                          \
                                 if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute> && std::is_same_v<VehicleRoute_j, TruckRoute>)                                   \
                                 {                                                                                                                                         \
                                     if (std::any_of(                                                                                                                      \
@@ -109,10 +111,10 @@ namespace d2d
                                     vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                                           \
                                 }                                                                                                                                         \
                                                                                                                                                                           \
-                                auto new_solution = std::make_shared<ST>(truck_routes, drone_routes);                                                                     \
+                                auto new_solution = this->construct(parent, truck_routes, drone_routes);                                                                  \
                                 if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))                                    \
                                 {                                                                                                                                         \
-                                    result.swap(new_solution);                                                                                                            \
+                                    result = new_solution;                                                                                                                \
                                 }                                                                                                                                         \
                                                                                                                                                                           \
                                 /* Restore */                                                                                                                             \

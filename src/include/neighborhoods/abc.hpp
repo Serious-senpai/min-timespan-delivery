@@ -1,6 +1,8 @@
 #pragma once
 
+#include "../parent.hpp"
 #include "../problem.hpp"
+#include "../routes.hpp"
 
 namespace d2d
 {
@@ -19,7 +21,20 @@ namespace d2d
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
-        virtual std::string performance_message() const = 0;
+        virtual std::string label() const = 0;
+
+        virtual std::shared_ptr<ST> construct(
+            const std::shared_ptr<ParentInfo<ST>> parent,
+            const std::vector<std::vector<TruckRoute>> &truck_routes,
+            const std::vector<std::vector<DroneRoute>> &drone_routes) const final
+        {
+            return std::make_shared<ST>(truck_routes, drone_routes, parent);
+        }
+
+        virtual std::shared_ptr<ParentInfo<ST>> parent_ptr(const std::shared_ptr<ST> solution) const final
+        {
+            return std::make_shared<ParentInfo<ST>>(solution, label());
+        }
     };
 
     template <typename ST, bool _EnableTabuList>
@@ -83,7 +98,7 @@ namespace d2d
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria)
         {
 #ifdef DEBUG
-            utils::PerformanceBenchmark _perf(this->performance_message());
+            utils::PerformanceBenchmark _perf(this->label());
 #endif
 
             std::shared_ptr<ST> result;
