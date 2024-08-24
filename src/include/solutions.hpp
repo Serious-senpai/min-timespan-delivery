@@ -24,15 +24,14 @@ namespace d2d
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
-        static double _calculate_working_time(
-            const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
+        static double _calculate_travel_cost(
+            const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
-        static double _calculate_waiting_time_violation(
-            const std::vector<std::vector<TruckRoute>> &truck_routes,
+        static double _calculate_working_time_violation(
             const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
@@ -43,8 +42,8 @@ namespace d2d
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
     public:
-        /** @brief System working time */
-        const double working_time;
+        /** @brief Total travel cost */
+        const double travel_cost;
 
         /** @brief Total drone energy violation */
         const double drone_energy_violation;
@@ -52,8 +51,8 @@ namespace d2d
         /** @brief Total capacity violation */
         const double capacity_violation;
 
-        /** @brief Total waiting time violation */
-        const double waiting_time_violation;
+        /** @brief Total working time violation */
+        const double working_time_violation;
 
         /** @brief Total fixed time violation */
         const double fixed_time_violation;
@@ -76,10 +75,10 @@ namespace d2d
             const std::shared_ptr<ParentInfo<Solution>> parent)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               _parent(parent),
-              working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
+              travel_cost(_calculate_travel_cost(truck_routes, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
-              waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
+              working_time_violation(_calculate_working_time_violation(_temp_truck_time_segments, drone_routes)),
               fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
               fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
               truck_routes(truck_routes),
@@ -87,7 +86,7 @@ namespace d2d
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
-                  utils::approximate(waiting_time_violation, 0.0) &&
+                  utils::approximate(working_time_violation, 0.0) &&
                   utils::approximate(fixed_time_violation, 0.0) &&
                   utils::approximate(fixed_distance_violation, 0.0))
         {
@@ -100,6 +99,25 @@ namespace d2d
             if (drone_routes.size() != problem->drones_count)
             {
                 throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
+            }
+
+            for (auto &routes : truck_routes)
+            {
+                if (routes.size() > 1)
+                {
+                    throw std::runtime_error(utils::format("Number of truck routes must be at most 1, not %lu", routes.size()));
+                }
+            }
+
+            for (auto &routes : drone_routes)
+            {
+                for (auto &route : routes)
+                {
+                    if (route.customers().size() != 3)
+                    {
+                        throw std::runtime_error(utils::format("Each drone route can only served 1 customer, not %lu", route.customers().size() - 2));
+                    }
+                }
             }
 
             std::vector<bool> exists(problem->customers.size());
@@ -145,10 +163,10 @@ namespace d2d
         /** @brief Objective function evaluation, including penalties. */
         utils::FloatingPointWrapper<double> cost() const
         {
-            double result = working_time;
+            double result = travel_cost;
             result += A1 * drone_energy_violation;
             result += A2 * capacity_violation;
-            result += A3 * waiting_time_violation;
+            result += A3 * working_time_violation;
             result += A4 * fixed_time_violation;
             result += A5 * fixed_distance_violation;
 
@@ -320,29 +338,26 @@ namespace d2d
         return result;
     }
 
-    double Solution::_calculate_working_time(
-        const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
+    double Solution::_calculate_travel_cost(
+        const std::vector<std::vector<TruckRoute>> &truck_routes,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
+        auto problem = Problem::get_instance();
         double result = 0;
 
-        for (auto &routes : truck_time_segments)
+        for (auto &routes : truck_routes)
         {
-            double time = 0;
             for (auto &route : routes)
             {
-                time += std::accumulate(route.begin(), route.end(), 0.0);
+                result += route.distance() * problem->truck_unit_cost;
             }
-            result = std::max(result, time);
         }
         for (auto &routes : drone_routes)
         {
-            double time = 0;
             for (auto &route : routes)
             {
-                time += route.working_time();
+                result += route.distance() * problem->drone_unit_cost;
             }
-            result = std::max(result, time);
         }
 
         return result;
@@ -400,43 +415,30 @@ namespace d2d
         return result;
     }
 
-    double Solution::_calculate_waiting_time_violation(
-        const std::vector<std::vector<TruckRoute>> &truck_routes,
+    double Solution::_calculate_working_time_violation(
         const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
-        double result = 0;
         auto problem = Problem::get_instance();
+        double result = 0;
 
-        for (std::size_t i = 0; i < truck_routes.size(); i++)
+        for (auto &routes : truck_time_segments)
         {
-            for (std::size_t j = 0; j < truck_routes[i].size(); j++)
+            double time = 0;
+            for (auto &route : routes)
             {
-                auto waiting_time_violations = TruckRoute::calculate_waiting_time_violations(
-                    truck_routes[i][j].customers(),
-                    truck_time_segments[i][j]);
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
+                time += std::accumulate(route.begin(), route.end(), 0.0);
             }
+            result += std::max(0.0, time - problem->truck_time_limit) / problem->truck_time_limit;
         }
         for (auto &routes : drone_routes)
         {
+            double time = 0;
             for (auto &route : routes)
             {
-                const std::vector<double> &waiting_time_violations = route.waiting_time_violations();
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
+                time += route.working_time();
             }
+            result += std::max(0.0, time - problem->truck_time_limit) / problem->drone_time_limit;
         }
 
         return result;
@@ -586,7 +588,7 @@ namespace d2d
 
             violation_update(A1, current->drone_energy_violation);
             violation_update(A2, current->capacity_violation);
-            violation_update(A3, current->waiting_time_violation);
+            violation_update(A3, current->working_time_violation);
             violation_update(A4, current->fixed_time_violation);
             violation_update(A5, current->fixed_distance_violation);
 

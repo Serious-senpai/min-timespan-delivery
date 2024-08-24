@@ -45,6 +45,10 @@ namespace d2d
             const std::vector<Customer> &customers,
             const std::vector<std::vector<double>> &man_distances,
             const std::vector<std::vector<double>> &euc_distances,
+            const double truck_time_limit,
+            const double drone_time_limit,
+            const double truck_unit_cost,
+            const double drone_unit_cost,
             const double &total_demand,
             const TruckConfig *const truck,
             const _BaseDroneConfig *const drone,
@@ -59,6 +63,10 @@ namespace d2d
               customers(customers),
               man_distances(man_distances),
               euc_distances(euc_distances),
+              truck_time_limit(truck_time_limit),
+              drone_time_limit(drone_time_limit),
+              truck_unit_cost(truck_unit_cost),
+              drone_unit_cost(drone_unit_cost),
               total_demand(total_demand),
               truck(truck),
               drone(drone),
@@ -78,7 +86,11 @@ namespace d2d
         const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> man_distances, euc_distances;
-        const double maximum_waiting_time = 3600; // hard-coded value
+        const double truck_time_limit;
+        const double drone_time_limit;
+        const double truck_unit_cost;
+        const double drone_unit_cost;
+
         const double total_demand;
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;
@@ -247,6 +259,12 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
+            double truck_time_limit;
+            double drone_time_limit;
+            double truck_unit_cost;
+            double drone_unit_cost;
+            std::cin >> truck_time_limit >> drone_time_limit >> truck_unit_cost >> drone_unit_cost;
+
             _instance = new Problem(
                 iterations,
                 tabu_size,
@@ -256,6 +274,10 @@ namespace d2d
                 customers,
                 man_distances,
                 euc_distances,
+                truck_time_limit,
+                drone_time_limit,
+                truck_unit_cost,
+                drone_unit_cost,
                 std::accumulate(
                     customers.begin(), customers.end(), 0.0,
                     [](const double &sum, const Customer &customer)

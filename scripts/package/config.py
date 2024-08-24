@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing_extensions import Any, Dict, Final, List, Literal, Tuple
 
+from .utils import euc_distance
+
 
 __all__ = ("ROOT", "TruckConfig", "DroneLinearConfig", "DroneNonlinearConfig", "DroneEnduranceConfig", "Problem")
 ROOT: Final[Path] = Path(__file__).parent.parent.parent
@@ -163,30 +165,57 @@ class Problem:
     truck_service_time: Tuple[float, ...]
     drone_service_time: Tuple[float, ...]
 
+    truck_capacity: float
+    drone_capacity: float
+
+    truck_speed: float
+    drone_speed: float
+
+    drone_endurance: float
+
+    truck_time_limit: float
+    drone_time_limit: float
+
+    truck_unit_cost: float
+    drone_unit_cost: float
+
     @staticmethod
     def import_data(problem: str, /) -> Problem:
         problem = problem.removesuffix(".txt")
-        with ROOT.joinpath("problems", "data", f"{problem}.txt").open("r") as file:
+        with ROOT.joinpath("problems", "[11]", "instances", "min-cost", f"{problem}.txt").open("r") as file:
             data = file.read()
 
-        customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
-        trucks_count = int(re.search(r"number_staff (\d+)", data).group(1))  # type: ignore
-        drones_count = int(re.search(r"number_drone (\d+)", data).group(1))  # type: ignore
+        customers_count = int(problem.split("-")[0])
 
-        x = [0.0]
-        y = [0.0]
-        demands = [0.0]
-        dronable = [True]
-        truck_service_time = [0.0]
-        drone_service_time = [0.0]
-        for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
-            _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
+        trucks_count = int(re.search(r"NUM TRUCKS,(\d+)", data).group(1))  # type: ignore
+        drones_count = int(re.search(r"NUM DRONES,(\d+)", data).group(1))  # type: ignore
+
+        truck_capacity = float(re.search(r"TRUCK CAP,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+        drone_capacity = float(re.search(r"DRONE CAP,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+
+        truck_speed = float(re.search(r"TRUCK SPEED,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+        drone_speed = float(re.search(r"DRONE SPEED,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+
+        drone_endurance = float(re.search(r"DRONE ENDURANCE,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+
+        truck_time_limit = float(re.search(r"TRUCK TIME LIMIT,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+        drone_time_limit = float(re.search(r"DRONE TIME LIMIT,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+
+        truck_unit_cost = float(re.search(r"TRUCK UNIT COST,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+        drone_unit_cost = float(re.search(r"DRONE UNIT COST,(\d+(?:\.\d+)?)", data).group(1))  # type: ignore
+
+        x: List[float] = []
+        y: List[float] = []
+        demands: List[float] = []
+        dronable: List[bool] = []
+        truck_service_time = [0.0] * (customers_count + 1)
+        drone_service_time = [0.0] * (customers_count + 1)
+        for match in re.finditer(r"^\d+\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$", data, re.MULTILINE):
+            _x, _y, demand = match.groups()
             x.append(float(_x))
             y.append(float(_y))
             demands.append(float(demand))
-            dronable.append(truck_only == "0")
-            truck_service_time.append(float(_truck_service_time))
-            drone_service_time.append(float(_drone_service_time))
+            dronable.append(demands[-1] <= drone_capacity and 2 * euc_distance(x[-1] - x[0], y[-1] - y[0]) <= drone_speed * drone_endurance)
 
         return Problem(
             problem=problem,
@@ -199,4 +228,13 @@ class Problem:
             dronable=tuple(dronable),
             truck_service_time=tuple(truck_service_time),
             drone_service_time=tuple(drone_service_time),
+            truck_capacity=truck_capacity,
+            drone_capacity=drone_capacity,
+            truck_speed=truck_speed,
+            drone_speed=drone_speed,
+            drone_endurance=drone_endurance,
+            truck_time_limit=truck_time_limit,
+            drone_time_limit=drone_time_limit,
+            truck_unit_cost=truck_unit_cost,
+            drone_unit_cost=drone_unit_cost,
         )

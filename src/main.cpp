@@ -3,10 +3,10 @@
 void print_solution(std::shared_ptr<d2d::Solution> ptr)
 {
     std::cout << ptr->cost() << "\n";
-    std::cout << ptr->working_time << "\n";
+    std::cout << ptr->travel_cost << "\n";
     std::cout << ptr->capacity_violation << "\n";
     std::cout << ptr->drone_energy_violation << "\n";
-    std::cout << ptr->waiting_time_violation << "\n";
+    std::cout << ptr->working_time_violation << "\n";
     std::cout << ptr->fixed_time_violation << "\n";
     std::cout << ptr->fixed_distance_violation << "\n";
 

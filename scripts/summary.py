@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 import json
-from typing_extensions import Any, List
+import re
+from typing_extensions import Any, Dict, List
 
 from package import ResultJSON, SolutionJSON, ROOT
 
 
 def wrap(value: Any) -> str:
     return f"\"{value}\""
+
+
+def compare() -> Dict[str, float]:
+    result: Dict[str, float] = {}
+    with ROOT.joinpath("problems", "[11]", "bestfoundsolutions-mincost.txt").open("r") as f:
+        for match in re.finditer(r"^(\d+-\w+-[012]-\w+)\.txt\s+Cost\s+=\s+(\d+(?:\.\d+)?)$", f.read(), re.MULTILINE):
+            result[match.group(1)] = float(match.group(2))
+
+    return result
 
 
 if __name__ == "__main__":
@@ -24,11 +34,11 @@ if __name__ == "__main__":
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
-        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,[11],Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, result in enumerate(results, start=2):
             segments = [
                 wrap(result["problem"]),
-                wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
+                wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\"-\"\", A{row}) - 1))"),
                 str(result["trucks_count"]),
                 str(result["drones_count"]),
                 str(result["iterations"]),
@@ -37,9 +47,11 @@ if __name__ == "__main__":
                 result["speed_type"],
                 result["range_type"],
                 str(result["solution"]["cost"]),
+                str(compare.get(result["problem"], "")),
+                wrap(f"=ROUND(100 * (K{row} - J{row}) / K{row}, 2)"),
                 str(result["solution"]["capacity_violation"]),
                 str(result["solution"]["drone_energy_violation"]),
-                str(result["solution"]["waiting_time_violation"]),
+                str(result["solution"]["working_time_violation"]),
                 str(result["solution"]["fixed_time_violation"]),
                 str(result["solution"]["fixed_distance_violation"]),
                 wrap(result["solution"]["truck_paths"]),

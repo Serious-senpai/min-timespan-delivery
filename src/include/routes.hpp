@@ -61,11 +61,6 @@ namespace d2d
         }
 
     public:
-        static std::vector<double> calculate_waiting_time_violations(
-            const std::vector<std::size_t> &customers,
-            const std::vector<double> &time_segments,
-            const std::function<double(const std::size_t &)> service_time);
-
         /** @brief The amount of weight exceeding vehicle capacity. */
         virtual double capacity_violation() const = 0;
 
@@ -119,26 +114,6 @@ namespace d2d
         return weight;
     }
 
-    std::vector<double> _BaseRoute::calculate_waiting_time_violations(
-        const std::vector<std::size_t> &customers,
-        const std::vector<double> &time_segments,
-        const std::function<double(const std::size_t &)> service_time)
-    {
-        auto problem = Problem::get_instance();
-        std::vector<double> violations(customers.size());
-
-        double time = std::accumulate(time_segments.begin(), time_segments.end(), 0.0);
-        for (std::size_t i = 0; i < customers.size(); i++)
-        {
-            violations[i] = std::max(0.0, time - service_time(customers[i]) - problem->maximum_waiting_time);
-            time -= time_segments[i];
-        }
-
-        violations.front() = violations.back() = 0;
-
-        return violations;
-    }
-
     /** @brief Represents a truck route. */
     class TruckRoute : public _BaseRoute
     {
@@ -157,9 +132,6 @@ namespace d2d
             const std::vector<std::size_t> &customers,
             std::size_t &coefficients_index,
             double &current_within_timespan);
-        static std::vector<double> calculate_waiting_time_violations(
-            const std::vector<std::size_t> &customers,
-            const std::vector<double> &time_segments);
 
         /** @brief Construct a `TruckRoute` with pre-calculated attributes */
         TruckRoute(
@@ -251,34 +223,16 @@ namespace d2d
         return time_segments;
     }
 
-    std::vector<double> TruckRoute::calculate_waiting_time_violations(
-        const std::vector<std::size_t> &customers,
-        const std::vector<double> &time_segments)
-    {
-        auto problem = Problem::get_instance();
-        return _BaseRoute::calculate_waiting_time_violations(
-            customers,
-            time_segments,
-            [&problem](const std::size_t &customer)
-            {
-                return problem->customers[customer].truck_service_time;
-            });
-    }
-
     /** @brief Represents a drone route. */
     class DroneRoute : public _BaseRoute
     {
     private:
         static std::vector<double> _calculate_time_segments(const std::vector<std::size_t> &customers);
-        static std::vector<double> _calculate_waiting_time_violations(
-            const std::vector<std::size_t> &customers,
-            const std::vector<double> &time_segments);
         static double _calculate_energy_consumption(const std::vector<std::size_t> &customers);
         static double _calculate_fixed_time_violation(const std::vector<double> &time_segments);
         static double _calculate_fixed_distance_violation(const double &distance);
 
         std::vector<double> _time_segments;
-        std::vector<double> _waiting_time_violations;
         double _working_time;
         double _energy_consumption;
         double _fixed_time_violation;
@@ -295,11 +249,6 @@ namespace d2d
             if (!utils::approximate(_time_segments, verify._time_segments))
             {
                 throw std::runtime_error("Inconsistent time segments, possibly an error in calculation");
-            }
-
-            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
-            {
-                throw std::runtime_error("Inconsistent waiting time violations, possibly an error in calculation");
             }
 
             if (!utils::approximate(_working_time, verify._working_time))
@@ -319,7 +268,6 @@ namespace d2d
         DroneRoute(
             const std::vector<std::size_t> &customers,
             const std::vector<double> &time_segments,
-            const std::vector<double> &waiting_time_violations,
             const double &distance,
             const double &weight,
             const double &energy_consumption,
@@ -327,7 +275,6 @@ namespace d2d
             const double &fixed_distance_violation)
             : _BaseRoute(customers, distance, weight),
               _time_segments(time_segments),
-              _waiting_time_violations(waiting_time_violations),
               _working_time(std::accumulate(time_segments.begin(), time_segments.end(), 0.0)),
               _energy_consumption(energy_consumption),
               _fixed_time_violation(fixed_time_violation),
@@ -358,7 +305,6 @@ namespace d2d
             : DroneRoute(
                   customers,
                   time_segments,
-                  _calculate_waiting_time_violations(customers, time_segments),
                   distance,
                   weight,
                   energy_consumption,
@@ -403,14 +349,6 @@ namespace d2d
         const std::vector<double> &time_segments() const
         {
             return _time_segments;
-        }
-
-        /**
-         * @brief The waiting time violations of each customer in this route.
-         */
-        const std::vector<double> &waiting_time_violations() const
-        {
-            return _waiting_time_violations;
         }
 
         /**
@@ -504,8 +442,7 @@ namespace d2d
                                        drone->landing_time() * drone->landing_power(_weight);
             } // Done updating _time_segments, _distance, _weight, _energy_consumption
 
-            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
-            _working_time = std::accumulate(_time_segments.begin(), _time_segments.end(), 0.0);        // Done updating _working_time
+            _working_time = std::accumulate(_time_segments.begin(), _time_segments.end(), 0.0); // Done updating _working_time
 
             _verify();
         }
@@ -528,20 +465,6 @@ namespace d2d
         }
 
         return time_segments;
-    }
-
-    std::vector<double> DroneRoute::_calculate_waiting_time_violations(
-        const std::vector<std::size_t> &customers,
-        const std::vector<double> &time_segments)
-    {
-        auto problem = Problem::get_instance();
-        return _BaseRoute::calculate_waiting_time_violations(
-            customers,
-            time_segments,
-            [&problem](const std::size_t &customer)
-            {
-                return problem->customers[customer].drone_service_time;
-            });
     }
 
     double DroneRoute::_calculate_energy_consumption(const std::vector<std::size_t> &customers)

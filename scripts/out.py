@@ -24,10 +24,10 @@ def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
     if cost is None:
         cost = float(input())
 
-    working_time = float(input())
+    travel_cost = float(input())
     capacity_violation = float(input())
     drone_energy_violation = float(input())
-    waiting_time_violation = float(input())
+    working_time_violation = float(input())
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
 
@@ -38,10 +38,10 @@ def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
 
     return {
         "cost": cost,
-        "working_time": working_time,
+        "travel_cost": travel_cost,
         "capacity_violation": capacity_violation,
         "drone_energy_violation": drone_energy_violation,
-        "waiting_time_violation": waiting_time_violation,
+        "working_time_violation": working_time_violation,
         "fixed_time_violation": fixed_time_violation,
         "fixed_distance_violation": fixed_distance_violation,
         "truck_paths": truck_paths,

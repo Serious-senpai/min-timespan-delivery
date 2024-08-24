@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing_extensions import Literal, Tuple, Union, TYPE_CHECKING
+from typing_extensions import Literal, TYPE_CHECKING
 
 from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig
 
@@ -52,23 +52,18 @@ if __name__ == "__main__":
     print(namespace.tabu_size)
     print(int(namespace.verbose))
 
-    truck = TruckConfig.import_data()
+    truck = TruckConfig(maximum_velocity=problem.truck_speed, capacity=problem.truck_capacity, coefficients=(1,))
     print(truck.maximum_velocity, truck.capacity)
     print(len(truck.coefficients), *truck.coefficients)
 
-    models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
-    if namespace.config == "linear":
-        models = DroneLinearConfig.import_data()
-    elif namespace.config == "non-linear":
-        models = DroneNonlinearConfig.import_data()
-    else:
-        models = DroneEnduranceConfig.import_data()
-
-    for model in models:
-        if model.speed_type == namespace.speed_type and model.range_type == namespace.range_type:
-            break
-    else:
-        raise RuntimeError("Cannot find a satisfying model from list", models)
+    model = DroneEnduranceConfig(
+        capacity=problem.drone_capacity,
+        speed_type="low",
+        range_type="low",
+        fixed_time=problem.drone_endurance,
+        fixed_distance=10 ** 9,
+        drone_speed=problem.drone_speed,
+    )
 
     print(model.__class__.__name__)
     print(
@@ -106,3 +101,10 @@ if __name__ == "__main__":
             model.fixed_distance,
             model.drone_speed,
         )
+
+    print(
+        problem.truck_time_limit,
+        problem.drone_time_limit,
+        problem.truck_unit_cost,
+        problem.drone_unit_cost,
+    )
