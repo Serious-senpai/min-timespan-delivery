@@ -13,14 +13,14 @@ namespace d2d
             return "CROSS-exchange";
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             return std::make_pair(nullptr, std::make_pair(0, 0));
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {

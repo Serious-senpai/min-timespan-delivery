@@ -246,7 +246,7 @@ namespace d2d
                         ptr->clear();
                     }
 
-                    neighborhood->multi_route(result, aspiration_criteria);
+                    neighborhood->inter_route(result, aspiration_criteria);
                 }
             }
 
@@ -268,7 +268,7 @@ namespace d2d
                         ptr->clear();
                     }
 
-                    neighborhood->same_route(result, aspiration_criteria);
+                    neighborhood->intra_route(result, aspiration_criteria);
                 }
             }
 
