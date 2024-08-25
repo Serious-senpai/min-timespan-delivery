@@ -13,11 +13,11 @@ namespace d2d
     class BaseNeighborhood
     {
     public:
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
+        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
@@ -113,8 +113,8 @@ namespace d2d
                 }
             };
 
-            update(this->same_route(solution, aspiration_criteria));
-            update(this->multi_route(solution, aspiration_criteria));
+            update(this->intra_route(solution, aspiration_criteria));
+            update(this->inter_route(solution, aspiration_criteria));
 
             if (result != nullptr)
             {

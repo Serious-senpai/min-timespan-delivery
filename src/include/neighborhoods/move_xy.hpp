@@ -15,7 +15,7 @@ namespace d2d
             return utils::format("Move (%d, %d)", X, Y);
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> multi_route(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
@@ -286,7 +286,7 @@ namespace d2d
     class MoveXY : public _BaseMoveXY<ST, X, Y>
     {
     protected:
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
@@ -359,7 +359,7 @@ namespace d2d
     class MoveXY<ST, X, 0> : public _BaseMoveXY<ST, X, 0>
     {
     protected:
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> same_route(
+        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
             std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
         {
