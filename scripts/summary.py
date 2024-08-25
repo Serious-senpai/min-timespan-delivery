@@ -16,6 +16,7 @@ if __name__ == "__main__":
     results: List[ResultJSON[SolutionJSON]] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
         if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
+            print(file.absolute())
             with file.open("r") as f:
                 data = json.load(f)
 
