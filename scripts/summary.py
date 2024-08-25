@@ -32,6 +32,8 @@ if __name__ == "__main__":
             result = ResultJSON[SolutionJSON](**data)  # type: ignore  # will throw at runtime if fields are incompatible
             results.append(result)
 
+    compare_11 = compare()
+
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
         csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,[11],Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
@@ -47,7 +49,7 @@ if __name__ == "__main__":
                 result["speed_type"],
                 result["range_type"],
                 str(result["solution"]["cost"]),
-                str(compare.get(result["problem"], "")),
+                str(compare_11.get(result["problem"], "")),
                 wrap(f"=ROUND(100 * (K{row} - J{row}) / K{row}, 2)"),
                 str(result["solution"]["capacity_violation"]),
                 str(result["solution"]["drone_energy_violation"]),
