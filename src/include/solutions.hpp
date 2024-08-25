@@ -72,7 +72,8 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes,
-            const std::shared_ptr<ParentInfo<Solution>> parent)
+            const std::shared_ptr<ParentInfo<Solution>> parent,
+            const bool debug_check = true)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               _parent(parent),
               travel_cost(_calculate_travel_cost(truck_routes, drone_routes)),
@@ -90,37 +91,39 @@ namespace d2d
                   utils::approximate(fixed_time_violation, 0.0) &&
                   utils::approximate(fixed_distance_violation, 0.0))
         {
+            if (debug_check)
+            {
 #ifdef DEBUG
-            auto problem = Problem::get_instance();
-            if (truck_routes.size() != problem->trucks_count)
-            {
-                throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
-            }
-            if (drone_routes.size() != problem->drones_count)
-            {
-                throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
-            }
-
-            for (auto &routes : truck_routes)
-            {
-                if (routes.size() > 1)
+                auto problem = Problem::get_instance();
+                if (truck_routes.size() != problem->trucks_count)
                 {
-                    throw std::runtime_error(utils::format("Number of truck routes must be at most 1, not %lu", routes.size()));
+                    throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
                 }
-            }
-
-            for (auto &routes : drone_routes)
-            {
-                for (auto &route : routes)
+                if (drone_routes.size() != problem->drones_count)
                 {
-                    if (route.customers().size() != 3)
+                    throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
+                }
+
+                for (auto &routes : truck_routes)
+                {
+                    if (routes.size() > 1)
                     {
-                        throw std::runtime_error(utils::format("Each drone route can only served 1 customer, not %lu", route.customers().size() - 2));
+                        throw std::runtime_error(utils::format("Number of truck routes must be at most 1, not %lu", routes.size()));
                     }
                 }
-            }
 
-            std::vector<bool> exists(problem->customers.size());
+                for (auto &routes : drone_routes)
+                {
+                    for (auto &route : routes)
+                    {
+                        if (route.customers().size() != 3)
+                        {
+                            throw std::runtime_error(utils::format("Each drone route can only served 1 customer, not %lu", route.customers().size() - 2));
+                        }
+                    }
+                }
+
+                std::vector<bool> exists(problem->customers.size());
 
 #define CHECK_ROUTES(vehicle_routes)                                                                             \
     for (auto &routes : vehicle_routes)                                                                          \
@@ -139,19 +142,20 @@ namespace d2d
         }                                                                                                        \
     }
 
-            CHECK_ROUTES(truck_routes);
-            CHECK_ROUTES(drone_routes);
+                CHECK_ROUTES(truck_routes);
+                CHECK_ROUTES(drone_routes);
 #undef CHECK_ROUTES
 
-            for (std::size_t i = 0; i < exists.size(); i++)
-            {
-                if (!exists[i])
+                for (std::size_t i = 0; i < exists.size(); i++)
                 {
-                    throw std::runtime_error(utils::format("Missing customer %lu", i));
+                    if (!exists[i])
+                    {
+                        throw std::runtime_error(utils::format("Missing customer %lu", i));
+                    }
                 }
-            }
 
 #endif
+            }
         }
 
         /** @brief The parent solution propagating this solution in the result tree */

@@ -6,40 +6,42 @@
 
 namespace d2d
 {
-    bool _truck_try_insert(TruckRoute &route, const std::size_t &customer)
-    {
-        TruckRoute old(route);
-        route.push_back(customer);
-
-        if (route.capacity_violation() > 0)
-        {
-            route = old;
-            return false;
-        }
-
-        return true;
-    };
-
-    bool _drone_try_insert(DroneRoute &route, const std::size_t &customer)
-    {
-        DroneRoute old(route);
-        route.push_back(customer);
-
-        if (route.capacity_violation() > 0 || route.energy_violation() > 0)
-        {
-            route = old;
-            return false;
-        }
-
-        return true;
-    };
-
     template <typename ST>
     std::shared_ptr<ST> initial_1()
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
         std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
+
+        auto _truck_try_insert = [&truck_routes, &drone_routes](TruckRoute &route, const std::size_t &customer)
+        {
+            TruckRoute old = route;
+            route.push_back(customer);
+
+            auto solution = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            if (solution->feasible)
+            {
+                return true;
+            }
+
+            route = old;
+            return false;
+        };
+
+        auto _drone_try_insert = [&truck_routes, &drone_routes](DroneRoute &route, const std::size_t &customer)
+        {
+            DroneRoute old = route;
+            route.push_back(customer);
+
+            auto solution = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            if (solution->feasible)
+            {
+                return true;
+            }
+
+            route = old;
+            return false;
+        };
 
         std::vector<std::size_t> customers_by_angle(problem->customers.size() - 1);
         std::iota(customers_by_angle.begin(), customers_by_angle.end(), 1);
