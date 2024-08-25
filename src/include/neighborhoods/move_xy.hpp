@@ -43,11 +43,19 @@ namespace d2d
         if constexpr (std::is_same_v<std::remove_cvref_t<decltype(solution->vehicle_routes_i)>, std::vector<std::vector<DroneRoute>>>) \
         {                                                                                                                              \
             _vehicle_i -= problem->trucks_count;                                                                                       \
+            if constexpr (X == 0 || X != Y)                                                                                            \
+            {                                                                                                                          \
+                continue;                                                                                                              \
+            }                                                                                                                          \
         }                                                                                                                              \
                                                                                                                                        \
         if constexpr (std::is_same_v<std::remove_cvref_t<decltype(solution->vehicle_routes_j)>, std::vector<std::vector<DroneRoute>>>) \
         {                                                                                                                              \
             _vehicle_j -= problem->trucks_count;                                                                                       \
+            if constexpr (Y == 0 || X != Y)                                                                                            \
+            {                                                                                                                          \
+                continue;                                                                                                              \
+            }                                                                                                                          \
         }                                                                                                                              \
                                                                                                                                        \
         for (std::size_t route_i = 0; route_i < solution->vehicle_routes_i[_vehicle_i].size(); route_i++)                              \
@@ -164,105 +172,108 @@ namespace d2d
             {
                 constexpr std::size_t Z = X + Y;
 
-#define APPEND_ROUTE(vehicle_routes)                                                                                      \
-    {                                                                                                                     \
-        for (std::size_t vehicle_i = 0; vehicle_i < vehicle_routes.size(); vehicle_i++)                                   \
-        {                                                                                                                 \
-            for (std::size_t route_i = 0; route_i < vehicle_routes[vehicle_i].size(); route_i++)                          \
-            {                                                                                                             \
-                using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes[vehicle_i][route_i])>;                 \
-                VehicleRoute_i old_route(vehicle_routes[vehicle_i][route_i]);                                             \
-                                                                                                                          \
-                for (std::size_t vehicle_j = 0; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)   \
-                {                                                                                                         \
-                    const std::vector<std::size_t> &customers = solution->vehicle_routes[vehicle_i][route_i].customers(); \
-                    for (std::size_t i = 1; i + Z < customers.size(); i++)                                                \
-                    {                                                                                                     \
-                        std::vector<std::size_t> new_customers(customers.begin(), customers.begin() + i);                 \
-                        new_customers.insert(new_customers.end(), customers.begin() + (i + Z), customers.end());          \
-                                                                                                                          \
-                        std::vector<std::size_t> detached = {0};                                                          \
-                        detached.insert(detached.end(), customers.begin() + i, customers.begin() + (i + Z));              \
-                        detached.push_back(0);                                                                            \
-                                                                                                                          \
-                        if constexpr (std::is_same_v<VehicleRoute_i, TruckRoute>)                                         \
-                        {                                                                                                 \
-                            if (vehicle_j >= problem->trucks_count &&                                                     \
-                                std::any_of(                                                                              \
-                                    detached.begin() + 1, detached.end() - 1, /* excluding depot */                       \
-                                    [&problem](const std::size_t &c) { return !problem->customers[c].dronable; }))        \
-                            {                                                                                             \
-                                continue;                                                                                 \
-                            }                                                                                             \
-                        }                                                                                                 \
-                                                                                                                          \
-                        /* Temporary modify */                                                                            \
-                        if (new_customers.size() == 2)                                                                    \
-                        {                                                                                                 \
-                            if constexpr (std::is_same_v<VehicleRoute_i, TruckRoute>)                                     \
-                            {                                                                                             \
-                                if (vehicle_j < problem->trucks_count && vehicle_i == vehicle_j)                          \
-                                {                                                                                         \
-                                    continue;                                                                             \
-                                }                                                                                         \
-                            }                                                                                             \
-                            else                                                                                          \
-                            {                                                                                             \
-                                if (vehicle_j >= problem->trucks_count && vehicle_i == vehicle_j - problem->trucks_count) \
-                                {                                                                                         \
-                                    continue;                                                                             \
-                                }                                                                                         \
-                            }                                                                                             \
-                                                                                                                          \
-                            vehicle_routes[vehicle_i].erase(vehicle_routes[vehicle_i].begin() + route_i);                 \
-                        }                                                                                                 \
-                        else                                                                                              \
-                        {                                                                                                 \
-                            vehicle_routes[vehicle_i][route_i] = VehicleRoute_i(new_customers);                           \
-                        }                                                                                                 \
-                                                                                                                          \
-                        if (vehicle_j < problem->trucks_count)                                                            \
-                        {                                                                                                 \
-                            truck_routes[vehicle_j].push_back(TruckRoute(detached));                                      \
-                        }                                                                                                 \
-                        else                                                                                              \
-                        {                                                                                                 \
-                            drone_routes[vehicle_j - problem->trucks_count].push_back(DroneRoute(detached));              \
-                        }                                                                                                 \
-                                                                                                                          \
-                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                          \
-                        if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], 0)) &&                     \
-                            (result == nullptr || new_solution->cost() < result->cost()))                                 \
-                        {                                                                                                 \
-                            result = new_solution;                                                                        \
-                            tabu_pair = std::make_pair(customers[i], 0);                                                  \
-                        }                                                                                                 \
-                                                                                                                          \
-                        /* Restore */                                                                                     \
-                        if (new_customers.size() == 2)                                                                    \
-                        {                                                                                                 \
-                            vehicle_routes[vehicle_i].insert(vehicle_routes[vehicle_i].begin() + route_i, old_route);     \
-                        }                                                                                                 \
-                        else                                                                                              \
-                        {                                                                                                 \
-                            vehicle_routes[vehicle_i][route_i] = old_route;                                               \
-                        }                                                                                                 \
-                        if (vehicle_j < problem->trucks_count)                                                            \
-                        {                                                                                                 \
-                            truck_routes[vehicle_j].pop_back();                                                           \
-                        }                                                                                                 \
-                        else                                                                                              \
-                        {                                                                                                 \
-                            drone_routes[vehicle_j - problem->trucks_count].pop_back();                                   \
-                        }                                                                                                 \
-                    }                                                                                                     \
-                }                                                                                                         \
-            }                                                                                                             \
-        }                                                                                                                 \
+#define APPEND_ROUTE(vehicle_routes)                                                                                                        \
+    {                                                                                                                                       \
+        for (std::size_t vehicle_i = 0; vehicle_i < vehicle_routes.size(); vehicle_i++)                                                     \
+        {                                                                                                                                   \
+            for (std::size_t route_i = 0; route_i < vehicle_routes[vehicle_i].size(); route_i++)                                            \
+            {                                                                                                                               \
+                using VehicleRoute_i = std::remove_cvref_t<decltype(vehicle_routes[vehicle_i][route_i])>;                                   \
+                VehicleRoute_i old_route(vehicle_routes[vehicle_i][route_i]);                                                               \
+                                                                                                                                            \
+                for (std::size_t vehicle_j = problem->trucks_count; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++) \
+                {                                                                                                                           \
+                    const std::vector<std::size_t> &customers = solution->vehicle_routes[vehicle_i][route_i].customers();                   \
+                    for (std::size_t i = 1; i + Z < customers.size(); i++)                                                                  \
+                    {                                                                                                                       \
+                        std::vector<std::size_t> new_customers(customers.begin(), customers.begin() + i);                                   \
+                        new_customers.insert(new_customers.end(), customers.begin() + (i + Z), customers.end());                            \
+                                                                                                                                            \
+                        std::vector<std::size_t> detached = {0};                                                                            \
+                        detached.insert(detached.end(), customers.begin() + i, customers.begin() + (i + Z));                                \
+                        detached.push_back(0);                                                                                              \
+                                                                                                                                            \
+                        if constexpr (std::is_same_v<VehicleRoute_i, TruckRoute>)                                                           \
+                        {                                                                                                                   \
+                            if (vehicle_j >= problem->trucks_count &&                                                                       \
+                                std::any_of(                                                                                                \
+                                    detached.begin() + 1, detached.end() - 1, /* excluding depot */                                         \
+                                    [&problem](const std::size_t &c) { return !problem->customers[c].dronable; }))                          \
+                            {                                                                                                               \
+                                continue;                                                                                                   \
+                            }                                                                                                               \
+                        }                                                                                                                   \
+                                                                                                                                            \
+                        /* Temporary modify */                                                                                              \
+                        if (new_customers.size() == 2)                                                                                      \
+                        {                                                                                                                   \
+                            if constexpr (std::is_same_v<VehicleRoute_i, TruckRoute>)                                                       \
+                            {                                                                                                               \
+                                if (vehicle_j < problem->trucks_count && vehicle_i == vehicle_j)                                            \
+                                {                                                                                                           \
+                                    continue;                                                                                               \
+                                }                                                                                                           \
+                            }                                                                                                               \
+                            else                                                                                                            \
+                            {                                                                                                               \
+                                if (vehicle_j >= problem->trucks_count && vehicle_i == vehicle_j - problem->trucks_count)                   \
+                                {                                                                                                           \
+                                    continue;                                                                                               \
+                                }                                                                                                           \
+                            }                                                                                                               \
+                                                                                                                                            \
+                            vehicle_routes[vehicle_i].erase(vehicle_routes[vehicle_i].begin() + route_i);                                   \
+                        }                                                                                                                   \
+                        else                                                                                                                \
+                        {                                                                                                                   \
+                            vehicle_routes[vehicle_i][route_i] = VehicleRoute_i(new_customers);                                             \
+                        }                                                                                                                   \
+                                                                                                                                            \
+                        if (vehicle_j < problem->trucks_count)                                                                              \
+                        {                                                                                                                   \
+                            truck_routes[vehicle_j].push_back(TruckRoute(detached));                                                        \
+                        }                                                                                                                   \
+                        else                                                                                                                \
+                        {                                                                                                                   \
+                            drone_routes[vehicle_j - problem->trucks_count].push_back(DroneRoute(detached));                                \
+                        }                                                                                                                   \
+                                                                                                                                            \
+                        auto new_solution = this->construct(parent, truck_routes, drone_routes);                                            \
+                        if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], 0)) &&                                       \
+                            (result == nullptr || new_solution->cost() < result->cost()))                                                   \
+                        {                                                                                                                   \
+                            result = new_solution;                                                                                          \
+                            tabu_pair = std::make_pair(customers[i], 0);                                                                    \
+                        }                                                                                                                   \
+                                                                                                                                            \
+                        /* Restore */                                                                                                       \
+                        if (new_customers.size() == 2)                                                                                      \
+                        {                                                                                                                   \
+                            vehicle_routes[vehicle_i].insert(vehicle_routes[vehicle_i].begin() + route_i, old_route);                       \
+                        }                                                                                                                   \
+                        else                                                                                                                \
+                        {                                                                                                                   \
+                            vehicle_routes[vehicle_i][route_i] = old_route;                                                                 \
+                        }                                                                                                                   \
+                        if (vehicle_j < problem->trucks_count)                                                                              \
+                        {                                                                                                                   \
+                            truck_routes[vehicle_j].pop_back();                                                                             \
+                        }                                                                                                                   \
+                        else                                                                                                                \
+                        {                                                                                                                   \
+                            drone_routes[vehicle_j - problem->trucks_count].pop_back();                                                     \
+                        }                                                                                                                   \
+                    }                                                                                                                       \
+                }                                                                                                                           \
+            }                                                                                                                               \
+        }                                                                                                                                   \
     }
 
-                APPEND_ROUTE(truck_routes);
-                APPEND_ROUTE(drone_routes);
+                if constexpr (Z == 1)
+                {
+                    APPEND_ROUTE(truck_routes);
+                    APPEND_ROUTE(drone_routes);
+                }
 
 #undef APPEND_ROUTE
             }

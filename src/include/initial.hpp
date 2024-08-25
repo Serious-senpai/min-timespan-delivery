@@ -30,16 +30,7 @@ namespace d2d
 
         auto _drone_try_insert = [&truck_routes, &drone_routes](DroneRoute &route, const std::size_t &customer)
         {
-            DroneRoute old = route;
-            route.push_back(customer);
-
-            auto solution = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            if (solution->feasible)
-            {
-                return true;
-            }
-
-            route = old;
+            // Each route serves at most one customer
             return false;
         };
 
@@ -97,7 +88,14 @@ namespace d2d
             {
                 if (!_truck_try_insert(truck_routes[truck % problem->trucks_count].back(), customer))
                 {
-                    truck_routes[truck % problem->trucks_count].push_back(TruckRoute({0, customer, 0}));
+                    if (truck_routes[truck % problem->trucks_count].empty())
+                    {
+                        truck_routes[truck % problem->trucks_count].push_back(TruckRoute({0, customer, 0}));
+                    }
+                    else
+                    {
+                        truck_routes[truck % problem->trucks_count][0].push_back(customer);
+                    }
                 }
                 truck++;
             }

@@ -128,6 +128,22 @@ namespace d2d
                                     rj.erase(rj.begin() + jy);                                                                                            \
                                     rk.insert(rk.begin() + k, customers_j[jy - (jy > jx)]);                                                               \
                                                                                                                                                           \
+                                    if constexpr (std::is_same_v<VehicleRoute_j, DroneRoute>)                                                             \
+                                    {                                                                                                                     \
+                                        if (rj.size() > 3)                                                                                                \
+                                        {                                                                                                                 \
+                                            continue;                                                                                                     \
+                                        }                                                                                                                 \
+                                    }                                                                                                                     \
+                                                                                                                                                          \
+                                    if constexpr (std::is_same_v<VehicleRoute_k, DroneRoute>)                                                             \
+                                    {                                                                                                                     \
+                                        if (rk.size() > 3)                                                                                                \
+                                        {                                                                                                                 \
+                                            continue;                                                                                                     \
+                                        }                                                                                                                 \
+                                    }                                                                                                                     \
+                                                                                                                                                          \
                                     /* Perform assignment first before doing any deletion */                                                              \
                                     vehicle_routes_j[_vehicle_j][route_j] = VehicleRoute_j(rj);                                                           \
                                     vehicle_routes_k[_vehicle_k][route_k] = VehicleRoute_k(rk);                                                           \

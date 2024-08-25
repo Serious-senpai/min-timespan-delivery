@@ -125,6 +125,22 @@ namespace d2d
                         ri.insert(ri.end(), customers_j.begin() + (j + 1), customers_j.end());                                                             \
                         rj.insert(rj.end(), customers_i.begin() + (i + 1), customers_i.end());                                                             \
                                                                                                                                                            \
+                        if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute>)                                                                          \
+                        {                                                                                                                                  \
+                            if (ri.size() != 3)                                                                                                            \
+                            {                                                                                                                              \
+                                continue;                                                                                                                  \
+                            }                                                                                                                              \
+                        }                                                                                                                                  \
+                                                                                                                                                           \
+                        if constexpr (std::is_same_v<VehicleRoute_j, DroneRoute>)                                                                          \
+                        {                                                                                                                                  \
+                            if (rj.size() != 3)                                                                                                            \
+                            {                                                                                                                              \
+                                continue;                                                                                                                  \
+                            }                                                                                                                              \
+                        }                                                                                                                                  \
+                                                                                                                                                           \
                         if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute> && std::is_same_v<VehicleRoute_j, TruckRoute>)                            \
                         {                                                                                                                                  \
                             if (std::any_of(ri.begin() + (i + 1), ri.end(), [&problem](const std::size_t &c) { return !problem->customers[c].dronable; })) \

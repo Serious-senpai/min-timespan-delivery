@@ -65,6 +65,22 @@ namespace d2d
                         {                                                                                                                                                 \
                             for (std::size_t jx = j; jx < customers_j.size(); jx++)                                                                                       \
                             {                                                                                                                                             \
+                                if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute>)                                                                                 \
+                                {                                                                                                                                         \
+                                    if (ix - i == 0 || jx - j != 1)                                                                                                       \
+                                    {                                                                                                                                     \
+                                        continue;                                                                                                                         \
+                                    }                                                                                                                                     \
+                                }                                                                                                                                         \
+                                                                                                                                                                          \
+                                if constexpr (std::is_same_v<VehicleRoute_j, DroneRoute>)                                                                                 \
+                                {                                                                                                                                         \
+                                    if (jx - j == 0 || ix - i != 1)                                                                                                       \
+                                    {                                                                                                                                     \
+                                        continue;                                                                                                                         \
+                                    }                                                                                                                                     \
+                                }                                                                                                                                         \
+                                                                                                                                                                          \
                                 if constexpr (std::is_same_v<VehicleRoute_i, DroneRoute> && std::is_same_v<VehicleRoute_j, TruckRoute>)                                   \
                                 {                                                                                                                                         \
                                     if (std::any_of(                                                                                                                      \
