@@ -586,6 +586,11 @@ namespace d2d
                 {
                     A /= B;
                 }
+
+                if (A < 1e-3 || A > 1e5)
+                {
+                    A = 1;
+                }
             };
 
             violation_update(A1, current->drone_energy_violation);
