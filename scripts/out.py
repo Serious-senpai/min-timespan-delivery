@@ -86,12 +86,32 @@ if __name__ == "__main__":
         s = read_solution(cost=cost)
         iteration = int(input())
         penalty_coefficients: List[float] = eval(input())
+
+        s["cost"] = (
+            s["working_time"]
+            + s["drone_energy_violation"] * penalty_coefficients[0]
+            + s["capacity_violation"] * penalty_coefficients[1]
+            + s["waiting_time_violation"] * penalty_coefficients[2]
+            + s["fixed_time_violation"] * penalty_coefficients[3]
+            + s["fixed_distance_violation"] * penalty_coefficients[4]
+        )
+
         history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
 
     progress: List[ProgressJSON[SolutionJSON]] = []
     while (cost := float(input())) != -1:
         s = read_solution(cost=cost)
         penalty_coefficients = eval(input())
+
+        s["cost"] = (
+            s["working_time"]
+            + s["drone_energy_violation"] * penalty_coefficients[0]
+            + s["capacity_violation"] * penalty_coefficients[1]
+            + s["waiting_time_violation"] * penalty_coefficients[2]
+            + s["fixed_time_violation"] * penalty_coefficients[3]
+            + s["fixed_distance_violation"] * penalty_coefficients[4]
+        )
+
         progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
 
     last_improved = int(input())
