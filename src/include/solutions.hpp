@@ -73,7 +73,8 @@ namespace d2d
         Solution(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes,
-            const std::shared_ptr<ParentInfo<Solution>> parent)
+            const std::shared_ptr<ParentInfo<Solution>> parent,
+            const bool debug_check = true)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               _parent(parent),
               working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
@@ -91,18 +92,20 @@ namespace d2d
                   utils::approximate(fixed_time_violation, 0.0) &&
                   utils::approximate(fixed_distance_violation, 0.0))
         {
+            if (debug_check)
+            {
 #ifdef DEBUG
-            auto problem = Problem::get_instance();
-            if (truck_routes.size() != problem->trucks_count)
-            {
-                throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
-            }
-            if (drone_routes.size() != problem->drones_count)
-            {
-                throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
-            }
+                auto problem = Problem::get_instance();
+                if (truck_routes.size() != problem->trucks_count)
+                {
+                    throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
+                }
+                if (drone_routes.size() != problem->drones_count)
+                {
+                    throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
+                }
 
-            std::vector<bool> exists(problem->customers.size());
+                std::vector<bool> exists(problem->customers.size());
 
 #define CHECK_ROUTES(vehicle_routes)                                                                             \
     for (auto &routes : vehicle_routes)                                                                          \
@@ -121,19 +124,20 @@ namespace d2d
         }                                                                                                        \
     }
 
-            CHECK_ROUTES(truck_routes);
-            CHECK_ROUTES(drone_routes);
+                CHECK_ROUTES(truck_routes);
+                CHECK_ROUTES(drone_routes);
 #undef CHECK_ROUTES
 
-            for (std::size_t i = 0; i < exists.size(); i++)
-            {
-                if (!exists[i])
+                for (std::size_t i = 0; i < exists.size(); i++)
                 {
-                    throw std::runtime_error(utils::format("Missing customer %lu", i));
+                    if (!exists[i])
+                    {
+                        throw std::runtime_error(utils::format("Missing customer %lu", i));
+                    }
                 }
-            }
 
 #endif
+            }
         }
 
         /** @brief The parent solution propagating this solution in the result tree */
@@ -242,7 +246,7 @@ namespace d2d
                         ptr->clear();
                     }
 
-                    neighborhood->multi_route(result, aspiration_criteria);
+                    neighborhood->inter_route(result, aspiration_criteria);
                 }
             }
 
@@ -264,7 +268,7 @@ namespace d2d
                         ptr->clear();
                     }
 
-                    neighborhood->same_route(result, aspiration_criteria);
+                    neighborhood->intra_route(result, aspiration_criteria);
                 }
             }
 

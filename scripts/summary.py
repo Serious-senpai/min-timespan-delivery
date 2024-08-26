@@ -16,6 +16,7 @@ if __name__ == "__main__":
     results: List[ResultJSON[SolutionJSON]] = []
     for file in sorted(ROOT.joinpath("result").iterdir(), key=lambda f: f.name):
         if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
+            print(file.absolute())
             with file.open("r") as f:
                 data = json.load(f)
 
@@ -24,7 +25,7 @@ if __name__ == "__main__":
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
-        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Propagation costs,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, result in enumerate(results, start=2):
             segments = [
                 wrap(result["problem"]),
@@ -45,7 +46,6 @@ if __name__ == "__main__":
                 wrap(result["solution"]["truck_paths"]),
                 wrap(result["solution"]["drone_paths"]),
                 str(int(result["solution"]["feasible"])),
-                wrap([s["solution"]["cost"] for s in result["propagation"]]),
                 str(result["last_improved"]),
                 str(result["real"]),
                 str(result["user"]),
