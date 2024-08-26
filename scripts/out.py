@@ -25,8 +25,8 @@ def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
         cost = float(input())
 
     working_time = float(input())
-    capacity_violation = float(input())
     drone_energy_violation = float(input())
+    capacity_violation = float(input())
     waiting_time_violation = float(input())
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
@@ -179,6 +179,29 @@ if __name__ == "__main__":
         json.dump(pretty_data, file, indent=4)
 
     print(f"Generated pretty JSON at {json_output.relative_to(working_dir)}")
+
+    csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
+    with csv_output.open("w") as file:
+        file.write("sep=,\n")
+        file.write("fitness,cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5\n")
+        for p in data["progress"]:
+            segments = [
+                str(p["solution"]["cost"]),
+                str(p["solution"]["working_time"]),
+                str(p["penalty_coefficients"][0]),
+                str(p["solution"]["drone_energy_violation"]),
+                str(p["penalty_coefficients"][1]),
+                str(p["solution"]["capacity_violation"]),
+                str(p["penalty_coefficients"][2]),
+                str(p["solution"]["waiting_time_violation"]),
+                str(p["penalty_coefficients"][3]),
+                str(p["solution"]["fixed_time_violation"]),
+                str(p["penalty_coefficients"][4]),
+                str(p["solution"]["fixed_distance_violation"]),
+            ]
+            file.write(",".join(segments) + "\n")
+
+    print(f"Generated CSV at {csv_output.relative_to(working_dir)}")
 
     pyplot_output = ROOT / "result" / f"{namespace.problem}-{index}-plot.py"
     with pyplot_output.open("w") as file:

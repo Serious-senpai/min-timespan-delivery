@@ -9,8 +9,8 @@ __all__ = ("SolutionJSON", "PrettySolutionJSON", "PropagationJSON", "HistoryJSON
 class _BaseSolutionJSON(TypedDict):
     cost: float
     working_time: float
-    capacity_violation: float
     drone_energy_violation: float
+    capacity_violation: float
     waiting_time_violation: float
     fixed_time_violation: float
     fixed_distance_violation: float
