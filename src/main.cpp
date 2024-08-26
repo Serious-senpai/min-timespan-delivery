@@ -21,7 +21,8 @@ void display(
     const std::size_t &last_improved,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
-    const std::vector<std::array<double, 5>> &coefficients)
+    const std::vector<std::array<double, 5>> &coefficients,
+    const std::vector<std::string> &neighborhoods)
 {
     auto problem = d2d::Problem::get_instance();
     std::cout << problem->iterations << "\n";
@@ -79,6 +80,12 @@ void display(
     }
     std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
+    std::cout << neighborhoods.size() << "\n";
+    for (auto &neighborhood : neighborhoods)
+    {
+        std::cout << neighborhood << "\n";
+    }
+
     std::cout << last_improved << "\n";
 }
 
@@ -94,9 +101,10 @@ int main()
     std::size_t last_improved;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    auto ptr = d2d::Solution::tabu_search(&last_improved, &history, &progress, &coefficients);
+    std::vector<std::string> neighborhoods;
+    auto ptr = d2d::Solution::tabu_search(&last_improved, &history, &progress, &coefficients, &neighborhoods);
 
-    display(ptr, last_improved, history, progress, coefficients);
+    display(ptr, last_improved, history, progress, coefficients, neighborhoods);
 
     return 0;
 }

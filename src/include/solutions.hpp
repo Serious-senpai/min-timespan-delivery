@@ -285,7 +285,8 @@ namespace d2d
             std::size_t *last_improved_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
-            std::vector<std::array<double, 5>> *coefficients_ptr);
+            std::vector<std::array<double, 5>> *coefficients_ptr,
+            std::vector<std::string> *neighborhoods_ptr);
     };
 
     double Solution::A1 = 1;
@@ -495,7 +496,8 @@ namespace d2d
         std::size_t *last_improved_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
-        std::vector<std::array<double, 5>> *coefficients_ptr)
+        std::vector<std::array<double, 5>> *coefficients_ptr,
+        std::vector<std::string> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -551,6 +553,11 @@ namespace d2d
 
                 return false;
             };
+
+            if (neighborhoods_ptr != nullptr)
+            {
+                neighborhoods_ptr->push_back(neighborhoods[neighborhood]->label());
+            }
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
             auto current_cost = current->cost();

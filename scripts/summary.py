@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing_extensions import Any, List
+from typing_extensions import List
 
-from package import ResultJSON, SolutionJSON, ROOT
-
-
-def wrap(value: Any) -> str:
-    return f"\"{value}\""
+from package import ResultJSON, SolutionJSON, ROOT, csv_wrap
 
 
 if __name__ == "__main__":
@@ -28,8 +24,8 @@ if __name__ == "__main__":
         csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Last improved,real,user,sys\n")
         for row, result in enumerate(results, start=2):
             segments = [
-                wrap(result["problem"]),
-                wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
+                csv_wrap(result["problem"]),
+                csv_wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
                 str(result["trucks_count"]),
                 str(result["drones_count"]),
                 str(result["iterations"]),
@@ -43,8 +39,8 @@ if __name__ == "__main__":
                 str(result["solution"]["waiting_time_violation"]),
                 str(result["solution"]["fixed_time_violation"]),
                 str(result["solution"]["fixed_distance_violation"]),
-                wrap(result["solution"]["truck_paths"]),
-                wrap(result["solution"]["drone_paths"]),
+                csv_wrap(result["solution"]["truck_paths"]),
+                csv_wrap(result["solution"]["drone_paths"]),
                 str(int(result["solution"]["feasible"])),
                 str(result["last_improved"]),
                 str(result["real"]),
