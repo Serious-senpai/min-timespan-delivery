@@ -617,6 +617,8 @@ namespace d2d
                 {
                     A /= B;
                 }
+
+                A = std::clamp(A, 1e-3, 1e5);
             };
 
             violation_update(A1, current->drone_energy_violation);
