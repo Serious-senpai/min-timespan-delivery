@@ -84,6 +84,14 @@ void display(
 
 int main()
 {
+    auto problem = d2d::Problem::get_instance();
+    std::cerr << "iterations = " << problem->iterations << "\n";
+    std::cerr << "tabu_size = " << problem->tabu_size << "\n";
+    std::cerr << "verbose = " << problem->verbose << "\n";
+    std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
+    std::cerr << "customers = " << problem->customers << "\n";
+    std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
+
     std::size_t last_improved;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
