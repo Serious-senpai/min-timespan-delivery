@@ -358,12 +358,11 @@ namespace d2d
         auto problem = Problem::get_instance();
         if (problem->endurance == nullptr)
         {
-            const double battery = (problem->linear != nullptr) ? problem->linear->battery : problem->nonlinear->battery;
             for (auto &routes : drone_routes)
             {
                 for (auto &route : routes)
                 {
-                    result += route.energy_violation() / battery;
+                    result += route.energy_violation();
                 }
             }
         }
@@ -378,23 +377,13 @@ namespace d2d
         double result = 0;
         auto problem = Problem::get_instance();
 
-#define CALCULATE_D2D_ROUTES(vehicle_routes)                                                \
-    for (auto &routes : vehicle_routes)                                                     \
-    {                                                                                       \
-        for (auto &route : routes)                                                          \
-        {                                                                                   \
-            double capacity;                                                                \
-            if constexpr (std::is_same_v<std::remove_cvref_t<decltype(route)>, TruckRoute>) \
-            {                                                                               \
-                capacity = problem->truck->capacity;                                        \
-            }                                                                               \
-            else                                                                            \
-            {                                                                               \
-                capacity = problem->drone->capacity;                                        \
-            }                                                                               \
-                                                                                            \
-            result += route.capacity_violation() / capacity;                                \
-        }                                                                                   \
+#define CALCULATE_D2D_ROUTES(vehicle_routes)      \
+    for (auto &routes : vehicle_routes)           \
+    {                                             \
+        for (auto &route : routes)                \
+        {                                         \
+            result += route.capacity_violation(); \
+        }                                         \
     }
 
         CALCULATE_D2D_ROUTES(truck_routes);
@@ -419,13 +408,7 @@ namespace d2d
                 auto waiting_time_violations = TruckRoute::calculate_waiting_time_violations(
                     truck_routes[i][j].customers(),
                     truck_time_segments[i][j]);
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
+                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
             }
         }
         for (auto &routes : drone_routes)
@@ -433,13 +416,7 @@ namespace d2d
             for (auto &route : routes)
             {
                 const std::vector<double> &waiting_time_violations = route.waiting_time_violations();
-                result += std::accumulate(
-                    waiting_time_violations.begin(), waiting_time_violations.end(),
-                    0.0,
-                    [&problem](const double &result, const double &violation)
-                    {
-                        return result + violation / problem->maximum_waiting_time;
-                    });
+                result += std::accumulate(waiting_time_violations.begin(), waiting_time_violations.end(), 0.0);
             }
         }
 
@@ -456,7 +433,7 @@ namespace d2d
             {
                 for (auto &route : routes)
                 {
-                    result += route.fixed_time_violation() / problem->endurance->fixed_time;
+                    result += route.fixed_time_violation();
                 }
             }
         }
@@ -474,7 +451,7 @@ namespace d2d
             {
                 for (auto &route : routes)
                 {
-                    result += route.fixed_distance_violation() / problem->endurance->fixed_distance;
+                    result += route.fixed_distance_violation();
                 }
             }
         }
