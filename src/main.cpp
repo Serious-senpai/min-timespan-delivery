@@ -4,8 +4,8 @@ void print_solution(std::shared_ptr<d2d::Solution> ptr)
 {
     std::cout << ptr->cost() << "\n";
     std::cout << ptr->working_time << "\n";
-    std::cout << ptr->capacity_violation << "\n";
     std::cout << ptr->drone_energy_violation << "\n";
+    std::cout << ptr->capacity_violation << "\n";
     std::cout << ptr->waiting_time_violation << "\n";
     std::cout << ptr->fixed_time_violation << "\n";
     std::cout << ptr->fixed_distance_violation << "\n";
@@ -89,7 +89,6 @@ int main()
     std::cerr << "tabu_size = " << problem->tabu_size << "\n";
     std::cerr << "verbose = " << problem->verbose << "\n";
     std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
-    std::cerr << "customers = " << problem->customers << "\n";
     std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
 
     std::size_t last_improved;
