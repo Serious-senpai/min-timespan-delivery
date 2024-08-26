@@ -59,6 +59,7 @@ class ResultJSON(Generic[T], TypedDict):
     propagation: List[PropagationJSON[T]]
     history: List[HistoryJSON[T]]
     progress: List[ProgressJSON[T]]
+    neighborhoods: List[str]
     last_improved: int
     elite_set_size: List[int]
     real: float

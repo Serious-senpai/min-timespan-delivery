@@ -287,7 +287,8 @@ namespace d2d
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr,
-            std::vector<std::size_t> *elite_size_ptr);
+            std::vector<std::size_t> *elite_size_ptr,
+            std::vector<std::string> *neighborhoods_ptr);
     };
 
     double Solution::A1 = 1;
@@ -499,7 +500,8 @@ namespace d2d
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr,
-        std::vector<std::size_t> *elite_size_ptr)
+        std::vector<std::size_t> *elite_size_ptr,
+        std::vector<std::string> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(), result = current;
@@ -569,6 +571,11 @@ namespace d2d
                 return false;
             };
 
+            if (neighborhoods_ptr != nullptr)
+            {
+                neighborhoods_ptr->push_back(neighborhoods[neighborhood]->label());
+            }
+
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
             auto current_cost = current->cost();
             if (neighbor != nullptr)
@@ -599,6 +606,10 @@ namespace d2d
             {
                 if (elite.empty())
                 {
+                    if (neighborhoods_ptr != nullptr)
+                    {
+                        neighborhoods_ptr->pop_back();
+                    }
                     break;
                 }
 

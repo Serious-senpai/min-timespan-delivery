@@ -9,7 +9,7 @@ import string
 import textwrap
 from typing_extensions import List, Optional
 
-from package import HistoryJSON, Problem, PrettySolutionJSON, ProgressJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, prettify
+from package import HistoryJSON, Problem, PrettySolutionJSON, ProgressJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, csv_wrap, prettify
 
 
 def random_str(length: int) -> str:
@@ -114,6 +114,9 @@ if __name__ == "__main__":
 
         progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
 
+    neighborhoods_size = int(input())
+    neighborhoods: List[str] = [input() for _ in range(neighborhoods_size)]
+
     last_improved = int(input())
     elite_set_size: List[int] = eval(input())
     real = user = sys = -1.0
@@ -148,6 +151,7 @@ if __name__ == "__main__":
         "propagation": propagation,
         "history": history,
         "progress": progress,
+        "neighborhoods": neighborhoods,
         "last_improved": last_improved,
         "elite_set_size": elite_set_size,
         "real": real,
@@ -183,8 +187,8 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("fitness,cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5\n")
-        for p in data["progress"]:
+        file.write("fitness,cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood\n")
+        for p, neighborhood in zip(data["progress"], neighborhoods, strict=True):
             segments = [
                 str(p["solution"]["cost"]),
                 str(p["solution"]["working_time"]),
@@ -198,6 +202,7 @@ if __name__ == "__main__":
                 str(p["solution"]["fixed_time_violation"]),
                 str(p["penalty_coefficients"][4]),
                 str(p["solution"]["fixed_distance_violation"]),
+                csv_wrap(neighborhood),
             ]
             file.write(",".join(segments) + "\n")
 
