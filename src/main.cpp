@@ -19,12 +19,14 @@ void print_solution(std::shared_ptr<d2d::Solution> ptr)
 void display(
     std::shared_ptr<d2d::Solution> ptr,
     const std::size_t &last_improved,
+    const std::size_t &iterations,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
-    const std::vector<std::array<double, 5>> &coefficients)
+    const std::vector<std::array<double, 5>> &coefficients,
+    const std::vector<std::size_t> &elite_set_size)
 {
     auto problem = d2d::Problem::get_instance();
-    std::cout << problem->iterations << "\n";
+    std::cout << iterations << "\n";
     std::cout << problem->tabu_size << "\n";
 
     if (problem->linear != nullptr)
@@ -80,16 +82,18 @@ void display(
     std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
     std::cout << last_improved << "\n";
+    std::cout << elite_set_size << "\n";
 }
 
 int main()
 {
-    std::size_t last_improved;
+    std::size_t last_improved, iterations;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    auto ptr = d2d::Solution::tabu_search(&last_improved, &history, &progress, &coefficients);
+    std::vector<std::size_t> elite_set_size;
+    auto ptr = d2d::Solution::tabu_search(&last_improved, &iterations, &history, &progress, &coefficients, &elite_set_size);
 
-    display(ptr, last_improved, history, progress, coefficients);
+    display(ptr, last_improved, iterations, history, progress, coefficients, elite_set_size);
 
     return 0;
 }
