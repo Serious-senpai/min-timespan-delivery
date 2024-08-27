@@ -671,15 +671,6 @@ namespace d2d
                 }
             }
 
-            if (neighbor == nullptr || current_cost <= current->cost())
-            {
-                neighborhood = (neighborhood + 1) % neighborhoods.size();
-            }
-            else
-            {
-                neighborhood = 0;
-            }
-
             if (last_improved_ptr != nullptr && iteration != *last_improved_ptr && (iteration - *last_improved_ptr) % problem->reset_after == 0)
             {
                 if (elite.empty())
@@ -718,6 +709,15 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
             violation_update(A5, current->fixed_distance_violation);
+
+            if (neighbor == nullptr || current_cost <= current->cost())
+            {
+                neighborhood = (neighborhood + 1) % neighborhoods.size();
+            }
+            else
+            {
+                neighborhood = 0;
+            }
 
             if (history_ptr != nullptr)
             {
