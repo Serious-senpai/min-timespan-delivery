@@ -24,9 +24,13 @@ namespace d2d
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
-        static double _calculate_working_time(
-            const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
+        static std::vector<double> _calculate_truck_working_time(
+            const std::vector<std::vector<std::vector<double>>> &truck_time_segments);
+        static std::vector<double> _calculate_drone_working_time(
             const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static double _calculate_working_time(
+            const std::vector<double> &truck_working_time,
+            const std::vector<double> &drone_working_time);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
@@ -43,6 +47,12 @@ namespace d2d
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
     public:
+        /** @brief Working time of truck routes */
+        const std::vector<double> truck_working_time;
+
+        /** @brief Working time of drone routes */
+        const std::vector<double> drone_working_time;
+
         /** @brief System working time */
         const double working_time;
 
@@ -77,7 +87,9 @@ namespace d2d
             const bool debug_check = true)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               _parent(parent),
-              working_time(_calculate_working_time(_temp_truck_time_segments, drone_routes)),
+              truck_working_time(_calculate_truck_working_time(_temp_truck_time_segments)),
+              drone_working_time(_calculate_drone_working_time(drone_routes)),
+              working_time(_calculate_working_time(truck_working_time, drone_working_time)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
@@ -326,11 +338,10 @@ namespace d2d
         return result;
     }
 
-    double Solution::_calculate_working_time(
-        const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
-        const std::vector<std::vector<DroneRoute>> &drone_routes)
+    std::vector<double> Solution::_calculate_truck_working_time(const std::vector<std::vector<std::vector<double>>> &truck_time_segments)
     {
-        double result = 0;
+        std::vector<double> result;
+        result.reserve(truck_time_segments.size());
 
         for (auto &routes : truck_time_segments)
         {
@@ -339,8 +350,17 @@ namespace d2d
             {
                 time += std::accumulate(route.begin(), route.end(), 0.0);
             }
-            result = std::max(result, time);
+            result.push_back(time);
         }
+
+        return result;
+    }
+
+    std::vector<double> Solution::_calculate_drone_working_time(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        std::vector<double> result;
+        result.reserve(drone_routes.size());
+
         for (auto &routes : drone_routes)
         {
             double time = 0;
@@ -348,10 +368,19 @@ namespace d2d
             {
                 time += route.working_time();
             }
-            result = std::max(result, time);
+            result.push_back(time);
         }
 
         return result;
+    }
+
+    double Solution::_calculate_working_time(
+        const std::vector<double> &truck_working_time,
+        const std::vector<double> &drone_working_time)
+    {
+        return std::max(
+            *std::max_element(truck_working_time.begin(), truck_working_time.end()),
+            *std::max_element(drone_working_time.begin(), drone_working_time.end()));
     }
 
     double Solution::_calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
@@ -489,26 +518,41 @@ namespace d2d
         auto r1 = initial_1<Solution>();
         auto r2 = initial_2<Solution>();
 
-        if (initialization_label_ptr == nullptr)
+        short option = 0;
+        if (r1->feasible && !r2->feasible)
         {
-            return r1->working_time < r2->working_time ? r1 : r2;
+            option = 1;
+        }
+        else if (!r1->feasible && r2->feasible)
+        {
+            option = 2;
+        }
+        else if (r1->cost() < r2->cost())
+        {
+            option = 1;
+        }
+        else if (r1->cost() > r2->cost())
+        {
+            option = 2;
         }
 
-        if (r1->working_time < r2->working_time)
+        if (initialization_label_ptr != nullptr)
         {
-            *initialization_label_ptr = "initial_1";
-            return r1;
+            switch (option)
+            {
+            case 0:
+                *initialization_label_ptr = "initial_12";
+                break;
+            case 1:
+                *initialization_label_ptr = "initial_1";
+                break;
+            case 2:
+                *initialization_label_ptr = "initial_2";
+                break;
+            }
         }
-        else if (r2->working_time < r1->working_time)
-        {
-            *initialization_label_ptr = "initial_2";
-            return r2;
-        }
-        else
-        {
-            *initialization_label_ptr = "initial_12";
-            return r1;
-        }
+
+        return option == 1 ? r1 : r2;
     }
 
     std::shared_ptr<Solution> Solution::tabu_search(
