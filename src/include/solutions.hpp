@@ -280,8 +280,9 @@ namespace d2d
             return result;
         }
 
-        static std::shared_ptr<Solution> initial();
+        static std::shared_ptr<Solution> initial(std::string *initialization_label_ptr);
         static std::shared_ptr<Solution> tabu_search(
+            std::string *initialization_label_ptr,
             std::size_t *last_improved_ptr,
             std::size_t *iterations_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
@@ -485,16 +486,35 @@ namespace d2d
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::initial()
+    std::shared_ptr<Solution> Solution::initial(std::string *initialization_label_ptr)
     {
-        auto result = initial_1<Solution>();
-        auto r = initial_2<Solution>();
-        result = result->cost() < r->cost() ? result : r;
+        auto r1 = initial_1<Solution>();
+        auto r2 = initial_2<Solution>();
 
-        return result;
+        if (initialization_label_ptr == nullptr)
+        {
+            return r1->working_time < r2->working_time ? r1 : r2;
+        }
+
+        if (r1->working_time < r2->working_time)
+        {
+            *initialization_label_ptr = "initial_1";
+            return r1;
+        }
+        else if (r2->working_time < r1->working_time)
+        {
+            *initialization_label_ptr = "initial_2";
+            return r2;
+        }
+        else
+        {
+            *initialization_label_ptr = "initial_12";
+            return r1;
+        }
     }
 
     std::shared_ptr<Solution> Solution::tabu_search(
+        std::string *initialization_label_ptr,
         std::size_t *last_improved_ptr,
         std::size_t *iterations_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
@@ -504,7 +524,7 @@ namespace d2d
         std::vector<std::string> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
-        auto current = initial(), result = current;
+        auto current = initial(initialization_label_ptr), result = current;
 
         if (last_improved_ptr != nullptr)
         {

@@ -60,6 +60,7 @@ class ResultJSON(Generic[T], TypedDict):
     history: List[HistoryJSON[T]]
     progress: List[ProgressJSON[T]]
     neighborhoods: List[str]
+    initialization_label: str
     last_improved: int
     elite_set_size: List[int]
     real: float

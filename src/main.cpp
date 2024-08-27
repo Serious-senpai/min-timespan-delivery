@@ -18,6 +18,7 @@ void print_solution(std::shared_ptr<d2d::Solution> ptr)
 
 void display(
     std::shared_ptr<d2d::Solution> ptr,
+    const std::string &initialization_label,
     const std::size_t &last_improved,
     const std::size_t &iterations,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
@@ -88,6 +89,7 @@ void display(
         std::cout << neighborhood << "\n";
     }
 
+    std::cout << initialization_label << "\n";
     std::cout << last_improved << "\n";
     std::cout << elite_set_size << "\n";
 }
@@ -102,14 +104,15 @@ int main()
     std::cerr << "max_elite_set_size = " << problem->max_elite_set_size << ", reset_after = " << problem->reset_after << "\n";
     std::cerr << "hamming_distance_factor = " << problem->hamming_distance_factor << "\n";
 
+    std::string initialization_label;
     std::size_t last_improved, iterations;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
     std::vector<std::size_t> elite_set_size;
     std::vector<std::string> neighborhoods;
-    auto ptr = d2d::Solution::tabu_search(&last_improved, &iterations, &history, &progress, &coefficients, &elite_set_size, &neighborhoods);
+    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set_size, &neighborhoods);
 
-    display(ptr, last_improved, iterations, history, progress, coefficients, elite_set_size, neighborhoods);
+    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set_size, neighborhoods);
 
     return 0;
 }
