@@ -31,6 +31,14 @@ jobs:
           key: ALGLIB-${{ matrix.os }}-${{ hashFiles('extern/alglib-cpp/**') }}
           path: build/*.o
 
+      - name: Display hardware info (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: lscpu
+
+      - name: Display hardware info (windows-latest)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: systeminfo
+
       - name: Compile ALGLIB (ubuntu-latest)
         if: ${{ matrix.os == 'ubuntu-latest' && steps.alglib-cache.outputs.cache-hit != 'true' }}
         run: scripts/build.sh alglib
