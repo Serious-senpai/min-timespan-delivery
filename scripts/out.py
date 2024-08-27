@@ -117,6 +117,7 @@ if __name__ == "__main__":
     neighborhoods_size = int(input())
     neighborhoods: List[str] = [input() for _ in range(neighborhoods_size)]
 
+    initialization_label = input()
     last_improved = int(input())
     real = user = sys = -1.0
 
@@ -151,6 +152,7 @@ if __name__ == "__main__":
         "history": history,
         "progress": progress,
         "neighborhoods": neighborhoods,
+        "initialization_label": initialization_label,
         "last_improved": last_improved,
         "real": real,
         "user": user,
