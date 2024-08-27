@@ -565,6 +565,20 @@ namespace d2d
 
                 auto prefix = utils::format(format_string, iteration + 1, current->cost(), result->cost());
                 std::cerr << prefix;
+
+                try
+                {
+                    std::size_t width = utils::get_console_size(false).first;
+                    if (width > prefix.size())
+                    {
+                        std::cerr << std::string(width - prefix.size(), ' '); // Clear the remaining space
+                    }
+                }
+                catch (std::runtime_error &)
+                {
+                    // ignore
+                }
+
                 std::cerr << std::flush;
             }
 
