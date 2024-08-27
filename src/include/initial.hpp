@@ -6,6 +6,14 @@
 
 namespace d2d
 {
+    template <typename ST>
+    bool _insertable(
+        const std::vector<std::vector<TruckRoute>> &truck_routes,
+        const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
+    }
+
     template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
     bool _try_insert(
         RT &route,
@@ -16,13 +24,30 @@ namespace d2d
         RT old = route;
         route.push_back(customer);
 
-        auto solution = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-        if (solution->feasible)
+        if (_insertable<ST>(truck_routes, drone_routes))
         {
             return true;
         }
 
         route = old;
+        return false;
+    }
+
+    template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+    bool _try_insert(
+        std::vector<RT> &routes,
+        const std::size_t &customer,
+        std::vector<std::vector<TruckRoute>> &truck_routes,
+        std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        routes.emplace_back(std::vector<std::size_t>{0, customer, 0});
+
+        if (_insertable<ST>(truck_routes, drone_routes))
+        {
+            return true;
+        }
+
+        routes.pop_back();
         return false;
     }
 
@@ -55,48 +80,54 @@ namespace d2d
         {
             if (drone_iter != drone_routes.end() && problem->customers[customer].dronable)
             {
-                drone_iter->push_back(DroneRoute({0, customer, 0}));
-                drone_iter++;
+                if (_try_insert<DroneRoute, ST>(*drone_iter, customer, truck_routes, drone_routes))
+                {
+                    drone_iter++;
+                    continue;
+                }
             }
-            else if (truck_iter != truck_routes.end())
+
+            if (truck_iter != truck_routes.end())
             {
-                truck_iter->push_back(TruckRoute({0, customer, 0}));
-                truck_iter++;
+                if (_try_insert<TruckRoute, ST>(*truck_iter, customer, truck_routes, drone_routes))
+                {
+                    truck_iter++;
+                    continue;
+                }
             }
-            else
-            {
-                next_phase.push_back(customer);
-            }
+
+            next_phase.push_back(customer);
         }
 
         std::size_t truck = 0, drone = 0;
-        std::shuffle(next_phase.begin(), next_phase.end(), utils::rng);
         while (!next_phase.empty())
         {
-            auto customer = next_phase.back();
-            next_phase.pop_back();
+            auto iter = utils::random_element(next_phase);
+            auto customer = *iter;
+            next_phase.erase(iter);
+
             if (problem->customers[customer].dronable)
             {
-                if (!_try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count].back(), customer, truck_routes, drone_routes))
+                if ((!drone_routes[drone % problem->drones_count].empty() && _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count].back(), customer, truck_routes, drone_routes)) ||
+                    _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count], customer, truck_routes, drone_routes))
                 {
-                    drone_routes[drone % problem->drones_count].push_back(DroneRoute({0, customer, 0}));
+                    drone++;
+                    continue;
                 }
-                drone++;
             }
-            else
+
+            if (!_try_insert<TruckRoute, ST>(truck_routes[truck % problem->trucks_count].back(), customer, truck_routes, drone_routes))
             {
-                if (!_try_insert<TruckRoute, ST>(truck_routes[truck % problem->trucks_count].back(), customer, truck_routes, drone_routes))
-                {
-                    truck_routes[truck % problem->trucks_count].push_back(TruckRoute({0, customer, 0}));
-                }
-                truck++;
+                truck_routes[truck % problem->trucks_count].push_back(TruckRoute({0, customer, 0}));
             }
+            truck++;
         }
+
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
     }
 
     template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
-    std::vector<std::vector<RT>> _initial_2_helper(const std::vector<std::size_t> &customers)
+    std::vector<std::vector<RT>> _initial_2_helper(const std::vector<std::size_t> &customers, std::vector<std::size_t> *unhandled_ptr)
     {
         auto problem = Problem::get_instance();
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
@@ -188,7 +219,6 @@ namespace d2d
             cluster = cluster_ordered;
         }
 
-        std::vector<double> working_time(vehicles_count);
         for (std::size_t cluster_i = 0; cluster_i < clusters.size(); cluster_i = (cluster_i + 1) % clusters.size())
         {
             if (clusters[cluster_i].empty())
@@ -202,29 +232,73 @@ namespace d2d
                 continue;
             }
 
-            std::size_t vehicle = std::min_element(working_time.begin(), working_time.end()) - working_time.begin();
+            std::size_t vehicle = (std::size_t)-1;
+            {
+                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+                if constexpr (std::is_same_v<RT, TruckRoute>)
+                {
+                    vehicle = std::min_element(
+                                  temp->truck_working_time.begin(),
+                                  temp->truck_working_time.end(),
+                                  [](const double &first, const double &second)
+                                  { return first < second; }) -
+                              temp->truck_working_time.begin();
+                }
+                else
+                {
+                    vehicle = std::min_element(
+                                  temp->drone_working_time.begin(),
+                                  temp->drone_working_time.end(),
+                                  [](const double &first, const double &second)
+                                  { return first < second; }) -
+                              temp->drone_working_time.begin();
+                }
+            }
+
+            std::size_t customer = clusters[cluster_i].back();
 
             if constexpr (std::is_same_v<RT, TruckRoute>)
             {
-                truck_routes[vehicle].push_back(TruckRoute({0, clusters[cluster_i].back(), 0}));
+                truck_routes[vehicle].push_back(TruckRoute({0, customer, 0}));
             }
             else
             {
-                drone_routes[vehicle].push_back(DroneRoute({0, clusters[cluster_i].back(), 0}));
+                if (!_try_insert<DroneRoute, ST>(drone_routes[vehicle], customer, truck_routes, drone_routes))
+                {
+                    if (unhandled_ptr != nullptr)
+                    {
+                        unhandled_ptr->push_back(customer);
+                    }
+                }
             }
 
             clusters[cluster_i].pop_back();
 
             while (!clusters[cluster_i].empty())
             {
+                std::size_t customer = clusters[cluster_i].back();
                 bool inserted = false;
                 if constexpr (std::is_same_v<RT, TruckRoute>)
                 {
-                    inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle].back(), clusters[cluster_i].back(), truck_routes, drone_routes);
+                    if (truck_routes[vehicle].empty())
+                    {
+                        inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle], customer, truck_routes, drone_routes);
+                    }
+                    else
+                    {
+                        inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle].back(), customer, truck_routes, drone_routes);
+                    }
                 }
                 else
                 {
-                    inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle].back(), clusters[cluster_i].back(), truck_routes, drone_routes);
+                    if (drone_routes[vehicle].empty())
+                    {
+                        inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle], customer, truck_routes, drone_routes);
+                    }
+                    else
+                    {
+                        inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle].back(), customer, truck_routes, drone_routes);
+                    }
                 }
 
                 if (inserted)
@@ -266,8 +340,8 @@ namespace d2d
             }
         }
 
-        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only);
-        std::vector<std::vector<DroneRoute>> drone_routes = _initial_2_helper<DroneRoute, ST>(dronable);
+        std::vector<std::vector<DroneRoute>> drone_routes = _initial_2_helper<DroneRoute, ST>(dronable, &truck_only);
+        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, nullptr);
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
     }
