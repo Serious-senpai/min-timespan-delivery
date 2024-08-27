@@ -108,7 +108,7 @@ namespace d2d
 
             if (problem->customers[customer].dronable)
             {
-                if (_try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count].back(), customer, truck_routes, drone_routes) ||
+                if ((!drone_routes[drone % problem->drones_count].empty() && _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count].back(), customer, truck_routes, drone_routes)) ||
                     _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count], customer, truck_routes, drone_routes))
                 {
                     drone++;
