@@ -18,11 +18,15 @@ void print_solution(std::shared_ptr<d2d::Solution> ptr)
 
 void display(
     std::shared_ptr<d2d::Solution> ptr,
+    const std::string &initialization_label,
     const std::size_t &last_improved,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
-    const std::vector<std::array<double, 5>> &coefficients)
+    const std::vector<std::array<double, 5>> &coefficients,
+    const std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> &neighborhoods)
 {
+    std::cout << std::fixed << std::setprecision(6);
+
     auto problem = d2d::Problem::get_instance();
     std::cout << problem->iterations << "\n";
     std::cout << problem->tabu_size << "\n";
@@ -79,6 +83,14 @@ void display(
     }
     std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
+    std::cout << neighborhoods.size() << "\n";
+    for (auto &neighborhood : neighborhoods)
+    {
+        std::cout << neighborhood.first << "\n";
+        std::cout << neighborhood.second << "\n";
+    }
+
+    std::cout << initialization_label << "\n";
     std::cout << last_improved << "\n";
 }
 
@@ -91,12 +103,14 @@ int main()
     std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
     std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
 
+    std::string initialization_label;
     std::size_t last_improved;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    auto ptr = d2d::Solution::tabu_search(&last_improved, &history, &progress, &coefficients);
+    std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> neighborhoods;
+    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &history, &progress, &coefficients, &neighborhoods);
 
-    display(ptr, last_improved, history, progress, coefficients);
+    display(ptr, initialization_label, last_improved, history, progress, coefficients, neighborhoods);
 
     return 0;
 }
