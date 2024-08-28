@@ -108,19 +108,22 @@ namespace d2d
 
             if (problem->customers[customer].dronable)
             {
-                if ((!drone_routes[drone % problem->drones_count].empty() && _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count].back(), customer, truck_routes, drone_routes)) ||
-                    _try_insert<DroneRoute, ST>(drone_routes[drone % problem->drones_count], customer, truck_routes, drone_routes))
+                if ((!drone_routes[drone].empty() && _try_insert<DroneRoute, ST>(drone_routes[drone].back(), customer, truck_routes, drone_routes)) ||
+                    _try_insert<DroneRoute, ST>(drone_routes[drone], customer, truck_routes, drone_routes))
                 {
-                    drone++;
+                    drone = (drone + 1) % problem->drones_count;
                     continue;
                 }
             }
 
-            if (!_try_insert<TruckRoute, ST>(truck_routes[truck % problem->trucks_count].back(), customer, truck_routes, drone_routes))
+            if ((!truck_routes[truck].empty() && _try_insert<TruckRoute, ST>(truck_routes[truck].back(), customer, truck_routes, drone_routes)) ||
+                _try_insert<TruckRoute, ST>(truck_routes[truck], customer, truck_routes, drone_routes))
             {
-                truck_routes[truck % problem->trucks_count].push_back(TruckRoute({0, customer, 0}));
+                truck = (truck + 1) % problem->trucks_count;
+                continue;
             }
-            truck++;
+
+            next_phase.push_back(customer);
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
@@ -256,6 +259,7 @@ namespace d2d
             }
 
             std::size_t customer = clusters[cluster_i].back();
+            clusters[cluster_i].pop_back();
 
             if constexpr (std::is_same_v<RT, TruckRoute>)
             {
@@ -269,10 +273,10 @@ namespace d2d
                     {
                         unhandled_ptr->push_back(customer);
                     }
+
+                    continue;
                 }
             }
-
-            clusters[cluster_i].pop_back();
 
             while (!clusters[cluster_i].empty())
             {
@@ -280,25 +284,11 @@ namespace d2d
                 bool inserted = false;
                 if constexpr (std::is_same_v<RT, TruckRoute>)
                 {
-                    if (truck_routes[vehicle].empty())
-                    {
-                        inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle], customer, truck_routes, drone_routes);
-                    }
-                    else
-                    {
-                        inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle].back(), customer, truck_routes, drone_routes);
-                    }
+                    inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle].back(), customer, truck_routes, drone_routes);
                 }
                 else
                 {
-                    if (drone_routes[vehicle].empty())
-                    {
-                        inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle], customer, truck_routes, drone_routes);
-                    }
-                    else
-                    {
-                        inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle].back(), customer, truck_routes, drone_routes);
-                    }
+                    inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle].back(), customer, truck_routes, drone_routes);
                 }
 
                 if (inserted)
