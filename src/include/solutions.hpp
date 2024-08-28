@@ -301,7 +301,7 @@ namespace d2d
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr,
             std::vector<std::size_t> *elite_size_ptr,
-            std::vector<std::string> *neighborhoods_ptr);
+            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
     };
 
     double Solution::A1 = 1;
@@ -565,7 +565,7 @@ namespace d2d
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr,
         std::vector<std::size_t> *elite_size_ptr,
-        std::vector<std::string> *neighborhoods_ptr)
+        std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
         auto current = initial(initialization_label_ptr), result = current;
@@ -602,9 +602,9 @@ namespace d2d
             if (problem->verbose)
             {
                 std::string format_string = "\rIteration #%lu(";
-                format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += current->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += "/";
-                format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += result->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += ") ";
 
                 auto prefix = utils::format(format_string, iteration + 1, current->cost(), result->cost());
@@ -649,12 +649,12 @@ namespace d2d
                 return false;
             };
 
+            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
             if (neighborhoods_ptr != nullptr)
             {
-                neighborhoods_ptr->push_back(neighborhoods[neighborhood]->label());
+                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
             }
 
-            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {

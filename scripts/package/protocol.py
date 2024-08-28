@@ -1,9 +1,18 @@
 from __future__ import annotations
 
-from typing_extensions import Generic, List, TypedDict, TypeVar
+from typing_extensions import Generic, List, Tuple, TypedDict, TypeVar
 
 
-__all__ = ("SolutionJSON", "PrettySolutionJSON", "PropagationJSON", "HistoryJSON", "ProgressJSON", "ResultJSON", "prettify")
+__all__ = (
+    "SolutionJSON",
+    "PrettySolutionJSON",
+    "PropagationJSON",
+    "NeighborhoodJSON",
+    "HistoryJSON",
+    "ProgressJSON",
+    "ResultJSON",
+    "prettify"
+)
 
 
 class _BaseSolutionJSON(TypedDict):
@@ -46,6 +55,11 @@ class ProgressJSON(Generic[T], TypedDict):
     penalty_coefficients: List[float]
 
 
+class NeighborhoodJSON(TypedDict):
+    label: str
+    pair: Tuple[int, int]
+
+
 class ResultJSON(Generic[T], TypedDict):
     problem: str
     trucks_count: int
@@ -59,7 +73,7 @@ class ResultJSON(Generic[T], TypedDict):
     propagation: List[PropagationJSON[T]]
     history: List[HistoryJSON[T]]
     progress: List[ProgressJSON[T]]
-    neighborhoods: List[str]
+    neighborhoods: List[NeighborhoodJSON]
     initialization_label: str
     last_improved: int
     elite_set_size: List[int]

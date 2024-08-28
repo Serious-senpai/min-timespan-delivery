@@ -9,7 +9,19 @@ import string
 import textwrap
 from typing_extensions import List, Optional
 
-from package import HistoryJSON, Problem, PrettySolutionJSON, ProgressJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, csv_wrap, prettify
+from package import (
+    HistoryJSON,
+    NeighborhoodJSON,
+    Problem,
+    PrettySolutionJSON,
+    ProgressJSON,
+    PropagationJSON,
+    ResultJSON,
+    SolutionJSON,
+    ROOT,
+    csv_wrap,
+    prettify,
+)
 
 
 def random_str(length: int) -> str:
@@ -115,7 +127,7 @@ if __name__ == "__main__":
         progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
 
     neighborhoods_size = int(input())
-    neighborhoods: List[str] = [input() for _ in range(neighborhoods_size)]
+    neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(neighborhoods_size)]
 
     initialization_label = input()
     last_improved = int(input())
@@ -189,10 +201,10 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("fitness,cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood\n")
-        for p, neighborhood in zip(data["progress"], neighborhoods, strict=True):
+        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes\n")
+        for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
             segments = [
-                str(p["solution"]["cost"]),
+                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row} * L{row}"),
                 str(p["solution"]["working_time"]),
                 str(p["penalty_coefficients"][0]),
                 str(p["solution"]["drone_energy_violation"]),
@@ -204,7 +216,10 @@ if __name__ == "__main__":
                 str(p["solution"]["fixed_time_violation"]),
                 str(p["penalty_coefficients"][4]),
                 str(p["solution"]["fixed_distance_violation"]),
-                csv_wrap(neighborhood),
+                csv_wrap(neighborhood["label"]),
+                csv_wrap(neighborhood["pair"]),
+                csv_wrap(p["solution"]["truck_paths"]),
+                csv_wrap(p["solution"]["drone_paths"]),
             ]
             file.write(",".join(segments) + "\n")
 
