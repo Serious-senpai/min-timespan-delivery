@@ -128,7 +128,7 @@ namespace d2d
 
         for (auto &customer : next_phase)
         {
-            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count)].emplace_back(std::vector<std::size_t>{0, customer, 0});
+            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
