@@ -100,7 +100,7 @@ namespace d2d
         }
 
         std::size_t truck = 0, drone = 0;
-        while (!next_phase.empty())
+        for (std::size_t iteration = 0; iteration < utils::pow2(problem->customers.size()) / 2 && !next_phase.empty(); iteration++)
         {
             auto iter = utils::random_element(next_phase);
             auto customer = *iter;
@@ -124,6 +124,11 @@ namespace d2d
             }
 
             next_phase.push_back(customer);
+        }
+
+        for (auto &customer : next_phase)
+        {
+            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
