@@ -27,6 +27,10 @@ namespace d2d
         static double _calculate_travel_cost(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
+        static std::vector<double> _calculate_truck_working_time(
+            const std::vector<std::vector<std::vector<double>>> &truck_time_segments);
+        static std::vector<double> _calculate_drone_working_time(
+            const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_capacity_violation(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
@@ -42,6 +46,12 @@ namespace d2d
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
     public:
+        /** @brief Working time of truck routes */
+        const std::vector<double> truck_working_time;
+
+        /** @brief Working time of drone routes */
+        const std::vector<double> drone_working_time;
+
         /** @brief Total travel cost */
         const double travel_cost;
 
@@ -76,6 +86,8 @@ namespace d2d
             const bool debug_check = true)
             : _temp_truck_time_segments(_calculate_truck_time_segments(truck_routes)),
               _parent(parent),
+              truck_working_time(_calculate_truck_working_time(_temp_truck_time_segments)),
+              drone_working_time(_calculate_drone_working_time(drone_routes)),
               travel_cost(_calculate_travel_cost(truck_routes, drone_routes)),
               drone_energy_violation(_calculate_energy_violation(drone_routes)),
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
@@ -298,12 +310,14 @@ namespace d2d
             return result;
         }
 
-        static std::shared_ptr<Solution> initial();
+        static std::shared_ptr<Solution> initial(std::string *initialization_label_ptr);
         static std::shared_ptr<Solution> tabu_search(
+            std::string *initialization_label_ptr,
             std::size_t *last_improved_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
-            std::vector<std::array<double, 5>> *coefficients_ptr);
+            std::vector<std::array<double, 5>> *coefficients_ptr,
+            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
     };
 
     double Solution::A1 = 1;
@@ -318,6 +332,7 @@ namespace d2d
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
+        std::make_shared<MoveXY<Solution, 2, 2>>(),
         std::make_shared<TwoOpt<Solution>>()};
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
@@ -367,6 +382,42 @@ namespace d2d
         return result;
     }
 
+    std::vector<double> Solution::_calculate_truck_working_time(const std::vector<std::vector<std::vector<double>>> &truck_time_segments)
+    {
+        std::vector<double> result;
+        result.reserve(truck_time_segments.size());
+
+        for (auto &routes : truck_time_segments)
+        {
+            double time = 0;
+            for (auto &route : routes)
+            {
+                time += std::accumulate(route.begin(), route.end(), 0.0);
+            }
+            result.push_back(time);
+        }
+
+        return result;
+    }
+
+    std::vector<double> Solution::_calculate_drone_working_time(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        std::vector<double> result;
+        result.reserve(drone_routes.size());
+
+        for (auto &routes : drone_routes)
+        {
+            double time = 0;
+            for (auto &route : routes)
+            {
+                time += route.working_time();
+            }
+            result.push_back(time);
+        }
+
+        return result;
+    }
+    
     double Solution::_calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
@@ -484,23 +535,58 @@ namespace d2d
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::initial()
+    std::shared_ptr<Solution> Solution::initial(std::string *initialization_label_ptr)
     {
-        auto result = initial_1<Solution>();
-        auto r = initial_2<Solution>();
-        result = result->cost() < r->cost() ? result : r;
+        auto r1 = initial_1<Solution>();
+        auto r2 = initial_2<Solution>();
 
-        return result;
+        short option = 0;
+        if (r1->feasible && !r2->feasible)
+        {
+            option = 1;
+        }
+        else if (!r1->feasible && r2->feasible)
+        {
+            option = 2;
+        }
+        else if (r1->cost() < r2->cost())
+        {
+            option = 1;
+        }
+        else if (r1->cost() > r2->cost())
+        {
+            option = 2;
+        }
+
+        if (initialization_label_ptr != nullptr)
+        {
+            switch (option)
+            {
+            case 0:
+                *initialization_label_ptr = "initial_12";
+                break;
+            case 1:
+                *initialization_label_ptr = "initial_1";
+                break;
+            case 2:
+                *initialization_label_ptr = "initial_2";
+                break;
+            }
+        }
+
+        return option == 1 ? r1 : r2;
     }
 
     std::shared_ptr<Solution> Solution::tabu_search(
+        std::string *initialization_label_ptr,
         std::size_t *last_improved_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
-        std::vector<std::array<double, 5>> *coefficients_ptr)
+        std::vector<std::array<double, 5>> *coefficients_ptr,
+        std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
-        auto current = initial(), result = current;
+        auto current = initial(initialization_label_ptr), result = current;
 
         if (last_improved_ptr != nullptr)
         {
@@ -513,9 +599,9 @@ namespace d2d
             if (problem->verbose)
             {
                 std::string format_string = "\rIteration #%lu/%lu(";
-                format_string += current->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += current->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += "/";
-                format_string += result->cost() > 999999 ? "%.2e" : "%.2lf";
+                format_string += result->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += ") ";
 
                 auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
@@ -555,6 +641,11 @@ namespace d2d
             };
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
+            if (neighborhoods_ptr != nullptr)
+            {
+                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
+            }
+
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
@@ -569,15 +660,6 @@ namespace d2d
                 }
             }
 
-            if (neighbor == nullptr || current_cost <= current->cost())
-            {
-                neighborhood = (neighborhood + 1) % neighborhoods.size();
-            }
-            else
-            {
-                neighborhood = 0;
-            }
-
             const auto violation_update = [](double &A, const double &violation)
             {
                 if (violation > 0)
@@ -588,6 +670,11 @@ namespace d2d
                 {
                     A /= B;
                 }
+
+                if (A < 1e-3 || A > 1e5)
+                {
+                    A = 1;
+                }
             };
 
             violation_update(A1, current->drone_energy_violation);
@@ -595,6 +682,15 @@ namespace d2d
             violation_update(A3, current->working_time_violation);
             violation_update(A4, current->fixed_time_violation);
             violation_update(A5, current->fixed_distance_violation);
+
+            if (neighbor == nullptr || current_cost <= current->cost())
+            {
+                neighborhood = (neighborhood + 1) % neighborhoods.size();
+            }
+            else
+            {
+                neighborhood = 0;
+            }
 
             if (history_ptr != nullptr)
             {
