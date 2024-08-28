@@ -12,9 +12,39 @@ namespace utils
 
         FloatingPointWrapper(const T &value) : value(value) {}
 
-        bool operator==(const FloatingPointWrapper<T> &other) const
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        FloatingPointWrapper &operator=(const _FT &other)
         {
-            return approximate(value, other.value);
+            value = other;
+            return *this;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        FloatingPointWrapper &operator+(const _FT &other)
+        {
+            value += other;
+            return *this;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        FloatingPointWrapper &operator+(const FloatingPointWrapper<_FT> &other)
+        {
+            value += other.value;
+            return *this;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        FloatingPointWrapper &operator-(const _FT &other)
+        {
+            value -= other;
+            return *this;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        FloatingPointWrapper &operator-(const FloatingPointWrapper<_FT> &other)
+        {
+            value -= other.value;
+            return *this;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
@@ -23,9 +53,10 @@ namespace utils
             return approximate(value, other);
         }
 
-        bool operator<(const FloatingPointWrapper<T> &other) const
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        bool operator==(const FloatingPointWrapper<_FT> &other) const
         {
-            return value + TOLERANCE < other.value;
+            return *this == other.value;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
@@ -34,16 +65,28 @@ namespace utils
             return value + TOLERANCE < other;
         }
 
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        bool operator<(const FloatingPointWrapper<_FT> &other) const
+        {
+            return *this < other.value;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        bool operator>(const _FT &other) const
+        {
+            return value - TOLERANCE > other;
+        }
+
+        template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
+        bool operator>(const FloatingPointWrapper<_FT> &other) const
+        {
+            return *this > other.value;
+        }
+
         template <typename _FT>
         bool operator!=(const _FT &other) const
         {
             return !(*this == other);
-        }
-
-        template <typename _FT>
-        bool operator>(const _FT &other) const
-        {
-            return !(*this < other) && *this != other;
         }
 
         template <typename _FT>

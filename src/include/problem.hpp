@@ -27,8 +27,6 @@ namespace d2d
               dronable(dronable),
               truck_service_time(truck_service_time),
               drone_service_time(drone_service_time) {}
-
-        static Customer depot();
     };
 
     class Problem

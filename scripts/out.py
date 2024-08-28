@@ -9,7 +9,19 @@ import string
 import textwrap
 from typing_extensions import List, Optional
 
-from package import HistoryJSON, Problem, PrettySolutionJSON, ProgressJSON, PropagationJSON, ResultJSON, SolutionJSON, ROOT, prettify
+from package import (
+    HistoryJSON,
+    NeighborhoodJSON,
+    Problem,
+    PrettySolutionJSON,
+    ProgressJSON,
+    PropagationJSON,
+    ResultJSON,
+    SolutionJSON,
+    ROOT,
+    csv_wrap,
+    prettify,
+)
 
 
 def random_str(length: int) -> str:
@@ -25,8 +37,8 @@ def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
         cost = float(input())
 
     travel_cost = float(input())
-    capacity_violation = float(input())
     drone_energy_violation = float(input())
+    capacity_violation = float(input())
     working_time_violation = float(input())
     fixed_time_violation = float(input())
     fixed_distance_violation = float(input())
@@ -86,14 +98,38 @@ if __name__ == "__main__":
         s = read_solution(cost=cost)
         iteration = int(input())
         penalty_coefficients: List[float] = eval(input())
+
+        s["cost"] = (
+            s["travel_cost"]
+            + s["drone_energy_violation"] * penalty_coefficients[0]
+            + s["capacity_violation"] * penalty_coefficients[1]
+            + s["working_time_violation"] * penalty_coefficients[2]
+            + s["fixed_time_violation"] * penalty_coefficients[3]
+            + s["fixed_distance_violation"] * penalty_coefficients[4]
+        )
+
         history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
 
     progress: List[ProgressJSON[SolutionJSON]] = []
     while (cost := float(input())) != -1:
         s = read_solution(cost=cost)
         penalty_coefficients = eval(input())
+
+        s["cost"] = (
+            s["travel_cost"]
+            + s["drone_energy_violation"] * penalty_coefficients[0]
+            + s["capacity_violation"] * penalty_coefficients[1]
+            + s["working_time_violation"] * penalty_coefficients[2]
+            + s["fixed_time_violation"] * penalty_coefficients[3]
+            + s["fixed_distance_violation"] * penalty_coefficients[4]
+        )
+
         progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
 
+    neighborhoods_size = int(input())
+    neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(neighborhoods_size)]
+
+    initialization_label = input()
     last_improved = int(input())
     elite_set_size: List[int] = eval(input())
     real = user = sys = -1.0
@@ -128,6 +164,8 @@ if __name__ == "__main__":
         "propagation": propagation,
         "history": history,
         "progress": progress,
+        "neighborhoods": neighborhoods,
+        "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set_size": elite_set_size,
         "real": real,
@@ -159,6 +197,33 @@ if __name__ == "__main__":
         json.dump(pretty_data, file, indent=4)
 
     print(f"Generated pretty JSON at {json_output.relative_to(working_dir)}")
+
+    csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
+    with csv_output.open("w") as file:
+        file.write("sep=,\n")
+        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes\n")
+        for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
+            segments = [
+                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row} * L{row}"),
+                str(p["solution"]["travel_cost"]),
+                str(p["penalty_coefficients"][0]),
+                str(p["solution"]["drone_energy_violation"]),
+                str(p["penalty_coefficients"][1]),
+                str(p["solution"]["capacity_violation"]),
+                str(p["penalty_coefficients"][2]),
+                str(p["solution"]["working_time_violation"]),
+                str(p["penalty_coefficients"][3]),
+                str(p["solution"]["fixed_time_violation"]),
+                str(p["penalty_coefficients"][4]),
+                str(p["solution"]["fixed_distance_violation"]),
+                csv_wrap(neighborhood["label"]),
+                csv_wrap(neighborhood["pair"]),
+                csv_wrap(p["solution"]["truck_paths"]),
+                csv_wrap(p["solution"]["drone_paths"]),
+            ]
+            file.write(",".join(segments) + "\n")
+
+    print(f"Generated CSV at {csv_output.relative_to(working_dir)}")
 
     pyplot_output = ROOT / "result" / f"{namespace.problem}-{index}-plot.py"
     with pyplot_output.open("w") as file:

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <list>
@@ -147,6 +148,6 @@ namespace std
     template <typename T1, typename T2>
     ostream &operator<<(ostream &stream, const pair<T1, T2> &_p)
     {
-        return stream << "<" << _p.first << ", " << _p.second << ">";
+        return stream << "(" << _p.first << ", " << _p.second << ")";
     }
 }

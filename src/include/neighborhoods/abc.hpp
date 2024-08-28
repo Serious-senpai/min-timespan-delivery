@@ -55,6 +55,16 @@ namespace d2d
         std::vector<_tabu_pair> _tabu_list;
 
     public:
+        _tabu_pair last_tabu() const
+        {
+            if (_tabu_list.empty())
+            {
+                return std::make_pair(-1, -1);
+            }
+
+            return _tabu_list.back();
+        }
+
         void add_to_tabu(const std::size_t &first, const std::size_t &second)
         {
             auto problem = Problem::get_instance();
