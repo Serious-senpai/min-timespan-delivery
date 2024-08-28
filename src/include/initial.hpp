@@ -21,6 +21,11 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> &truck_routes,
         std::vector<std::vector<DroneRoute>> &drone_routes)
     {
+        if constexpr (std::is_same_v<RT, DroneRoute>)
+        {
+            return false;
+        }
+
         RT old = route;
         route.push_back(customer);
 
@@ -40,6 +45,14 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> &truck_routes,
         std::vector<std::vector<DroneRoute>> &drone_routes)
     {
+        if constexpr (std::is_same_v<RT, TruckRoute>)
+        {
+            if (routes.size() == 1)
+            {
+                return false;
+            }
+        }
+
         routes.emplace_back(std::vector<std::size_t>{0, customer, 0});
 
         if (_insertable<ST>(truck_routes, drone_routes))
@@ -128,7 +141,15 @@ namespace d2d
 
         for (auto &customer : next_phase)
         {
-            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
+            auto truck = utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1);
+            if (truck_routes[truck].empty())
+            {
+                truck_routes[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
+            }
+            else
+            {
+                truck_routes[truck].back().push_back(customer);
+            }
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
@@ -364,7 +385,15 @@ namespace d2d
 
         for (auto &customer : left_over)
         {
-            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
+            auto truck = utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1);
+            if (truck_routes[truck].empty())
+            {
+                truck_routes[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
+            }
+            else
+            {
+                truck_routes[truck].back().push_back(customer);
+            }
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
