@@ -57,6 +57,11 @@ namespace d2d
     public:
         _tabu_pair last_tabu() const
         {
+            if (_tabu_list.empty())
+            {
+                return std::make_pair(-1, -1);
+            }
+
             return _tabu_list.back();
         }
 
