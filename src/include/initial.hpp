@@ -268,7 +268,15 @@ namespace d2d
 
             if constexpr (std::is_same_v<RT, TruckRoute>)
             {
-                truck_routes[vehicle].push_back(TruckRoute({0, customer, 0}));
+                if (!_try_insert<TruckRoute, ST>(truck_routes[vehicle], customer, truck_routes, drone_routes))
+                {
+                    if (unhandled_ptr != nullptr)
+                    {
+                        unhandled_ptr->push_back(customer);
+                    }
+
+                    continue;
+                }
             }
             else
             {
@@ -336,7 +344,14 @@ namespace d2d
         }
 
         std::vector<std::vector<DroneRoute>> drone_routes = _initial_2_helper<DroneRoute, ST>(dronable, &truck_only);
-        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, nullptr);
+
+        std::vector<std::size_t> left_over;
+        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, &left_over);
+
+        for (auto &customer : left_over)
+        {
+            truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
+        }
 
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
     }

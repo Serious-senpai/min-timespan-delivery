@@ -199,10 +199,10 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("fitness,cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes\n")
-        for p, neighborhood in zip(data["progress"], neighborhoods, strict=True):
+        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes\n")
+        for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
             segments = [
-                str(p["solution"]["cost"]),
+                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row} * L{row}"),
                 str(p["solution"]["working_time"]),
                 str(p["penalty_coefficients"][0]),
                 str(p["solution"]["drone_energy_violation"]),
