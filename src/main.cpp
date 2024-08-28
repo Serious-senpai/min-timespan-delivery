@@ -23,8 +23,10 @@ void display(
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
     const std::vector<std::array<double, 5>> &coefficients,
-    const std::vector<std::string> &neighborhoods)
+    const std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> &neighborhoods)
 {
+    std::cout << std::fixed << std::setprecision(6);
+
     auto problem = d2d::Problem::get_instance();
     std::cout << problem->iterations << "\n";
     std::cout << problem->tabu_size << "\n";
@@ -84,7 +86,8 @@ void display(
     std::cout << neighborhoods.size() << "\n";
     for (auto &neighborhood : neighborhoods)
     {
-        std::cout << neighborhood << "\n";
+        std::cout << neighborhood.first << "\n";
+        std::cout << neighborhood.second << "\n";
     }
 
     std::cout << initialization_label << "\n";
@@ -104,7 +107,7 @@ int main()
     std::size_t last_improved;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    std::vector<std::string> neighborhoods;
+    std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> neighborhoods;
     auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &history, &progress, &coefficients, &neighborhoods);
 
     display(ptr, initialization_label, last_improved, history, progress, coefficients, neighborhoods);
