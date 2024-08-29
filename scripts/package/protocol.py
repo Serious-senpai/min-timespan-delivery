@@ -76,6 +76,7 @@ class ResultJSON(Generic[T], TypedDict):
     neighborhoods: List[NeighborhoodJSON]
     initialization_label: str
     last_improved: int
+    elite_set: List[List[float]]
     real: float
     user: float
     sys: float
