@@ -45,6 +45,26 @@ namespace d2d
 
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
+        template <typename RT, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+        void _hamming_distance(const std::vector<std::vector<RT>> &vehicle_routes, std::vector<std::size_t> &repr) const
+        {
+            auto problem = Problem::get_instance();
+            repr.resize(problem->customers.size() - 1);
+
+            for (auto &routes : vehicle_routes)
+            {
+                for (auto &route : routes)
+                {
+                    const std::vector<std::size_t> &customers = route.customers();
+                    for (std::size_t i = 1; i + 2 < customers.size(); i++)
+                    {
+                        auto current = customers[i], next = customers[i + 1];
+                        repr[current] = next;
+                    }
+                }
+            }
+        }
+
     public:
         /** @brief Working time of truck routes */
         const std::vector<double> truck_working_time;
@@ -194,31 +214,13 @@ namespace d2d
             auto problem = Problem::get_instance();
             const std::size_t n = problem->customers.size() - 1;
 
-#define OPERATION(vehicle_routes, repr)                                        \
-    {                                                                          \
-        for (auto &routes : vehicle_routes)                                    \
-        {                                                                      \
-            for (auto &route : routes)                                         \
-            {                                                                  \
-                const std::vector<std::size_t> &customers = route.customers(); \
-                for (std::size_t i = 1; i + 2 < customers.size(); i++)         \
-                {                                                              \
-                    auto current = customers[i], next = customers[i + 1];      \
-                    repr[current] = next;                                      \
-                }                                                              \
-            }                                                                  \
-        }                                                                      \
-    }
+            std::vector<std::size_t> self_repr;
+            _hamming_distance(truck_routes, self_repr);
+            _hamming_distance(drone_routes, self_repr);
 
-            std::vector<std::size_t> self_repr(n);
-            OPERATION(truck_routes, self_repr);
-            OPERATION(drone_routes, self_repr);
-
-            std::vector<std::size_t> other_repr(n);
-            OPERATION(other->truck_routes, other_repr);
-            OPERATION(other->drone_routes, other_repr);
-
-#undef OPERATION
+            std::vector<std::size_t> other_repr;
+            _hamming_distance(other->truck_routes, other_repr);
+            _hamming_distance(other->drone_routes, other_repr);
 
             std::size_t result = 0;
             for (std::size_t i = 0; i < n; i++)
@@ -232,7 +234,9 @@ namespace d2d
             return result;
         }
 
-        std::shared_ptr<Solution> post_optimization()
+        std::shared_ptr<Solution> post_optimization(
+            std::vector<std::shared_ptr<Solution>> *progress_ptr,
+            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
         {
             auto problem = Problem::get_instance();
             std::size_t iteration = 0;
@@ -277,6 +281,23 @@ namespace d2d
                     }
 
                     neighborhood->inter_route(result, aspiration_criteria);
+
+                    if (progress_ptr != nullptr)
+                    {
+                        progress_ptr->push_back(result);
+                    }
+                    if (neighborhoods_ptr != nullptr)
+                    {
+                        auto label = neighborhood->label() + "/post-optimization/inter-route";
+                        if (ptr == nullptr)
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
+                        }
+                        else
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
+                        }
+                    }
                 }
             }
 
@@ -299,6 +320,23 @@ namespace d2d
                     }
 
                     neighborhood->intra_route(result, aspiration_criteria);
+
+                    if (progress_ptr != nullptr)
+                    {
+                        progress_ptr->push_back(result);
+                    }
+                    if (neighborhoods_ptr != nullptr)
+                    {
+                        auto label = neighborhood->label() + "/post-optimization/intra-route";
+                        if (ptr == nullptr)
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
+                        }
+                        else
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
+                        }
+                    }
                 }
             }
 
@@ -314,9 +352,11 @@ namespace d2d
         static std::shared_ptr<Solution> tabu_search(
             std::string *initialization_label_ptr,
             std::size_t *last_improved_ptr,
+            std::size_t *iterations_ptr,
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr,
+            std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
             std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
     };
 
@@ -417,7 +457,7 @@ namespace d2d
 
         return result;
     }
-    
+
     double Solution::_calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
@@ -580,9 +620,11 @@ namespace d2d
     std::shared_ptr<Solution> Solution::tabu_search(
         std::string *initialization_label_ptr,
         std::size_t *last_improved_ptr,
+        std::size_t *iterations_ptr,
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr,
+        std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
         std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
@@ -592,39 +634,50 @@ namespace d2d
         {
             *last_improved_ptr = 0;
         }
+        if (iterations_ptr != nullptr)
+        {
+            *iterations_ptr = 0;
+        }
 
         std::size_t neighborhood = 0;
-        for (std::size_t iteration = 0; iteration < problem->iterations; iteration++)
+        std::vector<std::shared_ptr<Solution>> elite = {result};
+        auto insert_elite = [&problem, &elite, &result]()
+        {
+            std::sort(
+                elite.begin(), elite.end(),
+                [&result](const std::shared_ptr<Solution> &first, const std::shared_ptr<Solution> &second)
+                {
+                    return result->hamming_distance(first) < result->hamming_distance(second);
+                });
+
+            if (elite.size() == 10 || (!elite.empty() && result->hamming_distance(elite.front()) <= problem->hamming_distance_factor * problem->customers.size()))
+            {
+                elite.erase(elite.begin());
+            }
+            elite.push_back(result);
+        };
+
+        for (std::size_t iteration = 0;; iteration++)
         {
             if (problem->verbose)
             {
-                std::string format_string = "\rIteration #%lu/%lu(";
+                std::string format_string = "\rIteration #%lu(";
                 format_string += current->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += "/";
                 format_string += result->cost() > 999999.0 ? "%.2e" : "%.2lf";
                 format_string += ") ";
 
-                auto prefix = utils::format(format_string, iteration + 1, problem->iterations, current->cost(), result->cost());
+                auto prefix = utils::format(format_string, iteration + 1, current->cost(), result->cost());
                 std::cerr << prefix;
-                try
-                {
-                    auto width = utils::get_console_size(false).first;
-                    const std::size_t excess = 10;
-                    if (prefix.size() + excess < width)
-                    {
-                        auto total = width - prefix.size() - excess,
-                             cover = (iteration * total + problem->iterations - 1) / problem->iterations;
-                        std::cerr << '[' << std::string(cover, '#') << std::string(total - cover, ' ') << ']';
-                    }
-                }
-                catch (std::runtime_error &)
-                {
-                    // pass
-                }
                 std::cerr << std::flush;
             }
 
-            const auto aspiration_criteria = [&last_improved_ptr, &result, &iteration](std::shared_ptr<Solution> ptr)
+            if (iterations_ptr != nullptr)
+            {
+                *iterations_ptr = iteration + 1;
+            }
+
+            const auto aspiration_criteria = [&last_improved_ptr, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
@@ -634,6 +687,8 @@ namespace d2d
                         *last_improved_ptr = iteration;
                     }
 
+                    insert_elite();
+
                     return true;
                 }
 
@@ -641,11 +696,6 @@ namespace d2d
             };
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
-            if (neighborhoods_ptr != nullptr)
-            {
-                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
-            }
-
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
@@ -657,7 +707,30 @@ namespace d2d
                     {
                         *last_improved_ptr = iteration;
                     }
+
+                    insert_elite();
                 }
+            }
+
+            if (progress_ptr != nullptr)
+            {
+                progress_ptr->push_back(current);
+            }
+            if (neighborhoods_ptr != nullptr)
+            {
+                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
+            }
+
+            if (last_improved_ptr != nullptr && iteration != *last_improved_ptr && (iteration - *last_improved_ptr) % problem->reset_after == 0)
+            {
+                if (elite.empty())
+                {
+                    break;
+                }
+
+                auto iter = utils::random_element(elite);
+                current = *iter;
+                elite.erase(iter);
             }
 
             const auto violation_update = [](double &A, const double &violation)
@@ -697,14 +770,14 @@ namespace d2d
                 history_ptr->push_back(result);
             }
 
-            if (progress_ptr != nullptr)
-            {
-                progress_ptr->push_back(current);
-            }
-
             if (coefficients_ptr != nullptr)
             {
                 coefficients_ptr->push_back({A1, A2, A3, A4, A5});
+            }
+
+            if (elite_set_ptr != nullptr)
+            {
+                elite_set_ptr->push_back(elite);
             }
         }
 
@@ -713,7 +786,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        auto post_opt = result->post_optimization();
+        auto post_opt = result->post_optimization(progress_ptr, neighborhoods_ptr);
         return post_opt;
     }
 }

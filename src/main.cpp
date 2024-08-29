@@ -20,15 +20,17 @@ void display(
     std::shared_ptr<d2d::Solution> ptr,
     const std::string &initialization_label,
     const std::size_t &last_improved,
+    const std::size_t &iterations,
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
     const std::vector<std::array<double, 5>> &coefficients,
+    const std::vector<std::vector<std::shared_ptr<d2d::Solution>>> &elite_set_size,
     const std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> &neighborhoods)
 {
     std::cout << std::fixed << std::setprecision(6);
 
     auto problem = d2d::Problem::get_instance();
-    std::cout << problem->iterations << "\n";
+    std::cout << iterations << "\n";
     std::cout << problem->tabu_size << "\n";
 
     if (problem->linear != nullptr)
@@ -76,12 +78,12 @@ void display(
     }
     std::cout << "-1\n"; // cost = -1. Signal the end of history chain.
 
-    for (std::size_t iteration = 0; iteration < history.size(); iteration++)
+    std::cout << progress.size() << "\n";
+    for (std::size_t iteration = 0; iteration < progress.size(); iteration++)
     {
         print_solution(progress[iteration]);
-        std::cout << coefficients[iteration] << "\n";
+        std::cout << coefficients[std::min(iteration, coefficients.size() - 1)] << "\n";
     }
-    std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
     std::cout << neighborhoods.size() << "\n";
     for (auto &neighborhood : neighborhoods)
@@ -92,12 +94,24 @@ void display(
 
     std::cout << initialization_label << "\n";
     std::cout << last_improved << "\n";
+
+    std::cout << elite_set_size.size() << "\n";
+    for (auto &elite_set : elite_set_size)
+    {
+        std::vector<double> costs(elite_set.size());
+        std::transform(
+            elite_set.begin(),
+            elite_set.end(),
+            costs.begin(),
+            [](const std::shared_ptr<d2d::Solution> &ptr)
+            { return ptr->travel_cost; });
+        std::cout << costs << "\n";
+    }
 }
 
 int main()
 {
     auto problem = d2d::Problem::get_instance();
-    std::cerr << "iterations = " << problem->iterations << "\n";
     std::cerr << "tabu_size = " << problem->tabu_size << "\n";
     std::cerr << "verbose = " << problem->verbose << "\n";
     std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
@@ -107,13 +121,14 @@ int main()
     std::cerr << "drone_unit_cost = " << problem->drone_unit_cost << "\n";
 
     std::string initialization_label;
-    std::size_t last_improved;
+    std::size_t last_improved, iterations;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
+    std::vector<std::vector<std::shared_ptr<d2d::Solution>>> elite_set;
     std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> neighborhoods;
-    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &history, &progress, &coefficients, &neighborhoods);
+    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set, &neighborhoods);
 
-    display(ptr, initialization_label, last_improved, history, progress, coefficients, neighborhoods);
+    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set, neighborhoods);
 
     return 0;
 }
