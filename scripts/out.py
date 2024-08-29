@@ -136,6 +136,8 @@ if __name__ == "__main__":
     elite_set_size = int(input())
     elite_set: List[List[float]] = [eval(input()) for _ in range(elite_set_size)]
 
+    elite_set_extraction: List[int] = eval(input())
+
     real = user = sys = -1.0
 
     for _ in range(3):
@@ -172,6 +174,7 @@ if __name__ == "__main__":
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
+        "elite_set_extraction": elite_set_extraction,
         "real": real,
         "user": user,
         "sys": sys,
@@ -205,10 +208,12 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs\n")
+        file.write("Old fitness,New fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
         for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
+            iteration = row - 2
             segments = [
-                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row} * L{row}"),
+                csv_wrap(f"=C{row} + D{row - 1} * E{row} + F{row - 1} * G{row} + H{row - 1} * I{row} + J{row - 1} * K{row} + L{row - 1} * M{row}" if row > 2 else ""),
+                csv_wrap(f"=C{row} + D{row} * E{row} + F{row} * G{row} + H{row} * I{row} + J{row} * K{row} + L{row} * M{row}"),
                 str(p["solution"]["working_time"]),
                 str(p["penalty_coefficients"][0]),
                 str(p["solution"]["drone_energy_violation"]),
@@ -224,7 +229,8 @@ if __name__ == "__main__":
                 csv_wrap(neighborhood["pair"]),
                 csv_wrap(p["solution"]["truck_paths"]),
                 csv_wrap(p["solution"]["drone_paths"]),
-                csv_wrap(elite_set[row - 2] if row - 2 < len(elite_set) else ""),
+                csv_wrap(sorted(elite_set[iteration], reverse=True) if iteration < len(elite_set) else ""),
+                "Extract from elite set" if iteration in elite_set_extraction else "",
             ]
             file.write(",".join(segments) + "\n")
 

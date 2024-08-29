@@ -339,6 +339,7 @@ namespace d2d
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr,
             std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
+            std::vector<std::size_t> *elite_set_extraction_ptr,
             std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
     };
 
@@ -604,6 +605,7 @@ namespace d2d
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr,
         std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
+        std::vector<std::size_t> *elite_set_extraction_ptr,
         std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
@@ -716,6 +718,11 @@ namespace d2d
 
             if (last_improved_ptr != nullptr && iteration != *last_improved_ptr && (iteration - *last_improved_ptr) % problem->reset_after == 0)
             {
+                if (elite_set_extraction_ptr != nullptr)
+                {
+                    elite_set_extraction_ptr->push_back(iteration);
+                }
+
                 if (elite.empty())
                 {
                     break;
