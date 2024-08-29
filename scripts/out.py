@@ -110,9 +110,10 @@ if __name__ == "__main__":
 
         history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
 
+    progress_size = int(input())
     progress: List[ProgressJSON[SolutionJSON]] = []
-    while (cost := float(input())) != -1:
-        s = read_solution(cost=cost)
+    for _ in range(progress_size):
+        s = read_solution()
         penalty_coefficients = eval(input())
 
         s["cost"] = (
