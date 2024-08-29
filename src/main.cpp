@@ -24,7 +24,7 @@ void display(
     const std::vector<std::shared_ptr<d2d::Solution>> &history,
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
     const std::vector<std::array<double, 5>> &coefficients,
-    const std::vector<std::size_t> &elite_set_size,
+    const std::vector<std::vector<std::shared_ptr<d2d::Solution>>> &elite_set_size,
     const std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> &neighborhoods)
 {
     std::cout << std::fixed << std::setprecision(6);
@@ -94,7 +94,19 @@ void display(
 
     std::cout << initialization_label << "\n";
     std::cout << last_improved << "\n";
-    std::cout << elite_set_size << "\n";
+
+    std::cout << elite_set_size.size() << "\n";
+    for (auto &elite_set : elite_set_size)
+    {
+        std::vector<double> costs(elite_set.size());
+        std::transform(
+            elite_set.begin(),
+            elite_set.end(),
+            costs.begin(),
+            [](const std::shared_ptr<d2d::Solution> &ptr)
+            { return ptr->working_time; });
+        std::cout << costs << "\n";
+    }
 }
 
 int main()
@@ -111,11 +123,11 @@ int main()
     std::size_t last_improved, iterations;
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
-    std::vector<std::size_t> elite_set_size;
+    std::vector<std::vector<std::shared_ptr<d2d::Solution>>> elite_set;
     std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> neighborhoods;
-    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set_size, &neighborhoods);
+    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set, &neighborhoods);
 
-    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set_size, neighborhoods);
+    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set, neighborhoods);
 
     return 0;
 }

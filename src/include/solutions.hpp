@@ -46,6 +46,26 @@ namespace d2d
 
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
+        template <typename RT, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+        void _hamming_distance(const std::vector<std::vector<RT>> &vehicle_routes, std::vector<std::size_t> &repr) const
+        {
+            auto problem = Problem::get_instance();
+            repr.resize(problem->customers.size() - 1);
+
+            for (auto &routes : vehicle_routes)
+            {
+                for (auto &route : routes)
+                {
+                    const std::vector<std::size_t> &customers = route.customers();
+                    for (std::size_t i = 1; i + 2 < customers.size(); i++)
+                    {
+                        auto current = customers[i], next = customers[i + 1];
+                        repr[current] = next;
+                    }
+                }
+            }
+        }
+
     public:
         /** @brief Working time of truck routes */
         const std::vector<double> truck_working_time;
@@ -176,31 +196,13 @@ namespace d2d
             auto problem = Problem::get_instance();
             const std::size_t n = problem->customers.size() - 1;
 
-#define OPERATION(vehicle_routes, repr)                                        \
-    {                                                                          \
-        for (auto &routes : vehicle_routes)                                    \
-        {                                                                      \
-            for (auto &route : routes)                                         \
-            {                                                                  \
-                const std::vector<std::size_t> &customers = route.customers(); \
-                for (std::size_t i = 1; i + 2 < customers.size(); i++)         \
-                {                                                              \
-                    auto current = customers[i], next = customers[i + 1];      \
-                    repr[current] = next;                                      \
-                }                                                              \
-            }                                                                  \
-        }                                                                      \
-    }
+            std::vector<std::size_t> self_repr;
+            _hamming_distance(truck_routes, self_repr);
+            _hamming_distance(drone_routes, self_repr);
 
-            std::vector<std::size_t> self_repr(n);
-            OPERATION(truck_routes, self_repr);
-            OPERATION(drone_routes, self_repr);
-
-            std::vector<std::size_t> other_repr(n);
-            OPERATION(other->truck_routes, other_repr);
-            OPERATION(other->drone_routes, other_repr);
-
-#undef OPERATION
+            std::vector<std::size_t> other_repr;
+            _hamming_distance(other->truck_routes, other_repr);
+            _hamming_distance(other->drone_routes, other_repr);
 
             std::size_t result = 0;
             for (std::size_t i = 0; i < n; i++)
@@ -336,7 +338,7 @@ namespace d2d
             std::vector<std::shared_ptr<Solution>> *history_ptr,
             std::vector<std::shared_ptr<Solution>> *progress_ptr,
             std::vector<std::array<double, 5>> *coefficients_ptr,
-            std::vector<std::size_t> *elite_size_ptr,
+            std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
             std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
     };
 
@@ -601,7 +603,7 @@ namespace d2d
         std::vector<std::shared_ptr<Solution>> *history_ptr,
         std::vector<std::shared_ptr<Solution>> *progress_ptr,
         std::vector<std::array<double, 5>> *coefficients_ptr,
-        std::vector<std::size_t> *elite_size_ptr,
+        std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
         std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
     {
         auto problem = Problem::get_instance();
@@ -766,9 +768,9 @@ namespace d2d
                 coefficients_ptr->push_back({A1, A2, A3, A4, A5});
             }
 
-            if (elite_size_ptr != nullptr)
+            if (elite_set_ptr != nullptr)
             {
-                elite_size_ptr->push_back(elite.size());
+                elite_set_ptr->push_back(elite);
             }
         }
 
