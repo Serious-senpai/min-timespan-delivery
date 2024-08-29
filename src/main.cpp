@@ -76,12 +76,12 @@ void display(
     }
     std::cout << "-1\n"; // cost = -1. Signal the end of history chain.
 
-    for (std::size_t iteration = 0; iteration < history.size(); iteration++)
+    std::cout << progress.size() << "\n";
+    for (std::size_t iteration = 0; iteration < progress.size(); iteration++)
     {
         print_solution(progress[iteration]);
-        std::cout << coefficients[iteration] << "\n";
+        std::cout << coefficients[std::min(iteration, coefficients.size() - 1)] << "\n";
     }
-    std::cout << "-1\n"; // cost = -1. Signal the end of progress chain.
 
     std::cout << neighborhoods.size() << "\n";
     for (auto &neighborhood : neighborhoods)

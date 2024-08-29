@@ -214,7 +214,9 @@ namespace d2d
             return result;
         }
 
-        std::shared_ptr<Solution> post_optimization()
+        std::shared_ptr<Solution> post_optimization(
+            std::vector<std::shared_ptr<Solution>> *progress_ptr,
+            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
         {
             auto problem = Problem::get_instance();
             std::size_t iteration = 0;
@@ -259,6 +261,23 @@ namespace d2d
                     }
 
                     neighborhood->inter_route(result, aspiration_criteria);
+
+                    if (progress_ptr != nullptr)
+                    {
+                        progress_ptr->push_back(result);
+                    }
+                    if (neighborhoods_ptr != nullptr)
+                    {
+                        auto label = neighborhood->label() + "/post-optimization/inter-route";
+                        if (ptr == nullptr)
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
+                        }
+                        else
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
+                        }
+                    }
                 }
             }
 
@@ -281,6 +300,23 @@ namespace d2d
                     }
 
                     neighborhood->intra_route(result, aspiration_criteria);
+
+                    if (progress_ptr != nullptr)
+                    {
+                        progress_ptr->push_back(result);
+                    }
+                    if (neighborhoods_ptr != nullptr)
+                    {
+                        auto label = neighborhood->label() + "/post-optimization/intra-route";
+                        if (ptr == nullptr)
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
+                        }
+                        else
+                        {
+                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
+                        }
+                    }
                 }
             }
 
@@ -620,11 +656,6 @@ namespace d2d
             };
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
-            if (neighborhoods_ptr != nullptr)
-            {
-                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
-            }
-
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
@@ -637,6 +668,15 @@ namespace d2d
                         *last_improved_ptr = iteration;
                     }
                 }
+            }
+
+            if (progress_ptr != nullptr)
+            {
+                progress_ptr->push_back(current);
+            }
+            if (neighborhoods_ptr != nullptr)
+            {
+                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
             }
 
             const auto violation_update = [](double &A, const double &violation)
@@ -676,11 +716,6 @@ namespace d2d
                 history_ptr->push_back(result);
             }
 
-            if (progress_ptr != nullptr)
-            {
-                progress_ptr->push_back(current);
-            }
-
             if (coefficients_ptr != nullptr)
             {
                 coefficients_ptr->push_back({A1, A2, A3, A4, A5});
@@ -692,7 +727,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        auto post_opt = result->post_optimization();
+        auto post_opt = result->post_optimization(progress_ptr, neighborhoods_ptr);
         return post_opt;
     }
 }
