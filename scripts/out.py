@@ -110,9 +110,10 @@ if __name__ == "__main__":
 
         history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
 
+    progress_size = int(input())
     progress: List[ProgressJSON[SolutionJSON]] = []
-    while (cost := float(input())) != -1:
-        s = read_solution(cost=cost)
+    for _ in range(progress_size):
+        s = read_solution()
         penalty_coefficients = eval(input())
 
         s["cost"] = (
@@ -131,7 +132,10 @@ if __name__ == "__main__":
 
     initialization_label = input()
     last_improved = int(input())
-    elite_set_size: List[int] = eval(input())
+
+    elite_set_size = int(input())
+    elite_set: List[List[float]] = [eval(input()) for _ in range(elite_set_size)]
+
     real = user = sys = -1.0
 
     for _ in range(3):
@@ -167,7 +171,7 @@ if __name__ == "__main__":
         "neighborhoods": neighborhoods,
         "initialization_label": initialization_label,
         "last_improved": last_improved,
-        "elite_set_size": elite_set_size,
+        "elite_set": elite_set,
         "real": real,
         "user": user,
         "sys": sys,
@@ -201,7 +205,7 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes\n")
+        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs\n")
         for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
             segments = [
                 csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row} * L{row}"),
@@ -220,6 +224,7 @@ if __name__ == "__main__":
                 csv_wrap(neighborhood["pair"]),
                 csv_wrap(p["solution"]["truck_paths"]),
                 csv_wrap(p["solution"]["drone_paths"]),
+                csv_wrap(elite_set[row - 2] if row - 2 < len(elite_set) else ""),
             ]
             file.write(",".join(segments) + "\n")
 
