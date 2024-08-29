@@ -171,9 +171,19 @@ namespace d2d
         alglib::clusterizerrunkmeans(state, vehicles_count, report);
 
         std::vector<std::vector<std::size_t>> clusters(vehicles_count);
-        for (std::size_t i = 0; i < customers.size(); i++)
+        if (report.terminationtype == 1)
         {
-            clusters[report.cidx[i]].push_back(customers[i]);
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                clusters[report.cidx[i]].push_back(customers[i]);
+            }
+        }
+        else
+        {
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                clusters[i % clusters.size()].push_back(customers[i]);
+            }
         }
 
         for (auto &cluster : clusters)
