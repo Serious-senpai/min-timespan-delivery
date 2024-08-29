@@ -25,6 +25,7 @@ void display(
     const std::vector<std::shared_ptr<d2d::Solution>> &progress,
     const std::vector<std::array<double, 5>> &coefficients,
     const std::vector<std::vector<std::shared_ptr<d2d::Solution>>> &elite_set_size,
+    const std::vector<std::size_t> &elite_set_extraction,
     const std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> &neighborhoods)
 {
     std::cout << std::fixed << std::setprecision(6);
@@ -107,6 +108,8 @@ void display(
             { return ptr->travel_cost; });
         std::cout << costs << "\n";
     }
+
+    std::cout << elite_set_extraction << std::endl;
 }
 
 int main()
@@ -125,10 +128,11 @@ int main()
     std::vector<std::shared_ptr<d2d::Solution>> history, progress;
     std::vector<std::array<double, 5>> coefficients;
     std::vector<std::vector<std::shared_ptr<d2d::Solution>>> elite_set;
+    std::vector<std::size_t> elite_set_extraction;
     std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> neighborhoods;
-    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set, &neighborhoods);
+    auto ptr = d2d::Solution::tabu_search(&initialization_label, &last_improved, &iterations, &history, &progress, &coefficients, &elite_set, &elite_set_extraction, &neighborhoods);
 
-    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set, neighborhoods);
+    display(ptr, initialization_label, last_improved, iterations, history, progress, coefficients, elite_set, elite_set_extraction, neighborhoods);
 
     return 0;
 }
