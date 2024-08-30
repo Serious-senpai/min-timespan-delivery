@@ -7,14 +7,12 @@ import random
 import re
 import string
 import textwrap
-from typing_extensions import List, Optional
+from typing_extensions import List, Optional, Tuple
 
 from package import (
-    HistoryJSON,
     NeighborhoodJSON,
     Problem,
     PrettySolutionJSON,
-    ProgressJSON,
     PropagationJSON,
     ResultJSON,
     SolutionJSON,
@@ -32,9 +30,10 @@ class Namespace(argparse.Namespace):
     problem: str
 
 
-def read_solution(*, cost: Optional[float] = None) -> SolutionJSON:
-    if cost is None:
-        cost = float(input())
+def read_solution() -> Optional[SolutionJSON]:
+    cost = float(input())
+    if cost == -1:
+        return None
 
     working_time = float(input())
     drone_energy_violation = float(input())
@@ -84,59 +83,41 @@ if __name__ == "__main__":
     problem = Problem.import_data(namespace.problem)
 
     solution = read_solution()
+    assert solution is not None
 
     propagation: List[PropagationJSON[SolutionJSON]] = []
-    while (cost := float(input())) != -1:
-        s = read_solution(cost=cost)
+    while True:
+        s = read_solution()
+        if s is None:
+            break
+
         label = input()
         propagation.append({"solution": s, "label": label})
 
     propagation.reverse()
 
-    history: List[HistoryJSON[SolutionJSON]] = []
-    while (cost := float(input())) != -1:
-        s = read_solution(cost=cost)
-        iteration = int(input())
-        penalty_coefficients: List[float] = eval(input())
+    history = [read_solution() for _ in range(int(input()))]
+    progress = [read_solution() for _ in range(int(input()))]
+    coefficients: List[List[float]] = eval(input())
 
-        s["cost"] = (
-            s["working_time"]
-            + s["drone_energy_violation"] * penalty_coefficients[0]
-            + s["capacity_violation"] * penalty_coefficients[1]
-            + s["waiting_time_violation"] * penalty_coefficients[2]
-            + s["fixed_time_violation"] * penalty_coefficients[3]
-            + s["fixed_distance_violation"] * penalty_coefficients[4]
-        )
+    for i in range(len(coefficients)):
+        for d in (history[i], progress[i]):
+            if d is not None:
+                d["cost"] = (
+                    d["working_time"]
+                    + d["drone_energy_violation"] * coefficients[i][0]
+                    + d["capacity_violation"] * coefficients[i][1]
+                    + d["waiting_time_violation"] * coefficients[i][2]
+                    + d["fixed_time_violation"] * coefficients[i][3]
+                    + d["fixed_distance_violation"] * coefficients[i][4]
+                )
 
-        history.append({"solution": s, "iteration": iteration, "penalty_coefficients": penalty_coefficients})
-
-    progress_size = int(input())
-    progress: List[ProgressJSON[SolutionJSON]] = []
-    for _ in range(progress_size):
-        s = read_solution()
-        penalty_coefficients = eval(input())
-
-        s["cost"] = (
-            s["working_time"]
-            + s["drone_energy_violation"] * penalty_coefficients[0]
-            + s["capacity_violation"] * penalty_coefficients[1]
-            + s["waiting_time_violation"] * penalty_coefficients[2]
-            + s["fixed_time_violation"] * penalty_coefficients[3]
-            + s["fixed_distance_violation"] * penalty_coefficients[4]
-        )
-
-        progress.append({"solution": s, "penalty_coefficients": penalty_coefficients})
-
-    neighborhoods_size = int(input())
-    neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(neighborhoods_size)]
+    neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(int(input()))]
 
     initialization_label = input()
     last_improved = int(input())
 
-    elite_set_size = int(input())
-    elite_set: List[List[float]] = [eval(input()) for _ in range(elite_set_size)]
-
-    elite_set_extraction: List[int] = eval(input())
+    elite_set: List[List[float]] = [eval(input()) for _ in range(int(input()))]
 
     real = user = sys = -1.0
 
@@ -170,11 +151,11 @@ if __name__ == "__main__":
         "propagation": propagation,
         "history": history,
         "progress": progress,
+        "coefficients": coefficients,
         "neighborhoods": neighborhoods,
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
-        "elite_set_extraction": elite_set_extraction,
         "real": real,
         "user": user,
         "sys": sys,
@@ -195,8 +176,8 @@ if __name__ == "__main__":
         **data,
         "solution": prettify(solution),
         "propagation": [{"solution": prettify(p["solution"]), "label": p["label"]} for p in propagation],
-        "history": [{"solution": prettify(h["solution"]), "iteration": h["iteration"], "penalty_coefficients": h["penalty_coefficients"]} for h in history],
-        "progress": [{"solution": prettify(p["solution"]), "penalty_coefficients": p["penalty_coefficients"]} for p in progress],
+        "history": [prettify(h) for h in history],
+        "progress": [prettify(p) for p in progress],
     }
 
     json_output = ROOT / "result" / f"{namespace.problem}-{index}-pretty.json"
@@ -209,32 +190,46 @@ if __name__ == "__main__":
     with csv_output.open("w") as file:
         file.write("sep=,\n")
         file.write("Old fitness,New fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
-        for row, (p, neighborhood) in enumerate(zip(data["progress"], neighborhoods, strict=True), start=2):
+        for row, (_progress, _coefficients, _neighborhood, _elite_set) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, strict=True), start=2):
             iteration = row - 2
             segments = [
                 csv_wrap(f"=C{row} + D{row - 1} * E{row} + F{row - 1} * G{row} + H{row - 1} * I{row} + J{row - 1} * K{row} + L{row - 1} * M{row}" if row > 2 else ""),
                 csv_wrap(f"=C{row} + D{row} * E{row} + F{row} * G{row} + H{row} * I{row} + J{row} * K{row} + L{row} * M{row}"),
-                str(p["solution"]["working_time"]),
-                str(p["penalty_coefficients"][0]),
-                str(p["solution"]["drone_energy_violation"]),
-                str(p["penalty_coefficients"][1]),
-                str(p["solution"]["capacity_violation"]),
-                str(p["penalty_coefficients"][2]),
-                str(p["solution"]["waiting_time_violation"]),
-                str(p["penalty_coefficients"][3]),
-                str(p["solution"]["fixed_time_violation"]),
-                str(p["penalty_coefficients"][4]),
-                str(p["solution"]["fixed_distance_violation"]),
-                csv_wrap(neighborhood["label"]),
-                csv_wrap(neighborhood["pair"]),
-                csv_wrap(p["solution"]["truck_paths"]),
-                csv_wrap(p["solution"]["drone_paths"]),
-                csv_wrap(sorted(elite_set[iteration], reverse=True) if iteration < len(elite_set) else ""),
-                "Extract from elite set" if iteration in elite_set_extraction else "",
+                str("" if _progress is None else _progress["working_time"]),
+                str(_coefficients[0]),
+                str("" if _progress is None else _progress["drone_energy_violation"]),
+                str(_coefficients[1]),
+                str("" if _progress is None else _progress["capacity_violation"]),
+                str(_coefficients[2]),
+                str("" if _progress is None else _progress["waiting_time_violation"]),
+                str(_coefficients[3]),
+                str("" if _progress is None else _progress["fixed_time_violation"]),
+                str(_coefficients[4]),
+                str("" if _progress is None else _progress["fixed_distance_violation"]),
+                csv_wrap(_neighborhood["label"]),
+                csv_wrap(_neighborhood["pair"]),
+                csv_wrap("" if _progress is None else _progress["truck_paths"]),
+                csv_wrap("" if _progress is None else _progress["drone_paths"]),
+                csv_wrap(sorted(_elite_set, reverse=True)),
             ]
             file.write(",".join(segments) + "\n")
 
     print(f"Generated CSV at {csv_output.relative_to(working_dir)}")
+
+    history_plot: Tuple[List[int], List[float], List[Tuple[int, float]]] = ([], [], [])
+    progress_plot: Tuple[List[int], List[float], List[Tuple[int, float]]] = ([], [], [])
+    for solutions, solution_plot in ((history, history_plot), (progress, progress_plot)):
+        for i, s in enumerate(solutions):
+            if s is not None:
+                solution_plot[0].append(i)
+                solution_plot[1].append(s["cost"])
+                if s["feasible"]:
+                    solution_plot[2].append((i, s["cost"]))
+
+    feasible_plot: Tuple[List[int], List[float]] = ([], [])
+    for x, y in (history_plot[2] + progress_plot[2]):
+        feasible_plot[0].append(x)
+        feasible_plot[1].append(y)
 
     pyplot_output = ROOT / "result" / f"{namespace.problem}-{index}-plot.py"
     with pyplot_output.open("w") as file:
@@ -256,9 +251,10 @@ if __name__ == "__main__":
 
             truck_paths: List[List[List[int]]] = {solution["truck_paths"]}
             drone_paths: List[List[List[int]]] = {solution["drone_paths"]}
-            history: List[Tuple[float, bool, int]] = {[(h["solution"]["cost"], h["solution"]["feasible"], h["iteration"]) for h in history]}
-            progress: List[Tuple[float, bool]] = {[(p["solution"]["cost"], p["solution"]["feasible"]) for p in progress]}
-            penalty_coefficients: List[List[float]] = {[p["penalty_coefficients"] for p in progress]}
+            history_plot: Tuple[List[int], List[float], List[Tuple[int, float]]] = {history_plot}
+            progress_plot: Tuple[List[int], List[float], List[Tuple[int, float]]] = {progress_plot}
+            feasible_plot: Tuple[List[int], List[float]] = {feasible_plot}
+            penalty_coefficients: List[List[float]] = {coefficients}
 
             # End of data region
 
@@ -346,34 +342,10 @@ if __name__ == "__main__":
                     ax.grid(True)
 
                 elif namespace.option == "history":
-                    history_costs: List[float] = []
-                    history_feasible: List[bool] = []
-                    for cost, feasible, iteration in history:
-                        while len(history_costs) <= iteration:
-                            history_costs.append(cost)
+                    pyplot.plot(history_plot[0], history_plot[1], label="Best")
+                    pyplot.plot(progress_plot[0], progress_plot[1], label="Progress")
 
-                        while len(history_feasible) <= iteration:
-                            history_feasible.append(feasible)
-
-                    while len(history_costs) < len(progress):
-                        history_costs.append(history_costs[-1])
-
-                    while len(history_feasible) < len(progress):
-                        history_feasible.append(history_feasible[-1])
-
-                    pyplot.plot(history_costs, label="History")
-                    pyplot.axhline(y=cost, color="black", linestyle="--", label="Best")
-
-                    pyplot.plot([p[0] for p in progress], label="Progress")
-
-                    feasible_x = [i for i, feasible in enumerate(history_feasible) if feasible]
-                    feasible_y = [history_costs[i] for i in feasible_x]
-                    for iteration, (cost, feasible) in enumerate(progress):
-                        if feasible:
-                            feasible_x.append(iteration)
-                            feasible_y.append(cost)
-
-                    ax.scatter(feasible_x, feasible_y, s=7, c="green", label="Feasible")
+                    ax.scatter(feasible_plot[0], feasible_plot[1], s=7, c="green", label="Feasible")
 
                 elif namespace.option == "coeff":
                     ax.set_yscale("log")
