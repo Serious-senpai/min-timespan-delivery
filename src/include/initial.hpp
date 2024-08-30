@@ -131,7 +131,7 @@ namespace d2d
             truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
-        return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
+        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
     }
 
     template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
@@ -171,9 +171,19 @@ namespace d2d
         alglib::clusterizerrunkmeans(state, vehicles_count, report);
 
         std::vector<std::vector<std::size_t>> clusters(vehicles_count);
-        for (std::size_t i = 0; i < customers.size(); i++)
+        if (report.terminationtype == 1)
         {
-            clusters[report.cidx[i]].push_back(customers[i]);
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                clusters[report.cidx[i]].push_back(customers[i]);
+            }
+        }
+        else
+        {
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                clusters[i % clusters.size()].push_back(customers[i]);
+            }
         }
 
         for (auto &cluster : clusters)
@@ -367,6 +377,6 @@ namespace d2d
             truck_routes[utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
-        return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
+        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
     }
 }

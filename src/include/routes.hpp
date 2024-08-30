@@ -38,28 +38,6 @@ namespace d2d
 #endif
         }
 
-        template <typename T, std::enable_if_t<std::is_base_of_v<_BaseRoute, T>, bool> = true>
-        void _verify(const T &verify) const
-        {
-#ifdef DEBUG
-            if (!utils::approximate(_distance, verify._distance))
-            {
-                throw std::runtime_error("Inconsistent distance, possibly an error in calculation");
-            }
-
-            if (!utils::approximate(_weight, verify._weight))
-            {
-                throw std::runtime_error("Inconsistent weight, possibly an error in calculation");
-            }
-#endif
-        }
-
-        template <typename T, std::enable_if_t<std::conjunction_v<std::is_base_of<_BaseRoute, T>, std::is_constructible<T, const std::vector<std::size_t> &>>, bool> = true>
-        void _verify() const
-        {
-            _verify<T>(T(_customers));
-        }
-
     public:
         static std::vector<double> calculate_waiting_time_violations(
             const std::vector<std::size_t> &customers,
@@ -145,13 +123,6 @@ namespace d2d
     protected:
         static double _calculate_distance(const std::vector<std::size_t> &customers);
 
-        void _verify()
-        {
-#ifdef DEBUG
-            _BaseRoute::_verify<TruckRoute>();
-#endif
-        }
-
     public:
         static std::vector<double> calculate_time_segments(
             const std::vector<std::size_t> &customers,
@@ -185,18 +156,9 @@ namespace d2d
          */
         void push_back(const std::size_t &customer)
         {
-            auto problem = Problem::get_instance();
-
-            _customers.back() = customer;
-            _customers.push_back(0); // Done updating _customers
-
-            std::size_t old_last_index = _customers.size() - 3;
-            _distance += problem->man_distances[_customers[old_last_index]][_customers[old_last_index + 1]] +
-                         problem->man_distances[_customers[old_last_index + 1]][0] -
-                         problem->man_distances[_customers[old_last_index]][0]; // Done updating _distance
-            _weight += problem->customers[customer].demand;                     // Done updating _weight
-
-            _verify();
+            std::vector<std::size_t> new_customers(_customers);
+            new_customers.insert(new_customers.end() - 1, customer);
+            *this = TruckRoute(new_customers);
         }
     };
 
@@ -286,33 +248,6 @@ namespace d2d
 
     protected:
         static double _calculate_distance(const std::vector<std::size_t> &customers);
-
-        void _verify()
-        {
-#ifdef DEBUG
-            DroneRoute verify(_customers);
-            _BaseRoute::_verify<DroneRoute>(verify);
-            if (!utils::approximate(_time_segments, verify._time_segments))
-            {
-                throw std::runtime_error("Inconsistent time segments, possibly an error in calculation");
-            }
-
-            if (!utils::approximate(_waiting_time_violations, verify._waiting_time_violations))
-            {
-                throw std::runtime_error("Inconsistent waiting time violations, possibly an error in calculation");
-            }
-
-            if (!utils::approximate(_working_time, verify._working_time))
-            {
-                throw std::runtime_error("Inconsistent working time, possibly an error in calculation");
-            }
-
-            if (!utils::approximate(_energy_consumption, verify._energy_consumption))
-            {
-                throw std::runtime_error("Inconsistent energy consumption, possibly an error in calculation");
-            }
-#endif
-        }
 
     public:
         /** @brief Construct a `DroneRoute` with pre-calculated attributes. */
@@ -465,49 +400,9 @@ namespace d2d
          */
         void push_back(const std::size_t &customer)
         {
-            auto problem = Problem::get_instance();
-#ifdef DEBUG
-            if (!problem->customers[customer].dronable)
-            {
-                throw NonDronable(customer);
-            }
-#endif
-
-            auto drone = problem->drone;
-
-            _customers.back() = customer;
-            _customers.push_back(0); // Done updating _customers
-
-            _time_segments.pop_back();
-
-            std::size_t old_last_index = _customers.size() - 3;
-
-            _distance -= problem->euc_distances[_customers[old_last_index]][0];
-            _energy_consumption -= drone->takeoff_time() * drone->takeoff_power(_weight) +
-                                   drone->landing_time() * drone->landing_power(_weight) +
-                                   drone->cruise_time(problem->euc_distances[_customers[old_last_index]][0]) * drone->cruise_power(_weight);
-            _weight -= problem->customers[_customers[old_last_index]].demand;
-
-            for (std::size_t i = old_last_index; i + 1 < _customers.size(); i++)
-            {
-                double distance = problem->euc_distances[_customers[i]][_customers[i + 1]];
-                _time_segments.push_back(
-                    problem->customers[_customers[i]].drone_service_time +
-                    drone->takeoff_time() +
-                    drone->cruise_time(distance) +
-                    drone->landing_time());
-
-                _distance += distance;
-                _weight += problem->customers[_customers[i]].demand;
-                _energy_consumption += drone->takeoff_time() * drone->takeoff_power(_weight) +
-                                       drone->cruise_time(distance) * drone->cruise_power(_weight) +
-                                       drone->landing_time() * drone->landing_power(_weight);
-            } // Done updating _time_segments, _distance, _weight, _energy_consumption
-
-            _waiting_time_violations = _calculate_waiting_time_violations(_customers, _time_segments); // Done updating _waiting_time_violations
-            _working_time = std::accumulate(_time_segments.begin(), _time_segments.end(), 0.0);        // Done updating _working_time
-
-            _verify();
+            std::vector<std::size_t> new_customers(_customers);
+            new_customers.insert(new_customers.end() - 1, customer);
+            *this = DroneRoute(new_customers);
         }
     };
 
