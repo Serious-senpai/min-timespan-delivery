@@ -14,11 +14,11 @@ namespace d2d
     {
     public:
         virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
-            std::shared_ptr<ST> solution,
+            const std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
         virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
-            std::shared_ptr<ST> solution,
+            const std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
         virtual std::string label() const = 0;
@@ -104,8 +104,8 @@ namespace d2d
          * @return The best solution found that is not `solution`, or `nullptr` if the neighborhood is empty
          */
         std::shared_ptr<ST> move(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria)
+            const std::shared_ptr<ST> solution,
+            const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria)
         {
 #ifdef DEBUG
             utils::PerformanceBenchmark _perf(this->label());

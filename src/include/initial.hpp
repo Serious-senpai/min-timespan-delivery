@@ -152,7 +152,7 @@ namespace d2d
             }
         }
 
-        return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
+        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
     }
 
     template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
@@ -406,6 +406,6 @@ namespace d2d
             }
         }
 
-        return std::make_shared<ST>(truck_routes, drone_routes, nullptr);
+        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
     }
 }

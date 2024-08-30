@@ -3,6 +3,7 @@
 #include "bitvector.hpp"
 #include "held_karp.hpp"
 #include "initial.hpp"
+#include "logger.hpp"
 #include "parent.hpp"
 #include "problem.hpp"
 #include "routes.hpp"
@@ -66,6 +67,8 @@ namespace d2d
         }
 
     public:
+        static std::array<double, 5> penalty_coefficients();
+
         /** @brief Working time of truck routes */
         const std::vector<double> truck_working_time;
 
@@ -234,9 +237,7 @@ namespace d2d
             return result;
         }
 
-        std::shared_ptr<Solution> post_optimization(
-            std::vector<std::shared_ptr<Solution>> *progress_ptr,
-            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
+        std::shared_ptr<Solution> post_optimization(Logger<Solution> &logger)
         {
             auto problem = Problem::get_instance();
             std::size_t iteration = 0;
@@ -282,22 +283,13 @@ namespace d2d
 
                     neighborhood->inter_route(result, aspiration_criteria);
 
-                    if (progress_ptr != nullptr)
-                    {
-                        progress_ptr->push_back(result);
-                    }
-                    if (neighborhoods_ptr != nullptr)
-                    {
-                        auto label = neighborhood->label() + "/post-optimization/inter-route";
-                        if (ptr == nullptr)
-                        {
-                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
-                        }
-                        else
-                        {
-                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
-                        }
-                    }
+                    logger.log(
+                        result,
+                        nullptr,
+                        {},
+                        std::make_pair(
+                            neighborhood->label() + "/post-optimization/inter-route",
+                            ptr == nullptr ? std::make_pair<std::size_t, std::size_t>(-1, -1) : ptr->last_tabu()));
                 }
             }
 
@@ -321,22 +313,13 @@ namespace d2d
 
                     neighborhood->intra_route(result, aspiration_criteria);
 
-                    if (progress_ptr != nullptr)
-                    {
-                        progress_ptr->push_back(result);
-                    }
-                    if (neighborhoods_ptr != nullptr)
-                    {
-                        auto label = neighborhood->label() + "/post-optimization/intra-route";
-                        if (ptr == nullptr)
-                        {
-                            neighborhoods_ptr->push_back(std::make_pair(label, std::make_pair(-1, -1)));
-                        }
-                        else
-                        {
-                            neighborhoods_ptr->push_back(std::make_pair(label, ptr->last_tabu()));
-                        }
-                    }
+                    logger.log(
+                        result,
+                        nullptr,
+                        {},
+                        std::make_pair(
+                            neighborhood->label() + "/post-optimization/intra-route",
+                            ptr == nullptr ? std::make_pair<std::size_t, std::size_t>(-1, -1) : ptr->last_tabu()));
                 }
             }
 
@@ -348,17 +331,8 @@ namespace d2d
             return result;
         }
 
-        static std::shared_ptr<Solution> initial(std::string *initialization_label_ptr);
-        static std::shared_ptr<Solution> tabu_search(
-            std::string *initialization_label_ptr,
-            std::size_t *last_improved_ptr,
-            std::size_t *iterations_ptr,
-            std::vector<std::shared_ptr<Solution>> *history_ptr,
-            std::vector<std::shared_ptr<Solution>> *progress_ptr,
-            std::vector<std::array<double, 5>> *coefficients_ptr,
-            std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
-            std::vector<std::size_t> *elite_set_extraction_ptr,
-            std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr);
+        static std::shared_ptr<Solution> initial(Logger<Solution> &logger);
+        static std::shared_ptr<Solution> tabu_search(Logger<Solution> &logger);
     };
 
     double Solution::A1 = 1;
@@ -576,7 +550,12 @@ namespace d2d
         return result;
     }
 
-    std::shared_ptr<Solution> Solution::initial(std::string *initialization_label_ptr)
+    std::array<double, 5> Solution::penalty_coefficients()
+    {
+        return {A1, A2, A3, A4, A5};
+    }
+
+    std::shared_ptr<Solution> Solution::initial(Logger<Solution> &logger)
     {
         auto r1 = initial_1<Solution>();
         auto r2 = initial_2<Solution>();
@@ -599,47 +578,29 @@ namespace d2d
             option = 2;
         }
 
-        if (initialization_label_ptr != nullptr)
+        switch (option)
         {
-            switch (option)
-            {
-            case 0:
-                *initialization_label_ptr = "initial_12";
-                break;
-            case 1:
-                *initialization_label_ptr = "initial_1";
-                break;
-            case 2:
-                *initialization_label_ptr = "initial_2";
-                break;
-            }
+        case 0:
+            logger.initialization_label = "initial_12";
+            break;
+        case 1:
+            logger.initialization_label = "initial_1";
+            break;
+        case 2:
+            logger.initialization_label = "initial_2";
+            break;
         }
 
         return option == 1 ? r1 : r2;
     }
 
-    std::shared_ptr<Solution> Solution::tabu_search(
-        std::string *initialization_label_ptr,
-        std::size_t *last_improved_ptr,
-        std::size_t *iterations_ptr,
-        std::vector<std::shared_ptr<Solution>> *history_ptr,
-        std::vector<std::shared_ptr<Solution>> *progress_ptr,
-        std::vector<std::array<double, 5>> *coefficients_ptr,
-        std::vector<std::vector<std::shared_ptr<Solution>>> *elite_set_ptr,
-        std::vector<std::size_t> *elite_set_extraction_ptr,
-        std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> *neighborhoods_ptr)
+    std::shared_ptr<Solution> Solution::tabu_search(Logger<Solution> &logger)
     {
         auto problem = Problem::get_instance();
-        auto current = initial(initialization_label_ptr), result = current;
+        auto current = initial(logger), result = current;
 
-        if (last_improved_ptr != nullptr)
-        {
-            *last_improved_ptr = 0;
-        }
-        if (iterations_ptr != nullptr)
-        {
-            *iterations_ptr = 0;
-        }
+        logger.last_improved = 0;
+        logger.iterations = 0;
 
         std::size_t neighborhood = 0;
         std::vector<std::shared_ptr<Solution>> elite = {result};
@@ -674,62 +635,30 @@ namespace d2d
                 std::cerr << std::flush;
             }
 
-            if (iterations_ptr != nullptr)
-            {
-                *iterations_ptr = iteration + 1;
-            }
+            logger.iterations = iteration + 1;
 
-            const auto aspiration_criteria = [&last_improved_ptr, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
+            const auto aspiration_criteria = [&logger, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
                     result = ptr;
-                    if (last_improved_ptr != nullptr)
-                    {
-                        *last_improved_ptr = iteration;
-                    }
-
+                    logger.last_improved = iteration;
                     insert_elite();
-
                     return true;
                 }
 
                 return false;
             };
 
-            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
+            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
                 current = neighbor;
-                if (neighbor->feasible && neighbor->cost() < result->cost())
-                {
-                    result = neighbor;
-                    if (last_improved_ptr != nullptr)
-                    {
-                        *last_improved_ptr = iteration;
-                    }
-
-                    insert_elite();
-                }
             }
 
-            if (progress_ptr != nullptr)
+            if (iteration != logger.last_improved && (iteration - logger.last_improved) % problem->reset_after == 0)
             {
-                progress_ptr->push_back(current);
-            }
-            if (neighborhoods_ptr != nullptr)
-            {
-                neighborhoods_ptr->push_back(std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
-            }
-
-            if (last_improved_ptr != nullptr && iteration != *last_improved_ptr && (iteration - *last_improved_ptr) % problem->reset_after == 0)
-            {
-                if (elite_set_extraction_ptr != nullptr)
-                {
-                    elite_set_extraction_ptr->push_back(iteration);
-                }
-
                 if (elite.empty())
                 {
                     break;
@@ -739,6 +668,12 @@ namespace d2d
                 current = *iter;
                 elite.erase(iter);
             }
+
+            logger.log(
+                result,
+                current,
+                elite,
+                std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
 
             const auto violation_update = [](double &A, const double &violation)
             {
@@ -771,21 +706,6 @@ namespace d2d
             {
                 neighborhood = 0;
             }
-
-            if (history_ptr != nullptr)
-            {
-                history_ptr->push_back(result);
-            }
-
-            if (coefficients_ptr != nullptr)
-            {
-                coefficients_ptr->push_back({A1, A2, A3, A4, A5});
-            }
-
-            if (elite_set_ptr != nullptr)
-            {
-                elite_set_ptr->push_back(elite);
-            }
         }
 
         if (problem->verbose)
@@ -793,7 +713,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        auto post_opt = result->post_optimization(progress_ptr, neighborhoods_ptr);
+        auto post_opt = result->post_optimization(logger);
         return post_opt;
     }
 }

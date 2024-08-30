@@ -16,8 +16,8 @@ namespace d2d
         }
 
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
+            const std::shared_ptr<ST> solution,
+            const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             auto parent = this->parent_ptr(solution);
@@ -287,8 +287,8 @@ namespace d2d
     {
     protected:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
+            const std::shared_ptr<ST> solution,
+            const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             auto parent = this->parent_ptr(solution);
@@ -360,8 +360,8 @@ namespace d2d
     {
     protected:
         std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
-            std::shared_ptr<ST> solution,
-            const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) override
+            const std::shared_ptr<ST> solution,
+            const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             auto parent = this->parent_ptr(solution);
