@@ -690,21 +690,11 @@ namespace d2d
                 return false;
             };
 
-            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria);
+            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto current_cost = current->cost();
             if (neighbor != nullptr)
             {
                 current = neighbor;
-                if (neighbor->feasible && neighbor->cost() < result->cost())
-                {
-                    result = neighbor;
-                    if (last_improved_ptr != nullptr)
-                    {
-                        *last_improved_ptr = iteration;
-                    }
-
-                    insert_elite();
-                }
             }
 
             if (progress_ptr != nullptr)
