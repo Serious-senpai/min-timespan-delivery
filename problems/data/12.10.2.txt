@@ -1,4 +1,4 @@
-number_truck 2
+number_staff 2
 number_drone 2
 droneLimitationFightTime(s) 1800
 Customers 12 
