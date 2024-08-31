@@ -634,7 +634,7 @@ namespace d2d
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
-                    result = ptr;
+                    result = ptr->post_optimization(logger);
                     logger.last_improved = iteration;
                     insert_elite();
                     return true;
