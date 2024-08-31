@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-from typing_extensions import Any, Dict, Iterable
+from typing_extensions import Dict, Iterable
 
 from package import ResultJSON, SolutionJSON, ROOT, csv_wrap
-
-
-def wrap(value: Any) -> str:
-    return f"\"{value}\""
 
 
 def compare() -> Dict[str, float]:
@@ -41,8 +37,8 @@ if __name__ == "__main__":
         csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,[11],Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Initialization,Last improved,real,user,sys\n")
         for row, result in enumerate(result_reader(), start=2):
             segments = [
-                wrap(result["problem"]),
-                wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\"-\"\", A{row}) - 1))"),
+                csv_wrap(result["problem"]),
+                csv_wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\"-\"\", A{row}) - 1))"),
                 str(result["trucks_count"]),
                 str(result["drones_count"]),
                 str(result["iterations"]),
@@ -52,7 +48,7 @@ if __name__ == "__main__":
                 result["range_type"],
                 str(result["solution"]["cost"]),
                 str(compare_11.get(result["problem"], "")),
-                wrap(f"=ROUND(100 * (K{row} - J{row}) / K{row}, 2)"),
+                csv_wrap(f"=ROUND(100 * (K{row} - J{row}) / K{row}, 2)"),
                 str(result["solution"]["capacity_violation"]),
                 str(result["solution"]["drone_energy_violation"]),
                 str(result["solution"]["working_time_violation"]),
