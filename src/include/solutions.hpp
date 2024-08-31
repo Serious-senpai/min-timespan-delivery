@@ -630,15 +630,13 @@ namespace d2d
 
             logger.iterations = iteration + 1;
 
-            bool new_result_set = false;
-            const auto aspiration_criteria = [&logger, &result, &insert_elite, &iteration, &new_result_set](std::shared_ptr<Solution> ptr)
+            const auto aspiration_criteria = [&logger, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
             {
                 if (ptr->feasible && ptr->cost() < result->cost())
                 {
                     result = ptr;
                     logger.last_improved = iteration;
                     insert_elite();
-                    new_result_set = true;
                     return true;
                 }
 
@@ -647,7 +645,7 @@ namespace d2d
 
             auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto current_cost = current->cost();
-            if (new_result_set)
+            if (logger.last_improved == iteration)
             {
                 current = result;
             }
