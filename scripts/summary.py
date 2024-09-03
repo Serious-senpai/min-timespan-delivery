@@ -11,10 +11,7 @@ def result_reader() -> Iterable[ResultJSON[SolutionJSON]]:
         if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
             print(file.absolute())
             with file.open("r") as f:
-                data = json.load(f)
-
-            result = ResultJSON[SolutionJSON](**data)  # type: ignore  # will throw at runtime if fields are incompatible
-            yield result
+                yield json.load(f)
 
 
 if __name__ == "__main__":
