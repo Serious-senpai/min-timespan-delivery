@@ -40,7 +40,6 @@ def read_solution() -> Optional[SolutionJSON]:
     capacity_violation = float(input())
     waiting_time_violation = float(input())
     fixed_time_violation = float(input())
-    fixed_distance_violation = float(input())
 
     truck_paths: List[List[List[int]]] = eval(input())
     drone_paths: List[List[List[int]]] = eval(input())
@@ -54,7 +53,6 @@ def read_solution() -> Optional[SolutionJSON]:
         "drone_energy_violation": drone_energy_violation,
         "waiting_time_violation": waiting_time_violation,
         "fixed_time_violation": fixed_time_violation,
-        "fixed_distance_violation": fixed_distance_violation,
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,
@@ -109,7 +107,6 @@ if __name__ == "__main__":
                     + d["capacity_violation"] * coefficients[i][1]
                     + d["waiting_time_violation"] * coefficients[i][2]
                     + d["fixed_time_violation"] * coefficients[i][3]
-                    + d["fixed_distance_violation"] * coefficients[i][4]
                 )
 
     neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(int(input()))]
@@ -189,7 +186,7 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("Old fitness,New fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,a5,p5,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
+        file.write("Old fitness,New fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
         for row, (_progress, _coefficients, _neighborhood, _elite_set) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, strict=True), start=2):
             iteration = row - 2
             segments = [
@@ -204,8 +201,6 @@ if __name__ == "__main__":
                 str("" if _progress is None else _progress["waiting_time_violation"]),
                 str(_coefficients[3]),
                 str("" if _progress is None else _progress["fixed_time_violation"]),
-                str(_coefficients[4]),
-                str("" if _progress is None else _progress["fixed_distance_violation"]),
                 csv_wrap(_neighborhood["label"]),
                 csv_wrap(_neighborhood["pair"]),
                 csv_wrap("" if _progress is None else _progress["truck_paths"]),

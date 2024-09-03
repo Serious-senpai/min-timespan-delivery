@@ -106,7 +106,7 @@ if __name__ == "__main__":
     else:
         print(
             model.fixed_time,
-            model.fixed_distance,
+            # model.fixed_distance,
             model.drone_speed,
         )
 

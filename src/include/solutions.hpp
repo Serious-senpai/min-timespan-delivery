@@ -19,7 +19,7 @@ namespace d2d
     class Solution
     {
     private:
-        static double A1, A2, A3, A4, A5, B;
+        static double A1, A2, A3, A4, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> neighborhoods;
 
@@ -41,7 +41,6 @@ namespace d2d
             const std::vector<std::vector<std::vector<double>>> &truck_time_segments,
             const std::vector<std::vector<DroneRoute>> &drone_routes);
         static double _calculate_fixed_time_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
-        static double _calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes);
 
         const std::vector<std::vector<std::vector<double>>> _temp_truck_time_segments;
 
@@ -68,7 +67,7 @@ namespace d2d
         }
 
     public:
-        static std::array<double, 5> penalty_coefficients();
+        static std::array<double, 4> penalty_coefficients();
 
         /** @brief Working time of truck routes */
         const std::vector<double> truck_working_time;
@@ -90,9 +89,6 @@ namespace d2d
 
         /** @brief Total fixed time violation */
         const double fixed_time_violation;
-
-        /** @brief Total fixed distance violation */
-        const double fixed_distance_violation;
 
         /** @brief Routes of trucks */
         const std::vector<std::vector<TruckRoute>> truck_routes;
@@ -117,15 +113,13 @@ namespace d2d
               capacity_violation(_calculate_capacity_violation(truck_routes, drone_routes)),
               waiting_time_violation(_calculate_waiting_time_violation(truck_routes, _temp_truck_time_segments, drone_routes)),
               fixed_time_violation(_calculate_fixed_time_violation(drone_routes)),
-              fixed_distance_violation(_calculate_fixed_distance_violation(drone_routes)),
               truck_routes(truck_routes),
               drone_routes(drone_routes),
               feasible(
                   utils::approximate(drone_energy_violation, 0.0) &&
                   utils::approximate(capacity_violation, 0.0) &&
                   utils::approximate(waiting_time_violation, 0.0) &&
-                  utils::approximate(fixed_time_violation, 0.0) &&
-                  utils::approximate(fixed_distance_violation, 0.0))
+                  utils::approximate(fixed_time_violation, 0.0))
         {
             if (debug_check)
             {
@@ -189,7 +183,6 @@ namespace d2d
             result += A2 * capacity_violation;
             result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
-            result += A5 * fixed_distance_violation;
 
             return result;
         }
@@ -321,7 +314,6 @@ namespace d2d
     double Solution::A2 = 1;
     double Solution::A3 = 1;
     double Solution::A4 = 1;
-    double Solution::A5 = 1;
     double Solution::B = 1.5;
 
     const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> Solution::neighborhoods = {
@@ -422,7 +414,6 @@ namespace d2d
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
-        auto problem = Problem::get_instance();
 
 #define CALCULATE_D2D_ROUTES(vehicle_routes)      \
     for (auto &routes : vehicle_routes)           \
@@ -446,7 +437,6 @@ namespace d2d
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
         double result = 0;
-        auto problem = Problem::get_instance();
 
         for (std::size_t i = 0; i < truck_routes.size(); i++)
         {
@@ -488,27 +478,9 @@ namespace d2d
         return result;
     }
 
-    double Solution::_calculate_fixed_distance_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
+    std::array<double, 4> Solution::penalty_coefficients()
     {
-        double result = 0;
-        auto problem = Problem::get_instance();
-        if (problem->endurance != nullptr)
-        {
-            for (auto &routes : drone_routes)
-            {
-                for (auto &route : routes)
-                {
-                    result += route.fixed_distance_violation();
-                }
-            }
-        }
-
-        return result;
-    }
-
-    std::array<double, 5> Solution::penalty_coefficients()
-    {
-        return {A1, A2, A3, A4, A5};
+        return {A1, A2, A3, A4};
     }
 
     std::shared_ptr<Solution> Solution::initial(Logger<Solution> &logger)
@@ -670,7 +642,6 @@ namespace d2d
             violation_update(A2, current->capacity_violation);
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
-            violation_update(A5, current->fixed_distance_violation);
 
             if (neighbor == nullptr || current_cost <= current->cost())
             {
