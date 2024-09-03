@@ -168,9 +168,9 @@ namespace d2d
         {
             *time_segment_ptr += dt;
             current_within_timespan += dt;
-            if (current_within_timespan >= 3600)
+            if (current_within_timespan >= ONE_HOUR)
             {
-                current_within_timespan -= 3600;
+                current_within_timespan -= ONE_HOUR;
                 coefficients_index++;
             }
         };
@@ -184,7 +184,7 @@ namespace d2d
             while (distance > 0)
             {
                 double speed = problem->truck->speed(coefficients_index),
-                       distance_shift = std::min(distance, speed * (3600.0 - current_within_timespan));
+                       distance_shift = std::min(distance, speed * (ONE_HOUR - current_within_timespan));
 
                 distance -= distance_shift;
                 shift(&time_segment, distance_shift / speed);

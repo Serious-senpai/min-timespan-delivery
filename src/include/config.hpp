@@ -3,6 +3,8 @@
 #include "standard.hpp"
 #include "utils.hpp"
 
+#define ONE_HOUR 3600.0
+
 namespace d2d
 {
     class TruckConfig
