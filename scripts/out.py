@@ -190,8 +190,8 @@ if __name__ == "__main__":
         for row, (_progress, _coefficients, _neighborhood, _elite_set) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, strict=True), start=2):
             iteration = row - 2
             segments = [
-                csv_wrap(f"=C{row} + D{row - 1} * E{row} + F{row - 1} * G{row} + H{row - 1} * I{row} + J{row - 1} * K{row} + L{row - 1} * M{row}" if row > 2 else ""),
-                csv_wrap(f"=C{row} + D{row} * E{row} + F{row} * G{row} + H{row} * I{row} + J{row} * K{row} + L{row} * M{row}"),
+                csv_wrap(f"=C{row} + D{row - 1} * E{row} + F{row - 1} * G{row} + H{row - 1} * I{row} + J{row - 1} * K{row}" if row > 2 else ""),
+                csv_wrap(f"=C{row} + D{row} * E{row} + F{row} * G{row} + H{row} * I{row} + J{row} * K{row}"),
                 str("" if _progress is None else _progress["working_time"]),
                 str(_coefficients[0]),
                 str("" if _progress is None else _progress["drone_energy_violation"]),
