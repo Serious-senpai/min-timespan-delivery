@@ -16,6 +16,11 @@ namespace utils
         PerformanceBenchmark(const std::string &message) : start(std::chrono::high_resolution_clock::now()), message(message) {}
         ~PerformanceBenchmark()
         {
+            report();
+        }
+
+        void report() const
+        {
             report(message);
         }
 
