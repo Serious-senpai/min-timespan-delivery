@@ -44,6 +44,76 @@ namespace utils
     template <typename _InputIterator>
     using is_input_iterator_t = std::enable_if_t<std::is_convertible_v<_iterator_category_t<_InputIterator>, std::input_iterator_tag>, bool>;
 
+    template <typename _RT, typename _T>
+    std::enable_if_t<
+        std::is_same_v<std::remove_cvref_t<_RT>, std::remove_cvref_t<_T>>,
+        std::conditional_t<std::is_const_v<_T>, const _RT, _RT>> &
+    match_type(_T &t)
+    {
+        return t;
+    }
+
+    template <typename _RT, typename _T, typename... Args>
+    auto &match_type(_T &t1, Args &...args)
+    {
+        if constexpr (std::is_same_v<std::remove_cvref_t<_RT>, std::remove_cvref_t<_T>>)
+        {
+            return t1;
+        }
+        else
+        {
+            return match_type<_RT>(args...);
+        }
+    }
+
+    template <bool _Cond, typename _IfTrue, typename _IfFalse>
+    const std::conditional_t<_Cond, _IfTrue, _IfFalse> &ternary(const _IfTrue &if_true, const _IfFalse &if_false)
+    {
+        if constexpr (_Cond)
+        {
+            return if_true;
+        }
+        else
+        {
+            return if_false;
+        }
+    }
+
+    template <typename T>
+    std::string type()
+    {
+        const char *mangled = typeid(T).name();
+        int status;
+        std::unique_ptr<char> ptr(abi::__cxa_demangle(mangled, nullptr, nullptr, &status));
+
+        std::string name(status == 0 ? ptr.get() : mangled);
+        if constexpr (std::is_const_v<T>)
+        {
+            name = "const " + name;
+        }
+
+        if constexpr (std::is_volatile_v<T>)
+        {
+            name = "volatile " + name;
+        }
+
+        if constexpr (std::is_pointer_v<T>)
+        {
+            name += "*";
+        }
+
+        if constexpr (std::is_lvalue_reference_v<T>)
+        {
+            name += "&";
+        }
+        else if constexpr (std::is_rvalue_reference_v<T>)
+        {
+            name += "&&";
+        }
+
+        return name;
+    }
+
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T sqrt(const T &value)
     {

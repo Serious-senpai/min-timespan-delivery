@@ -643,6 +643,7 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
 
+            /* Compare current_cost with current->cost() AFTER updating penalty coefficients */
             if (neighbor == nullptr || current_cost <= current->cost())
             {
                 neighborhood = (neighborhood + 1) % neighborhoods.size();

@@ -436,6 +436,12 @@ namespace d2d
 
         return 0;
     }
+
+    template <typename T>
+    using is_route = std::disjunction<std::is_same<T, TruckRoute>, std::is_same<T, DroneRoute>>;
+
+    template <typename T>
+    constexpr bool is_route_v = is_route<T>::value;
 }
 
 namespace std

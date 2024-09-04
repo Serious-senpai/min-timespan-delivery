@@ -14,7 +14,7 @@ namespace d2d
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
     }
 
-    template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
     bool _try_insert(
         RT &route,
         const std::size_t &customer,
@@ -33,7 +33,7 @@ namespace d2d
         return false;
     }
 
-    template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
     bool _try_insert(
         std::vector<RT> &routes,
         const std::size_t &customer,
@@ -134,7 +134,7 @@ namespace d2d
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
     }
 
-    template <typename RT, typename ST, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
     std::vector<std::vector<RT>> _initial_2_helper(const std::vector<std::size_t> &customers, std::vector<std::size_t> *unhandled_ptr)
     {
         auto problem = Problem::get_instance();

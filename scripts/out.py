@@ -186,12 +186,11 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("Old fitness,New fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
+        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
         for row, (_progress, _coefficients, _neighborhood, _elite_set) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, strict=True), start=2):
             iteration = row - 2
             segments = [
-                csv_wrap(f"=C{row} + D{row - 1} * E{row} + F{row - 1} * G{row} + H{row - 1} * I{row} + J{row - 1} * K{row}" if row > 2 else ""),
-                csv_wrap(f"=C{row} + D{row} * E{row} + F{row} * G{row} + H{row} * I{row} + J{row} * K{row}"),
+                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * j{row}"),
                 str("" if _progress is None else _progress["working_time"]),
                 str(_coefficients[0]),
                 str("" if _progress is None else _progress["drone_energy_violation"]),
