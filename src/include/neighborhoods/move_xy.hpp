@@ -327,7 +327,7 @@ namespace d2d
         {
             auto problem = Problem::get_instance();
 
-            auto vehicles_count = utils::ternary<std::is_same_v<_RT, DroneRoute>>(problem->trucks_count, problem->drones_count);
+            auto vehicles_count = utils::ternary<std::is_same_v<_RT, TruckRoute>>(problem->trucks_count, problem->drones_count);
             auto &vehicle_routes = utils::match_type<std::vector<std::vector<_RT>>>(truck_routes, drone_routes);
             auto &original_vehicle_routes = utils::match_type<std::vector<std::vector<_RT>>>(solution->truck_routes, solution->drone_routes);
 
@@ -413,7 +413,7 @@ namespace d2d
         {
             auto problem = Problem::get_instance();
 
-            auto vehicles_count = utils::ternary<std::is_same_v<_RT, DroneRoute>>(problem->trucks_count, problem->drones_count);
+            auto vehicles_count = utils::ternary<std::is_same_v<_RT, TruckRoute>>(problem->trucks_count, problem->drones_count);
             auto &vehicle_routes = utils::match_type<std::vector<std::vector<_RT>>>(truck_routes, drone_routes);
             auto &original_vehicle_routes = utils::match_type<std::vector<std::vector<_RT>>>(solution->truck_routes, solution->drone_routes);
 
