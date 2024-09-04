@@ -10,7 +10,7 @@ namespace d2d
     {
     private:
         std::vector<std::shared_ptr<ST>> _history, _progress;
-        std::vector<std::array<double, 5>> _coefficients;
+        std::vector<std::array<double, 4>> _coefficients;
         std::vector<std::vector<std::shared_ptr<ST>>> _elite_set;
         std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> _neighborhoods;
 
@@ -45,7 +45,6 @@ namespace d2d
             std::cout << ptr->capacity_violation << "\n";
             std::cout << ptr->waiting_time_violation << "\n";
             std::cout << ptr->fixed_time_violation << "\n";
-            std::cout << ptr->fixed_distance_violation << "\n";
 
             std::cout << ptr->truck_routes << "\n";
             std::cout << ptr->drone_routes << "\n";

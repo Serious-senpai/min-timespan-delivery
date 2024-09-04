@@ -80,7 +80,7 @@ namespace d2d
         const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> man_distances, euc_distances;
-        const double maximum_waiting_time = 7200; // hard-coded value
+        const double maximum_waiting_time = 2 * ONE_HOUR; // hard-coded value
         const double total_demand;
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;
@@ -237,14 +237,14 @@ namespace d2d
             }
             else if (drone_class == "DroneEnduranceConfig")
             {
-                double fixed_time, fixed_distance, drone_speed;
-                std::cin >> fixed_time >> fixed_distance >> drone_speed;
+                double fixed_time, /* fixed_distance ,*/ drone_speed;
+                std::cin >> fixed_time >> /* fixed_distance >> */ drone_speed;
                 drone = new DroneEnduranceConfig(
                     capacity,
                     speed_type,
                     range_type,
                     fixed_time,
-                    fixed_distance,
+                    // fixed_distance,
                     drone_speed);
             }
             else

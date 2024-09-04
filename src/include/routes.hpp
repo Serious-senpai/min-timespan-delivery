@@ -185,9 +185,9 @@ namespace d2d
         {
             *time_segment_ptr += dt;
             current_within_timespan += dt;
-            if (current_within_timespan >= 3600)
+            if (current_within_timespan >= ONE_HOUR)
             {
-                current_within_timespan -= 3600;
+                current_within_timespan -= ONE_HOUR;
                 coefficients_index++;
             }
         };
@@ -201,7 +201,7 @@ namespace d2d
             while (distance > 0)
             {
                 double speed = problem->truck->speed(coefficients_index),
-                       distance_shift = std::min(distance, speed * (3600.0 - current_within_timespan));
+                       distance_shift = std::min(distance, speed * (ONE_HOUR - current_within_timespan));
 
                 distance -= distance_shift;
                 shift(&time_segment, distance_shift / speed);
@@ -237,14 +237,12 @@ namespace d2d
             const std::vector<double> &time_segments);
         static double _calculate_energy_consumption(const std::vector<std::size_t> &customers);
         static double _calculate_fixed_time_violation(const std::vector<double> &time_segments);
-        static double _calculate_fixed_distance_violation(const double &distance);
 
         std::vector<double> _time_segments;
         std::vector<double> _waiting_time_violations;
         double _working_time;
         double _energy_consumption;
         double _fixed_time_violation;
-        double _fixed_distance_violation;
 
     protected:
         static double _calculate_distance(const std::vector<std::size_t> &customers);
@@ -258,15 +256,13 @@ namespace d2d
             const double &distance,
             const double &weight,
             const double &energy_consumption,
-            const double &fixed_time_violation,
-            const double &fixed_distance_violation)
+            const double &fixed_time_violation)
             : _BaseRoute(customers, distance, weight),
               _time_segments(time_segments),
               _waiting_time_violations(waiting_time_violations),
               _working_time(std::accumulate(time_segments.begin(), time_segments.end(), 0.0)),
               _energy_consumption(energy_consumption),
-              _fixed_time_violation(fixed_time_violation),
-              _fixed_distance_violation(fixed_distance_violation)
+              _fixed_time_violation(fixed_time_violation)
         {
 #ifdef DEBUG
             auto problem = Problem::get_instance();
@@ -297,8 +293,7 @@ namespace d2d
                   distance,
                   weight,
                   energy_consumption,
-                  _calculate_fixed_time_violation(time_segments),
-                  _calculate_fixed_distance_violation(distance)) {}
+                  _calculate_fixed_time_violation(time_segments)) {}
 
         /** @brief Construct a `DroneRoute` with pre-calculated `time_segments`. */
         DroneRoute(
@@ -388,11 +383,6 @@ namespace d2d
             return _fixed_time_violation;
         }
 
-        double fixed_distance_violation() const
-        {
-            return _fixed_distance_violation;
-        }
-
         /**
          * @brief Append a new customer to this route.
          *
@@ -467,17 +457,6 @@ namespace d2d
         return 0;
     }
 
-    double DroneRoute::_calculate_fixed_distance_violation(const double &distance)
-    {
-        auto problem = Problem::get_instance();
-        if (problem->endurance != nullptr)
-        {
-            return std::max(0.0, distance - problem->endurance->fixed_distance);
-        }
-
-        return 0;
-    }
-
     double DroneRoute::_calculate_distance(const std::vector<std::size_t> &customers)
     {
         auto problem = Problem::get_instance();
@@ -488,6 +467,12 @@ namespace d2d
                 return problem->euc_distances[first][second];
             });
     }
+
+    template <typename T>
+    using is_route = std::disjunction<std::is_same<T, TruckRoute>, std::is_same<T, DroneRoute>>;
+
+    template <typename T>
+    constexpr bool is_route_v = is_route<T>::value;
 }
 
 namespace std

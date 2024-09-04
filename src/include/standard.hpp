@@ -30,6 +30,8 @@
 #include <sys/ioctl.h>
 #endif
 
+#include <cxxabi.h>
+
 #include <dataanalysis.h>
 
 namespace std
