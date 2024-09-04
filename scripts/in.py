@@ -64,7 +64,6 @@ if __name__ == "__main__":
         speed_type="low",
         range_type="low",
         fixed_time=problem.drone_endurance,
-        fixed_distance=10 ** 9,
         drone_speed=problem.drone_speed,
     )
 
@@ -101,7 +100,7 @@ if __name__ == "__main__":
     else:
         print(
             model.fixed_time,
-            model.fixed_distance,
+            # model.fixed_distance,
             model.drone_speed,
         )
 

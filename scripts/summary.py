@@ -21,10 +21,7 @@ def result_reader() -> Iterable[ResultJSON[SolutionJSON]]:
         if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
             print(file.absolute())
             with file.open("r") as f:
-                data = json.load(f)
-
-            result = ResultJSON[SolutionJSON](**data)  # type: ignore  # will throw at runtime if fields are incompatible
-            yield result
+                yield json.load(f)
 
 
 if __name__ == "__main__":
@@ -34,7 +31,7 @@ if __name__ == "__main__":
 
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
-        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,[11],Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Initialization,Last improved,real,user,sys\n")
+        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,[11],Improved [%],Capacity violation,Energy violation,Waiting time violation,Fixed time violation,Truck paths,Drone paths,Feasible,Initialization,Last improved,real,user,sys\n")
         for row, result in enumerate(result_reader(), start=2):
             segments = [
                 csv_wrap(result["problem"]),
@@ -53,7 +50,6 @@ if __name__ == "__main__":
                 str(result["solution"]["drone_energy_violation"]),
                 str(result["solution"]["working_time_violation"]),
                 str(result["solution"]["fixed_time_violation"]),
-                str(result["solution"]["fixed_distance_violation"]),
                 csv_wrap(result["solution"]["truck_paths"]),
                 csv_wrap(result["solution"]["drone_paths"]),
                 str(int(result["solution"]["feasible"])),

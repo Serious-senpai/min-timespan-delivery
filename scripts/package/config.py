@@ -125,7 +125,7 @@ class DroneNonlinearConfig(_VariableDroneConfig):
 @dataclass(frozen=True, kw_only=True, slots=True)
 class DroneEnduranceConfig(_BaseDroneConfig):
     fixed_time: float
-    fixed_distance: float
+    # fixed_distance: float
     drone_speed: float
 
     @staticmethod
@@ -138,7 +138,7 @@ class DroneEnduranceConfig(_BaseDroneConfig):
         for d in data.values():
             item = DroneEnduranceConfig(
                 fixed_time=d["FixedTime (s)"],
-                fixed_distance=d["FixedDistance (m)"],
+                # fixed_distance=d["FixedDistance (m)"],
                 drone_speed=d["Drone_speed (m/s)"],
                 capacity=d["capacity [kg]"],
                 speed_type=d["speed_type"],

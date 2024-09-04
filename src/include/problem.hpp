@@ -249,14 +249,14 @@ namespace d2d
             }
             else if (drone_class == "DroneEnduranceConfig")
             {
-                double fixed_time, fixed_distance, drone_speed;
-                std::cin >> fixed_time >> fixed_distance >> drone_speed;
+                double fixed_time, /* fixed_distance ,*/ drone_speed;
+                std::cin >> fixed_time >> /* fixed_distance >> */ drone_speed;
                 drone = new DroneEnduranceConfig(
                     capacity,
                     speed_type,
                     range_type,
                     fixed_time,
-                    fixed_distance,
+                    // fixed_distance,
                     drone_speed);
             }
             else

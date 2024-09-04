@@ -3,6 +3,8 @@
 #include "standard.hpp"
 #include "utils.hpp"
 
+#define ONE_HOUR 3600.0
+
 namespace d2d
 {
     class TruckConfig
@@ -240,7 +242,7 @@ namespace d2d
     {
     public:
         const double fixed_time;
-        const double fixed_distance;
+        // const double fixed_distance;
         const double drone_speed;
 
         DroneEnduranceConfig(
@@ -248,11 +250,11 @@ namespace d2d
             const StatsType speed_type,
             const StatsType range_type,
             const double fixed_time,
-            const double fixed_distance,
+            // const double fixed_distance,
             const double drone_speed)
             : _BaseDroneConfig(capacity, speed_type, range_type),
               fixed_time(fixed_time),
-              fixed_distance(fixed_distance),
+              // fixed_distance(fixed_distance),
               drone_speed(drone_speed)
         {
         }
