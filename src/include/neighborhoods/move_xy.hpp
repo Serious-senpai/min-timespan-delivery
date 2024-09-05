@@ -8,7 +8,7 @@ namespace d2d
     class _BaseMoveXY : public Neighborhood<ST, true>
     {
     private:
-        template <typename _RT_I, typename _RT_J, std::enable_if_t<std::conjunction_v<is_route<_RT_I>, is_route<_RT_J>>, bool> = true>
+        template <typename _RT_I, typename _RT_J, std::enable_if_t<is_route_v<_RT_I, _RT_J>, bool> = true>
         void _inter_route_internal(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
