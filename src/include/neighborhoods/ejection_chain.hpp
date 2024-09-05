@@ -13,14 +13,14 @@ namespace d2d
             return "Ejection chain";
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> intra_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
-            return std::make_pair(nullptr, std::make_pair(0, 0));
+            return std::make_pair(nullptr, std::vector<std::size_t>());
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> inter_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
@@ -221,7 +221,7 @@ namespace d2d
                 }
             }
 
-            return std::make_pair(result, std::make_pair(0, 0));
+            return std::make_pair(result, std::vector<std::size_t>());
         }
     };
 }
