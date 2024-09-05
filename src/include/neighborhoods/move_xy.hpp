@@ -20,7 +20,7 @@ namespace d2d
             const std::size_t &vehicle_i,
             const std::size_t &vehicle_j)
         {
-            if constexpr (X != Y && (std::is_same_v<_RT_I, DroneRoute> || std::is_same_v<_RT_J, DroneRoute>))
+            if constexpr (X != Y && std::is_same_v<_RT_J, DroneRoute>)
             {
                 return;
             }
