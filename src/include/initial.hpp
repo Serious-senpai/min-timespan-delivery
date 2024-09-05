@@ -164,7 +164,7 @@ namespace d2d
         }
         matrix.setcontent(customers.size(), 2, xy.data());
 
-        alglib::clusterizersetpoints(state, matrix, 2);
+        alglib::clusterizersetpoints(state, matrix, std::is_same_v<RT, TruckRoute> ? 1 : 2);
         alglib::clusterizersetkmeanslimits(state, 1, 500);
 
         alglib::kmeansreport report;
