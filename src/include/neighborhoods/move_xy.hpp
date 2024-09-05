@@ -224,7 +224,7 @@ namespace d2d
                             }
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], 0)) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], static_cast<std::size_t>(0))) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
