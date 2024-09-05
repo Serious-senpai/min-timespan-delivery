@@ -397,11 +397,20 @@ namespace d2d
             });
     }
 
-    template <typename T>
-    using is_route = std::disjunction<std::is_same<T, TruckRoute>, std::is_same<T, DroneRoute>>;
+    template <typename T, typename... Args>
+    struct is_route
+    {
+        constexpr static bool value = std::conjunction_v<std::disjunction<std::is_same<T, TruckRoute>, std::is_same<T, DroneRoute>>, is_route<Args>...>;
+    };
 
-    template <typename T>
-    constexpr bool is_route_v = is_route<T>::value;
+    template <typename T, typename... Args>
+    constexpr bool is_route_v = is_route<T, Args...>::value;
+
+    template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool> = true>
+    bool operator==(const _RT &f, const _RT &s)
+    {
+        return f.customers() == s.customers();
+    }
 }
 
 namespace std

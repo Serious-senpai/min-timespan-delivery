@@ -324,6 +324,16 @@ namespace d2d
             return result;
         }
 
+        bool operator==(const Solution &other) const
+        {
+            return truck_routes == other.truck_routes && drone_routes == other.drone_routes;
+        }
+
+        bool operator!=(const Solution &other) const
+        {
+            return !(*this == other);
+        }
+
         static std::shared_ptr<Solution> initial(Logger<Solution> &logger);
         static std::shared_ptr<Solution> tabu_search(Logger<Solution> &logger);
     };
