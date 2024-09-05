@@ -442,6 +442,12 @@ namespace d2d
 
     template <typename T>
     constexpr bool is_route_v = is_route<T>::value;
+
+    template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool> = true>
+    bool operator==(const _RT &f, const _RT &s)
+    {
+        return f.customers() == s.customers();
+    }
 }
 
 namespace std
