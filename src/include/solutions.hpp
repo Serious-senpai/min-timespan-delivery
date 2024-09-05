@@ -264,7 +264,7 @@ namespace d2d
                         {},
                         std::make_pair(
                             neighborhood->label() + "/post-optimization/inter-route",
-                            ptr == nullptr ? std::make_pair<std::size_t, std::size_t>(-1, -1) : ptr->last_tabu()));
+                            ptr == nullptr ? std::vector<std::size_t>() : ptr->last_tabu()));
                 }
             }
 
@@ -294,7 +294,7 @@ namespace d2d
                         {},
                         std::make_pair(
                             neighborhood->label() + "/post-optimization/intra-route",
-                            ptr == nullptr ? std::make_pair<std::size_t, std::size_t>(-1, -1) : ptr->last_tabu()));
+                            ptr == nullptr ? std::vector<std::size_t>() : ptr->last_tabu()));
                 }
             }
 
