@@ -14,7 +14,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes)
         {
@@ -44,7 +44,7 @@ namespace d2d
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers[i - 1], customers[j]);
+                                tabu = {customers[i - 1], customers[j]};
                             }
 
                             /* Restore */
@@ -61,7 +61,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes,
             const std::size_t &vehicle_i,
@@ -161,7 +161,7 @@ namespace d2d
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers_i[i], customers_j[j]);
+                                tabu = {customers_i[i], customers_j[j]};
                             }
 
                             /* Restore */
@@ -179,32 +179,32 @@ namespace d2d
             return "2-opt";
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> intra_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto parent = this->parent_ptr(solution);
 
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
 
-            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
-            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
+            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
+            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, tabu);
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> inter_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto problem = Problem::get_instance();
             auto parent = this->parent_ptr(solution);
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
@@ -221,7 +221,7 @@ namespace d2d
                                 solution,
                                 aspiration_criteria,
                                 parent, result,
-                                tabu_pair,
+                                tabu,
                                 truck_routes,
                                 drone_routes,
                                 vehicle_i,
@@ -233,7 +233,7 @@ namespace d2d
                                 solution,
                                 aspiration_criteria,
                                 parent, result,
-                                tabu_pair,
+                                tabu,
                                 truck_routes,
                                 drone_routes,
                                 vehicle_i,
@@ -246,7 +246,7 @@ namespace d2d
                             solution,
                             aspiration_criteria,
                             parent, result,
-                            tabu_pair,
+                            tabu,
                             truck_routes,
                             drone_routes,
                             vehicle_i,
@@ -255,7 +255,7 @@ namespace d2d
                 }
             }
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, tabu);
         }
     };
 }

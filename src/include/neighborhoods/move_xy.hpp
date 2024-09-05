@@ -14,7 +14,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes,
             const std::size_t &vehicle_i,
@@ -104,12 +104,15 @@ namespace d2d
                                 vehicle_routes_j[_vehicle_j][route_j] = _RT_J(rj);
                             }
 
+                            std::vector<std::size_t> new_tabu(customers_i.begin() + i, customers_i.begin() + (i + X));
+                            new_tabu.insert(new_tabu.end(), customers_j.begin() + j, customers_j.begin() + (j + Y));
+
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers_i[i], customers_j[j]);
+                                tabu = new_tabu;
                             }
 
                             /* Restore */
@@ -127,7 +130,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes)
         {
@@ -223,12 +226,14 @@ namespace d2d
                                 drone_routes[vehicle_dest - problem->trucks_count].push_back(DroneRoute(detached));
                             }
 
+                            std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + Z));
+
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], static_cast<std::size_t>(0))) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers[i], 0);
+                                tabu = new_tabu;
                             }
 
                             /* Restore */
@@ -262,7 +267,7 @@ namespace d2d
             return utils::format("Move (%d, %d)", X, Y);
         }
 
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> inter_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
@@ -270,7 +275,7 @@ namespace d2d
             auto parent = this->parent_ptr(solution);
 
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
@@ -283,22 +288,22 @@ namespace d2d
                     {
                         if (vehicle_j < problem->trucks_count)
                         {
-                            _inter_route_internal<TruckRoute, TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, vehicle_i, vehicle_j);
+                            _inter_route_internal<TruckRoute, TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, vehicle_i, vehicle_j);
                         }
                         else
                         {
-                            _inter_route_internal<TruckRoute, DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, vehicle_i, vehicle_j);
+                            _inter_route_internal<TruckRoute, DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, vehicle_i, vehicle_j);
                         }
                     }
                     else
                     {
                         if (vehicle_j < problem->trucks_count)
                         {
-                            _inter_route_internal<DroneRoute, TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, vehicle_i, vehicle_j);
+                            _inter_route_internal<DroneRoute, TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, vehicle_i, vehicle_j);
                         }
                         else
                         {
-                            _inter_route_internal<DroneRoute, DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, vehicle_i, vehicle_j);
+                            _inter_route_internal<DroneRoute, DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, vehicle_i, vehicle_j);
                         }
                     }
                 }
@@ -306,11 +311,11 @@ namespace d2d
 
             if constexpr (X == 0 || Y == 0)
             {
-                _inter_route_append_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
-                _inter_route_append_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
+                _inter_route_append_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
+                _inter_route_append_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
             }
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, tabu);
         }
     };
 
@@ -324,7 +329,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes,
             const std::size_t &_X,
@@ -361,12 +366,15 @@ namespace d2d
                             /* Temporary modify */
                             vehicle_routes[index][route] = _RT(new_customers);
 
+                            std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + _X));
+                            new_tabu.insert(new_tabu.end(), customers.begin() + j, customers.begin() + (j + _Y));
+
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers[i], customers[j]);
+                                tabu = new_tabu;
                             }
 
                             /* Restore */
@@ -378,27 +386,27 @@ namespace d2d
         }
 
     protected:
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> intra_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto parent = this->parent_ptr(solution);
 
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
 
-            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, X, Y);
-            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, X, Y);
+            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, X, Y);
+            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, X, Y);
             if constexpr (X != Y)
             {
-                _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, Y, X);
-                _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes, Y, X);
+                _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, Y, X);
+                _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes, Y, X);
             }
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, tabu);
         }
     };
 
@@ -412,7 +420,7 @@ namespace d2d
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria,
             const std::shared_ptr<ParentInfo<ST>> parent,
             std::shared_ptr<ST> &result,
-            std::pair<std::size_t, std::size_t> &tabu_pair,
+            std::vector<std::size_t> &tabu,
             std::vector<std::vector<TruckRoute>> &truck_routes,
             std::vector<std::vector<DroneRoute>> &drone_routes)
         {
@@ -437,12 +445,14 @@ namespace d2d
 
                             vehicle_routes[index][route] = _RT(new_customers);
 
+                            std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + X));
+
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers[i], customers[j]);
+                                tabu = new_tabu;
                             }
 
                             /* Restore */
@@ -457,12 +467,14 @@ namespace d2d
 
                             vehicle_routes[index][route] = _RT(new_customers);
 
+                            std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + X));
+
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i], customers[j])) &&
+                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
-                                tabu_pair = std::make_pair(customers[i], customers[j]);
+                                tabu = new_tabu;
                             }
 
                             /* Restore */
@@ -474,22 +486,22 @@ namespace d2d
         }
 
     protected:
-        std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
+        std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> intra_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(const std::shared_ptr<ST>)> &aspiration_criteria) override
         {
             auto parent = this->parent_ptr(solution);
 
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
             std::vector<std::vector<TruckRoute>> truck_routes(solution->truck_routes);
             std::vector<std::vector<DroneRoute>> drone_routes(solution->drone_routes);
 
-            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
-            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu_pair, truck_routes, drone_routes);
+            _intra_route_internal<TruckRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
+            _intra_route_internal<DroneRoute>(solution, aspiration_criteria, parent, result, tabu, truck_routes, drone_routes);
 
-            return std::make_pair(result, tabu_pair);
+            return std::make_pair(result, tabu);
         }
     };
 }

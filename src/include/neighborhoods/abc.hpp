@@ -13,11 +13,11 @@ namespace d2d
     class BaseNeighborhood
     {
     public:
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> intra_route(
+        virtual std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> intra_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
-        virtual std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> inter_route(
+        virtual std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> inter_route(
             const std::shared_ptr<ST> solution,
             const std::function<bool(std::shared_ptr<ST>)> &aspiration_criteria) = 0;
 
@@ -127,14 +127,14 @@ namespace d2d
 #endif
 
             std::shared_ptr<ST> result;
-            std::pair<std::size_t, std::size_t> tabu_pair;
+            std::vector<std::size_t> tabu;
 
-            const auto update = [&result, &tabu_pair](const std::pair<std::shared_ptr<ST>, std::pair<std::size_t, std::size_t>> &r)
+            const auto update = [&result, &tabu](const std::pair<std::shared_ptr<ST>, std::vector<std::size_t>> &r)
             {
                 if (r.first != nullptr && (result == nullptr || r.first->cost() < result->cost()))
                 {
                     result = r.first;
-                    tabu_pair = r.second;
+                    tabu = r.second;
                 }
             };
 
@@ -155,7 +155,7 @@ namespace d2d
                 std::cerr << "Old tabu list = " << _tabu_list << "\n";
 #endif
 
-                this->add_to_tabu(tabu_pair.first, tabu_pair.second);
+                this->add_to_tabu(tabu);
 
 #ifdef DEBUG
                 std::cerr << "New tabu list = " << _tabu_list << "\n";
