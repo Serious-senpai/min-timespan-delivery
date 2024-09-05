@@ -17,7 +17,32 @@ def result_reader() -> Iterable[ResultJSON[SolutionJSON]]:
 if __name__ == "__main__":
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
-        csv.write("Problem,Customers count,Trucks count,Drones count,Iterations,Tabu size,Energy model,Speed type,Range type,Cost,Capacity violation,Energy violation,Waiting time violation,Fixed distance violation,Truck paths,Drone paths,Feasible,Initialization,Last improved,real,user,sys\n")
+        headers = [
+            "Problem",
+            "Customers count",
+            "Trucks count",
+            "Drones count",
+            "Iterations",
+            "Tabu size",
+            "Energy model",
+            "Speed type",
+            "Range type",
+            "Cost",
+            "Capacity violation",
+            "Energy violation",
+            "Waiting time violation",
+            "Fixed distance violation",
+            "Truck paths",
+            "Drone paths",
+            "Feasible",
+            "Initialization",
+            "Last improved",
+            "real",
+            "user",
+            "sys",
+        ]
+        csv.write(",".join(headers) + "\n")
+
         for row, result in enumerate(result_reader(), start=2):
             segments = [
                 csv_wrap(result["problem"]),
