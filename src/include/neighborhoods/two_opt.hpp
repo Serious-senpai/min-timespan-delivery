@@ -125,14 +125,14 @@ namespace d2d
 
                             if constexpr (std::is_same_v<_RT_I, DroneRoute>)
                             {
-                                if (ri.size() != 3)
+                                if (ri.size() > 3)
                                 {
                                     continue;
                                 }
                             }
                             if constexpr (std::is_same_v<_RT_J, DroneRoute>)
                             {
-                                if (rj.size() != 3)
+                                if (rj.size() > 3)
                                 {
                                     continue;
                                 }
