@@ -12,7 +12,7 @@ namespace d2d
         std::vector<std::shared_ptr<ST>> _history, _progress;
         std::vector<std::array<double, 4>> _coefficients;
         std::vector<std::vector<std::shared_ptr<ST>>> _elite_set;
-        std::vector<std::pair<std::string, std::pair<std::size_t, std::size_t>>> _neighborhoods;
+        std::vector<std::pair<std::string, std::vector<std::size_t>>> _neighborhoods;
 
     public:
         std::string initialization_label;
@@ -22,7 +22,7 @@ namespace d2d
             const std::shared_ptr<ST> history,
             const std::shared_ptr<ST> progress,
             const std::vector<std::shared_ptr<ST>> &elite_set,
-            const std::pair<std::string, std::pair<std::size_t, std::size_t>> &neighborhood)
+            const std::pair<std::string, std::vector<std::size_t>> &neighborhood)
         {
             _history.push_back(history);
             _progress.push_back(progress);
