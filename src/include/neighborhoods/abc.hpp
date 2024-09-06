@@ -143,23 +143,7 @@ namespace d2d
 
             if (result != nullptr)
             {
-#ifdef DEBUG
-                std::cerr << "Current solution:\n";
-                std::cerr << "cost = " << solution->cost() << "\n";
-                std::cerr << "truck_routes = " << solution->truck_routes << "\n";
-                std::cerr << "drone_routes = " << solution->drone_routes << "\n";
-                std::cerr << "New solution:\n";
-                std::cerr << "cost = " << result->cost() << "\n";
-                std::cerr << "truck_routes = " << result->truck_routes << "\n";
-                std::cerr << "drone_routes = " << result->drone_routes << "\n";
-                std::cerr << "Old tabu list = " << _tabu_list << "\n";
-#endif
-
                 this->add_to_tabu(tabu);
-
-#ifdef DEBUG
-                std::cerr << "New tabu list = " << _tabu_list << "\n";
-#endif
             }
 
             return result;
