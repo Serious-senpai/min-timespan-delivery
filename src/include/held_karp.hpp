@@ -98,4 +98,35 @@ namespace utils
 
         return __held_karp(n, distance);
     }
+
+    std::pair<double, std::vector<std::size_t>> nearest_heuristic(
+        const std::size_t &n,
+        const std::function<double(const std::size_t &, const std::size_t &)> &distance)
+    {
+        std::vector<std::size_t> path(n);
+        std::iota(path.begin(), path.end(), 0);
+
+        for (auto iter = path.begin(); iter != path.end(); iter++)
+        {
+            auto nearest = std::min_element(
+                iter + 1, path.end(),
+                [&distance, &iter](const std::size_t &i, const std::size_t &j)
+                {
+                    return distance(*iter, i) < distance(*iter, j);
+                });
+
+            if (nearest != path.end())
+            {
+                std::iter_swap(iter + 1, nearest);
+            }
+        }
+
+        double d = 0;
+        for (std::size_t i = 0; i < n - 1; i++)
+        {
+            d += distance(path[i], path[i + 1]);
+        }
+
+        return std::make_pair(d, path);
+    }
 }
