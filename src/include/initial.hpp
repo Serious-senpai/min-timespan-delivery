@@ -190,35 +190,13 @@ namespace d2d
         {
             cluster.push_back(0);
 
-            std::vector<std::size_t> order(cluster.size());
-            std::iota(order.begin(), order.end(), 0);
-            if (cluster.size() < 20)
+            auto distance = [&problem, &cluster](const std::size_t &i, const std::size_t &j)
             {
-                order = utils::held_karp_algorithm(
-                            cluster.size(),
-                            [&problem, &cluster](const std::size_t &i, const std::size_t &j)
-                            {
-                                return problem->distances[cluster[i]][cluster[j]];
-                            })
-                            .second;
-            }
-            else
-            {
-                for (auto iter = order.begin(); iter != order.end(); iter++)
-                {
-                    auto nearest = std::min_element(
-                        iter + 1, order.end(),
-                        [&problem, &cluster, &iter](const std::size_t &i, const std::size_t &j)
-                        {
-                            return problem->distances[cluster[*iter]][cluster[i]] < problem->distances[cluster[*iter]][cluster[j]];
-                        });
-
-                    if (nearest != order.end())
-                    {
-                        std::iter_swap(iter + 1, nearest);
-                    }
-                }
-            }
+                return problem->distances[cluster[i]][cluster[j]];
+            };
+            std::vector<std::size_t> order = cluster.size() < 20
+                                                 ? utils::held_karp_algorithm(cluster.size(), distance).second
+                                                 : utils::nearest_heuristic(cluster.size(), distance).second;
 
             std::vector<std::size_t> cluster_ordered(cluster.size());
             for (std::size_t i = 0; i < cluster.size(); i++)
