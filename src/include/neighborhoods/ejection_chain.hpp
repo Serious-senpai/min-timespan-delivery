@@ -33,6 +33,11 @@ namespace d2d
             auto &original_vehicle_routes_j = utils::match_type<std::vector<std::vector<_RT_J>>>(solution->truck_routes, solution->drone_routes);
             auto &original_vehicle_routes_k = utils::match_type<std::vector<std::vector<_RT_K>>>(solution->truck_routes, solution->drone_routes);
 
+            // std::cerr << "\e[31mInitial state:" << std::endl;
+            // std::cerr << original_vehicle_routes_i << std::endl;
+            // std::cerr << original_vehicle_routes_j << std::endl;
+            // std::cerr << original_vehicle_routes_k << "\e[0m\n";
+
             for (std::size_t route_i = 0; route_i < original_vehicle_routes_i[_vehicle_i].size(); route_i++)
             {
                 const auto &customers_i = original_vehicle_routes_i[_vehicle_i][route_i].customers();
@@ -91,6 +96,8 @@ namespace d2d
                                     vehicle_routes_i[_vehicle_i][route_i] = _RT_I(ri);
                                 }
 
+                                // std::cerr << "Temporary state " << vehicle_routes_i << " " << vehicle_routes_j << ", insert_k = " << insert_k << std::endl;
+
                                 /* Construct a new route of vehicle_k (temporary state lv2) */
                                 vehicle_routes_k[_vehicle_k].emplace_back(std::vector<std::size_t>{0, insert_k, 0});
 
@@ -103,6 +110,7 @@ namespace d2d
                                 /* Restore temporary state lv1 */
                                 vehicle_routes_k[_vehicle_k].pop_back();
 
+                                // std::cerr << "1. Restore temporary state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
                                 /* Swap customers between 3 existing routes */
                                 bool same_ik = (vehicle_i == vehicle_k);
                                 for (std::size_t route_k = 0; route_k < original_vehicle_routes_k[_vehicle_k].size() - same_ik; route_k++)
@@ -123,7 +131,7 @@ namespace d2d
                                         }
                                     }
 
-                                    std::size_t route_k_new = route_k - (same_ik && route_k >= route_i);
+                                    std::size_t route_k_new = route_k - (ri.size() == 2 && same_ik && route_k >= route_i);
                                     const auto &customers_k = original_vehicle_routes_k[_vehicle_k][route_k].customers();
                                     for (std::size_t k = 1; k < customers_k.size(); k++)
                                     {
@@ -134,6 +142,7 @@ namespace d2d
                                         /* Temporary modify (temporary state lv2) */
                                         vehicle_routes_k[_vehicle_k][route_k_new] = _RT_K(rk);
 
+                                        // std::cerr << "Constructing " << truck_routes << " " << drone_routes << std::endl;
                                         auto new_solution = this->construct(parent, truck_routes, drone_routes);
                                         if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))
                                         {
@@ -142,6 +151,7 @@ namespace d2d
 
                                         /* Restore temporary state lv1 */
                                         vehicle_routes_k[_vehicle_k][route_k_new] = original_vehicle_routes_k[_vehicle_k][route_k];
+                                        // std::cerr << "2. Restore temporary state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
                                     }
                                 }
 
@@ -151,6 +161,7 @@ namespace d2d
                                 {
                                     vehicle_routes_j[_vehicle_j][route_j] = original_vehicle_routes_j[_vehicle_j][route_j];
                                 }
+                                // std::cerr << "3. Restore original state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
                             }
                         }
                     }
