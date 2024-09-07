@@ -2,6 +2,7 @@
 
 #include "bitvector.hpp"
 #include "held_karp.hpp"
+#include "fp_specifier.hpp"
 #include "initial.hpp"
 #include "logger.hpp"
 #include "parent.hpp"
@@ -596,13 +597,12 @@ namespace d2d
         {
             if (problem->verbose)
             {
-                std::string format_string = "\rIteration #%lu(";
-                format_string += current->cost() > 999999.0 ? "%.2e" : "%.2lf";
-                format_string += "/";
-                format_string += result->cost() > 999999.0 ? "%.2e" : "%.2lf";
-                format_string += ") ";
-
-                auto prefix = utils::format(format_string, iteration + 1, current->cost(), result->cost());
+                std::string format_string = utils::format(
+                    "Iteration #%lu(%s/%s)",
+                    iteration + 1,
+                    utils::fp_format_specifier(current->cost()),
+                    utils::fp_format_specifier(result->cost()));
+                auto prefix = utils::format(format_string, current->cost(), result->cost());
                 std::cerr << prefix;
 
                 try
@@ -618,7 +618,7 @@ namespace d2d
                     // ignore
                 }
 
-                std::cerr << std::flush;
+                std::cerr << '\r' << std::flush;
             }
 
             logger.iterations = iteration + 1;

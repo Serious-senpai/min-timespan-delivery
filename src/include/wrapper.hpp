@@ -8,6 +8,11 @@ namespace utils
     class FloatingPointWrapper
     {
     public:
+        /**
+         * @brief The underlying value
+         *
+         * This underlying value is the first class member so that format specifier of T works (address of class instance = &value)
+         */
         T value;
 
         FloatingPointWrapper(const T &value) : value(value) {}

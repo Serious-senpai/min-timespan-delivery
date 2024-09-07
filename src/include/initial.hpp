@@ -83,7 +83,7 @@ namespace d2d
 
         std::rotate(
             customers_by_angle.begin(),
-            customers_by_angle.begin() + utils::random(static_cast<std::size_t>(0), problem->customers.size() - 1),
+            customers_by_angle.begin() + utils::random<std::size_t>(0, problem->customers.size() - 1),
             customers_by_angle.end());
 
         auto truck_iter = truck_routes.begin();
@@ -141,15 +141,7 @@ namespace d2d
 
         for (auto &customer : next_phase)
         {
-            auto truck = utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1);
-            if (truck_routes[truck].empty())
-            {
-                truck_routes[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
-            }
-            else
-            {
-                truck_routes[truck].back().push_back(customer);
-            }
+            truck_routes[utils::random<std::size_t>(0, problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
@@ -162,15 +154,7 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
         std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
 
-        std::size_t vehicles_count;
-        if constexpr (std::is_same_v<RT, TruckRoute>)
-        {
-            vehicles_count = problem->trucks_count;
-        }
-        else
-        {
-            vehicles_count = problem->drones_count;
-        }
+        std::size_t vehicles_count = utils::ternary<std::is_same_v<RT, TruckRoute>>(problem->trucks_count, problem->drones_count);
 
         alglib::clusterizerstate state;
         alglib::clusterizercreate(state);
@@ -243,6 +227,8 @@ namespace d2d
             cluster = cluster_ordered;
         }
 
+        auto &vehicle_routes = utils::match_type<std::vector<std::vector<RT>>>(truck_routes, drone_routes);
+
         for (std::size_t cluster_i = 0; cluster_i < clusters.size(); cluster_i = (cluster_i + 1) % clusters.size())
         {
             if (clusters[cluster_i].empty())
@@ -256,71 +242,27 @@ namespace d2d
                 continue;
             }
 
-            std::size_t vehicle = (std::size_t)-1;
-            {
-                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                if constexpr (std::is_same_v<RT, TruckRoute>)
-                {
-                    vehicle = std::min_element(
-                                  temp->truck_working_time.begin(),
-                                  temp->truck_working_time.end(),
-                                  [](const double &first, const double &second)
-                                  { return first < second; }) -
-                              temp->truck_working_time.begin();
-                }
-                else
-                {
-                    vehicle = std::min_element(
-                                  temp->drone_working_time.begin(),
-                                  temp->drone_working_time.end(),
-                                  [](const double &first, const double &second)
-                                  { return first < second; }) -
-                              temp->drone_working_time.begin();
-                }
-            }
+            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            const auto &working_time = utils::ternary<std::is_same_v<RT, TruckRoute>>(temp->truck_working_time, temp->drone_working_time);
+            std::size_t vehicle = std::min_element(working_time.begin(), working_time.end()) - working_time.begin();
 
             std::size_t customer = clusters[cluster_i].back();
             clusters[cluster_i].pop_back();
 
-            if constexpr (std::is_same_v<RT, TruckRoute>)
+            if (!_try_insert<RT, ST>(vehicle_routes[vehicle], customer, truck_routes, drone_routes))
             {
-                if (!_try_insert<TruckRoute, ST>(truck_routes[vehicle], customer, truck_routes, drone_routes))
+                if (unhandled_ptr != nullptr)
                 {
-                    if (unhandled_ptr != nullptr)
-                    {
-                        unhandled_ptr->push_back(customer);
-                    }
-
-                    continue;
+                    unhandled_ptr->push_back(customer);
                 }
-            }
-            else
-            {
-                if (!_try_insert<DroneRoute, ST>(drone_routes[vehicle], customer, truck_routes, drone_routes))
-                {
-                    if (unhandled_ptr != nullptr)
-                    {
-                        unhandled_ptr->push_back(customer);
-                    }
 
-                    continue;
-                }
+                continue;
             }
 
             while (!clusters[cluster_i].empty())
             {
                 std::size_t customer = clusters[cluster_i].back();
-                bool inserted = false;
-                if constexpr (std::is_same_v<RT, TruckRoute>)
-                {
-                    inserted = _try_insert<TruckRoute, ST>(truck_routes[vehicle].back(), customer, truck_routes, drone_routes);
-                }
-                else
-                {
-                    inserted = _try_insert<DroneRoute, ST>(drone_routes[vehicle].back(), customer, truck_routes, drone_routes);
-                }
-
-                if (inserted)
+                if (_try_insert<RT, ST>(vehicle_routes[vehicle].back(), customer, truck_routes, drone_routes))
                 {
                     clusters[cluster_i].pop_back();
                 }
@@ -331,14 +273,7 @@ namespace d2d
             }
         }
 
-        if constexpr (std::is_same_v<RT, TruckRoute>)
-        {
-            return truck_routes;
-        }
-        else
-        {
-            return drone_routes;
-        }
+        return vehicle_routes;
     }
 
     template <typename ST>
@@ -366,15 +301,7 @@ namespace d2d
 
         for (auto &customer : left_over)
         {
-            auto truck = utils::random(static_cast<std::size_t>(0), problem->trucks_count - 1);
-            if (truck_routes[truck].empty())
-            {
-                truck_routes[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
-            }
-            else
-            {
-                truck_routes[truck].back().push_back(customer);
-            }
+            truck_routes[utils::random<std::size_t>(0, problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
         }
 
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
