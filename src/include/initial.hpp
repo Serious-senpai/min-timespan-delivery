@@ -94,7 +94,7 @@ namespace d2d
                         truck_routes_modified[truck][route] = TruckRoute(r);
 
                         auto new_temp = std::make_shared<ST>(truck_routes_modified, drone_routes, nullptr, false);
-                        if (temp == nullptr || new_temp->working_time < temp->working_time || (new_temp->feasible && !temp->feasible))
+                        if (temp == nullptr || new_temp->travel_cost < temp->travel_cost || (new_temp->feasible && !temp->feasible))
                         {
                             temp = new_temp;
                         }
@@ -103,18 +103,6 @@ namespace d2d
                         truck_routes_modified[truck][route] = truck_routes[truck][route];
                     }
                 }
-
-                // Temporary append
-                truck_routes_modified[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
-
-                auto new_temp = std::make_shared<ST>(truck_routes_modified, drone_routes, nullptr, false);
-                if (temp == nullptr || new_temp->working_time < temp->working_time || (new_temp->feasible && !temp->feasible))
-                {
-                    temp = new_temp;
-                }
-
-                // Restore
-                truck_routes_modified[truck].pop_back();
             }
 
             truck_routes = temp->truck_routes;
