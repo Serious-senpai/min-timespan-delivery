@@ -52,6 +52,63 @@ namespace d2d
     }
 
     template <typename ST>
+    void _insert_leftover(
+        const std::vector<std::size_t> &leftover,
+        std::vector<std::vector<TruckRoute>> &truck_routes,
+        const std::vector<std::vector<DroneRoute>> &drone_routes)
+    {
+        auto problem = Problem::get_instance();
+
+        std::vector<std::size_t> leftover_copy(leftover);
+        std::shuffle(leftover_copy.begin(), leftover_copy.end(), utils::rng);
+
+        for (auto &customer : leftover_copy)
+        {
+            std::vector<std::vector<TruckRoute>> truck_routes_modified(truck_routes);
+            std::shared_ptr<ST> temp = nullptr;
+
+            for (std::size_t truck = 0; truck < problem->trucks_count; truck++)
+            {
+                for (std::size_t route = 0; route < truck_routes[truck].size(); route++)
+                {
+                    const auto &customers = truck_routes[truck][route].customers();
+                    for (std::size_t i = 1; i < customers.size(); i++)
+                    {
+                        std::vector<std::size_t> r(customers);
+                        r.insert(r.begin() + i, customer);
+
+                        // Temporary modify
+                        truck_routes_modified[truck][route] = TruckRoute(r);
+
+                        auto new_temp = std::make_shared<ST>(truck_routes_modified, drone_routes, nullptr, false);
+                        if (temp == nullptr || new_temp->working_time < temp->working_time || (new_temp->feasible && !temp->feasible))
+                        {
+                            temp = new_temp;
+                        }
+
+                        // Restore
+                        truck_routes_modified[truck][route] = truck_routes[truck][route];
+                    }
+                }
+
+                // Temporary append
+                truck_routes_modified[truck].emplace_back(std::vector<std::size_t>{0, customer, 0});
+
+                auto new_temp = std::make_shared<ST>(truck_routes_modified, drone_routes, nullptr, false);
+                if (temp == nullptr || new_temp->working_time < temp->working_time || (new_temp->feasible && !temp->feasible))
+                {
+                    temp = new_temp;
+                }
+
+                // Restore
+                truck_routes_modified[truck].pop_back();
+            }
+
+            truck_routes = temp->truck_routes;
+        }
+    }
+
+    template <typename ST>
     std::shared_ptr<ST> initial_1()
     {
         auto problem = Problem::get_instance();
@@ -126,11 +183,7 @@ namespace d2d
             next_phase.push_back(customer);
         }
 
-        for (auto &customer : next_phase)
-        {
-            truck_routes[utils::random<std::size_t>(0, problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
-        }
-
+        _insert_leftover<ST>(next_phase, truck_routes, drone_routes);
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
     }
 
@@ -276,14 +329,10 @@ namespace d2d
 
         std::vector<std::vector<DroneRoute>> drone_routes = _initial_2_helper<DroneRoute, ST>(dronable, &truck_only);
 
-        std::vector<std::size_t> left_over;
-        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, &left_over);
+        std::vector<std::size_t> leftover;
+        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, &leftover);
 
-        for (auto &customer : left_over)
-        {
-            truck_routes[utils::random<std::size_t>(0, problem->trucks_count - 1)].emplace_back(std::vector<std::size_t>{0, customer, 0});
-        }
-
+        _insert_leftover<ST>(leftover, truck_routes, drone_routes);
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
     }
 }
