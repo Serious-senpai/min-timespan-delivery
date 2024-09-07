@@ -91,6 +91,23 @@ namespace utils
      * @return An iterator to the selected element
      */
     template <typename T>
+    std::vector<T>::iterator random_element(std::vector<T> &v)
+    {
+        if (v.empty())
+        {
+            throw std::runtime_error("Cannot select an element from an empty vector");
+        }
+
+        return v.begin() + random<std::size_t>(0, v.size() - 1);
+    }
+
+    /**
+     * @brief Select a random element from a const vector
+     *
+     * @param v The vector to select from
+     * @return A const_iterator to the selected element
+     */
+    template <typename T>
     std::vector<T>::const_iterator random_element(const std::vector<T> &v)
     {
         if (v.empty())
@@ -98,6 +115,6 @@ namespace utils
             throw std::runtime_error("Cannot select an element from an empty vector");
         }
 
-        return v.cbegin() + random<std::size_t>(0, v.size() - 1);
+        return v.begin() + random<std::size_t>(0, v.size() - 1);
     }
 }
