@@ -14,7 +14,7 @@ namespace d2d
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
     }
 
-    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
+    template <typename ST, typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
     bool _try_insert(
         RT &route,
         const std::size_t &customer,
@@ -33,7 +33,7 @@ namespace d2d
         return false;
     }
 
-    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
+    template <typename ST, typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
     bool _try_insert(
         std::vector<RT> &routes,
         const std::size_t &customer,
@@ -108,93 +108,17 @@ namespace d2d
         }
     }
 
-    template <typename ST>
-    std::shared_ptr<ST> initial_1()
+    std::vector<std::vector<std::size_t>> clusterize_1(
+        const std::vector<std::size_t> &customers,
+        const std::size_t &k)
     {
-        auto problem = Problem::get_instance();
-        std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
-        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
-
-        std::vector<std::size_t> customers_by_angle(problem->customers.size() - 1);
-        std::iota(customers_by_angle.begin(), customers_by_angle.end(), 1);
-        std::sort(
-            customers_by_angle.begin(), customers_by_angle.end(),
-            [&problem](const std::size_t &first, const std::size_t &second)
-            {
-                return std::atan2(problem->customers[first].y, problem->customers[first].x) <
-                       std::atan2(problem->customers[second].y, problem->customers[second].x);
-            });
-
-        std::rotate(
-            customers_by_angle.begin(),
-            customers_by_angle.begin() + utils::random<std::size_t>(0, problem->customers.size() - 1),
-            customers_by_angle.end());
-
-        auto truck_iter = truck_routes.begin();
-        auto drone_iter = drone_routes.begin();
-        std::vector<std::size_t> next_phase;
-        for (auto &customer : customers_by_angle)
+        std::vector<std::vector<std::size_t>> clusters(k);
+        if (customers.empty())
         {
-            if (drone_iter != drone_routes.end() && problem->customers[customer].dronable)
-            {
-                if (_try_insert<DroneRoute, ST>(*drone_iter, customer, truck_routes, drone_routes))
-                {
-                    drone_iter++;
-                    continue;
-                }
-            }
-
-            if (truck_iter != truck_routes.end())
-            {
-                if (_try_insert<TruckRoute, ST>(*truck_iter, customer, truck_routes, drone_routes))
-                {
-                    truck_iter++;
-                    continue;
-                }
-            }
-
-            next_phase.push_back(customer);
+            return clusters;
         }
 
-        std::size_t truck = 0, drone = 0;
-        for (std::size_t iteration = 0; iteration < utils::pow2(problem->customers.size()) / 2 && !next_phase.empty(); iteration++)
-        {
-            auto iter = utils::random_element(next_phase);
-            auto customer = *iter;
-            next_phase.erase(iter);
-
-            if (problem->customers[customer].dronable)
-            {
-                if ((!drone_routes[drone].empty() && _try_insert<DroneRoute, ST>(drone_routes[drone].back(), customer, truck_routes, drone_routes)) ||
-                    _try_insert<DroneRoute, ST>(drone_routes[drone], customer, truck_routes, drone_routes))
-                {
-                    drone = (drone + 1) % problem->drones_count;
-                    continue;
-                }
-            }
-
-            if ((!truck_routes[truck].empty() && _try_insert<TruckRoute, ST>(truck_routes[truck].back(), customer, truck_routes, drone_routes)) ||
-                _try_insert<TruckRoute, ST>(truck_routes[truck], customer, truck_routes, drone_routes))
-            {
-                truck = (truck + 1) % problem->trucks_count;
-                continue;
-            }
-
-            next_phase.push_back(customer);
-        }
-
-        _insert_leftover<ST>(next_phase, truck_routes, drone_routes);
-        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-1"));
-    }
-
-    template <typename RT, typename ST, std::enable_if_t<is_route_v<RT>, bool> = true>
-    std::vector<std::vector<RT>> _initial_2_helper(const std::vector<std::size_t> &customers, std::vector<std::size_t> *unhandled_ptr)
-    {
         auto problem = Problem::get_instance();
-        std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
-        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
-
-        std::size_t vehicles_count = utils::ternary<std::is_same_v<RT, TruckRoute>>(problem->trucks_count, problem->drones_count);
 
         alglib::clusterizerstate state;
         alglib::clusterizercreate(state);
@@ -202,7 +126,7 @@ namespace d2d
         alglib::real_2d_array matrix;
         std::vector<double> xy;
         xy.reserve(2 * customers.size());
-        for (auto index : customers)
+        for (auto &index : customers)
         {
             xy.push_back(problem->customers[index].x);
             xy.push_back(problem->customers[index].y);
@@ -213,9 +137,8 @@ namespace d2d
         alglib::clusterizersetkmeanslimits(state, 1, 500);
 
         alglib::kmeansreport report;
-        alglib::clusterizerrunkmeans(state, vehicles_count, report);
+        alglib::clusterizerrunkmeans(state, k, report);
 
-        std::vector<std::vector<std::size_t>> clusters(vehicles_count);
         if (report.terminationtype == 1)
         {
             for (std::size_t i = 0; i < customers.size(); i++)
@@ -227,10 +150,126 @@ namespace d2d
         {
             for (std::size_t i = 0; i < customers.size(); i++)
             {
-                clusters[i % clusters.size()].push_back(customers[i]);
+                clusters[i % k].push_back(customers[i]);
             }
         }
 
+        return clusters;
+    }
+
+    std::vector<std::vector<std::size_t>> clusterize_2(
+        const std::vector<std::size_t> &customers,
+        const std::size_t &k)
+    {
+        std::vector<std::vector<std::size_t>> clusters(k);
+        if (customers.empty())
+        {
+            return clusters;
+        }
+
+        auto problem = Problem::get_instance();
+        std::vector<double> angles(customers.size());
+        std::transform(
+            customers.begin(), customers.end(), angles.begin(),
+            [&problem](const std::size_t &customer)
+            {
+                return std::atan2(problem->customers[customer].y, problem->customers[customer].x) + M_PI; // range [0, 2 * M_PI]
+            });
+
+        std::vector<std::size_t> ordered(customers);
+        std::sort(
+            ordered.begin(), ordered.end(),
+            [&angles](const std::size_t &first, const std::size_t &second)
+            {
+                return angles[first] < angles[second];
+            });
+        std::sort(angles.begin(), angles.end());
+
+        const auto angle_diff = [](const double &from, const double &to)
+        {
+            double diff = to - from;
+            return diff < 0 ? diff + 2 * M_PI : diff;
+        };
+
+        {
+            std::size_t shift = 0;
+            double max_diff = std::numeric_limits<double>::max();
+            for (std::size_t i = 0; i < angles.size(); i++)
+            {
+                double diff = angle_diff(angles[(i + angles.size() - 1) % angles.size()], angles[i]);
+                if (diff < 0)
+                {
+                    diff += 2 * M_PI;
+                }
+
+                if (diff > max_diff)
+                {
+                    shift = i;
+                    max_diff = diff;
+                }
+            }
+
+            std::rotate(ordered.begin(), ordered.begin() + shift, ordered.end());
+            std::rotate(angles.begin(), angles.begin() + shift, angles.end());
+        }
+
+        const double base = angles.front();
+        std::transform(
+            angles.begin(), angles.end(), angles.begin(),
+            [&angle_diff, &base](const double &angle)
+            {
+                return angle_diff(base, angle);
+            });
+
+        double angle_shift = (angles.back() - angles.front()) / static_cast<double>(k);
+        auto cluster = clusters.begin();
+        for (std::size_t i = 0; i < angles.size(); i++)
+        {
+            if (cluster->empty() || angles[i] - angles[cluster->front()] < angle_shift)
+            {
+                cluster->push_back(i);
+            }
+            else
+            {
+                cluster++;
+                cluster->push_back(i);
+            }
+        }
+
+        for (auto &cluster : clusters)
+        {
+            std::transform(
+                cluster.begin(), cluster.end(), cluster.begin(),
+                [&ordered](const std::size_t &index)
+                {
+                    return ordered[index];
+                });
+        }
+
+        return clusters;
+    }
+
+    template <typename ST, int _Clusterizer, typename RT, std::enable_if_t<is_route_v<RT> && (_Clusterizer == 1 || _Clusterizer == 2), bool> = true>
+    std::vector<std::vector<RT>> _initial_helper(const std::vector<std::size_t> &customers, std::vector<std::size_t> *unhandled_ptr)
+    {
+        auto problem = Problem::get_instance();
+        std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
+        std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
+
+        auto vehicles_count = utils::ternary<std::is_same_v<RT, TruckRoute>>(problem->trucks_count, problem->drones_count);
+        auto &vehicle_routes = utils::match_type<std::vector<std::vector<RT>>>(truck_routes, drone_routes);
+
+        std::vector<std::vector<std::size_t>> clusters;
+        if constexpr (_Clusterizer == 1)
+        {
+            clusters = clusterize_1(customers, vehicles_count);
+        }
+        else
+        {
+            clusters = clusterize_2(customers, vehicles_count);
+        }
+
+        // std::cerr << "clusters = " << clusters << std::endl;
         for (auto &cluster : clusters)
         {
             cluster.push_back(0);
@@ -267,8 +306,6 @@ namespace d2d
             cluster = cluster_ordered;
         }
 
-        auto &vehicle_routes = utils::match_type<std::vector<std::vector<RT>>>(truck_routes, drone_routes);
-
         for (std::size_t cluster_i = 0; cluster_i < clusters.size(); cluster_i = (cluster_i + 1) % clusters.size())
         {
             if (clusters[cluster_i].empty())
@@ -289,7 +326,7 @@ namespace d2d
             std::size_t customer = clusters[cluster_i].back();
             clusters[cluster_i].pop_back();
 
-            if (!_try_insert<RT, ST>(vehicle_routes[vehicle], customer, truck_routes, drone_routes))
+            if (!_try_insert<ST>(vehicle_routes[vehicle], customer, truck_routes, drone_routes))
             {
                 if (unhandled_ptr != nullptr)
                 {
@@ -302,7 +339,7 @@ namespace d2d
             while (!clusters[cluster_i].empty())
             {
                 std::size_t customer = clusters[cluster_i].back();
-                if (_try_insert<RT, ST>(vehicle_routes[vehicle].back(), customer, truck_routes, drone_routes))
+                if (_try_insert<ST>(vehicle_routes[vehicle].back(), customer, truck_routes, drone_routes))
                 {
                     clusters[cluster_i].pop_back();
                 }
@@ -316,8 +353,8 @@ namespace d2d
         return vehicle_routes;
     }
 
-    template <typename ST>
-    std::shared_ptr<ST> initial_2()
+    template <typename ST, int _Clusterizer>
+    std::shared_ptr<ST> initial_impl()
     {
         auto problem = Problem::get_instance();
 
@@ -334,10 +371,10 @@ namespace d2d
             }
         }
 
-        std::vector<std::vector<DroneRoute>> drone_routes = _initial_2_helper<DroneRoute, ST>(dronable, &truck_only);
+        std::vector<std::vector<DroneRoute>> drone_routes = _initial_helper<ST, _Clusterizer, DroneRoute>(dronable, &truck_only);
 
         std::vector<std::size_t> leftover;
-        std::vector<std::vector<TruckRoute>> truck_routes = _initial_2_helper<TruckRoute, ST>(truck_only, &leftover);
+        std::vector<std::vector<TruckRoute>> truck_routes = _initial_helper<ST, _Clusterizer, TruckRoute>(truck_only, &leftover);
 
         _insert_leftover<ST>(leftover, truck_routes, drone_routes);
         return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
