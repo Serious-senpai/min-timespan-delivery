@@ -285,7 +285,7 @@ if __name__ == "__main__":
                             angles="xy",
                             scale_units="xy",
                             scale=1,
-                            width=0.004,
+                            width=0.002,
                         )
 
                     for paths in truck_paths:
@@ -312,10 +312,10 @@ if __name__ == "__main__":
                             angles="xy",
                             scale_units="xy",
                             scale=1,
-                            width=0.004,
+                            width=0.002,
                         )
 
-                    ax.scatter((0,), (0,), c="black", label="Depot")
+                    ax.scatter((x[0],), (y[0],), c="black", label="Depot")
                     ax.scatter(
                         [x[index] for index in range(1, 1 + customers_count) if dronable[index]],
                         [y[index] for index in range(1, 1 + customers_count) if dronable[index]],
@@ -329,7 +329,7 @@ if __name__ == "__main__":
                         label="Truck-only",
                     )
 
-                    ax.annotate("0", (0, 0))
+                    ax.annotate("0", (x[0], y[0]))
                     for index in range(1, 1 + customers_count):
                         ax.annotate(str(index), (x[index], y[index]))
 

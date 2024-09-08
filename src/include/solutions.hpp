@@ -530,8 +530,8 @@ namespace d2d
 
     std::shared_ptr<Solution> Solution::initial(Logger<Solution> &logger)
     {
-        auto r1 = initial_1<Solution>();
-        auto r2 = initial_2<Solution>();
+        auto r1 = initial_impl<Solution, 1>();
+        auto r2 = initial_impl<Solution, 2>();
 
         short option = 0;
         if (r1->feasible && !r2->feasible)
@@ -563,6 +563,8 @@ namespace d2d
             logger.initialization_label = "initial_2";
             break;
         }
+
+        std::cerr << "\e[31mInitialization label = \"" << logger.initialization_label << "\"\e[0m" << std::endl;
 
         return option == 1 ? r1 : r2;
     }
