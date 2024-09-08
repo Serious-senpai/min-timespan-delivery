@@ -64,9 +64,8 @@ class ResultJSON(Generic[T], TypedDict):
     initialization_label: str
     last_improved: int
     elite_set: List[List[float]]
-    real: float
-    user: float
-    sys: float
+    elapsed: float
+    url: Optional[str]
 
 
 @overload

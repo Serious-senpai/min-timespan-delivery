@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import random
-import re
 import string
 import textwrap
 from typing_extensions import List, Optional, Tuple
@@ -28,6 +27,7 @@ def random_str(length: int) -> str:
 
 class Namespace(argparse.Namespace):
     problem: str
+    url: Optional[str]
 
 
 def read_solution() -> Optional[SolutionJSON]:
@@ -64,6 +64,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
+parser.add_argument("--url", type=str, required=False, help="the GitHub Actions job URL")
 
 
 if __name__ == "__main__":
@@ -115,25 +116,7 @@ if __name__ == "__main__":
     last_improved = int(input())
 
     elite_set: List[List[float]] = [eval(input()) for _ in range(int(input()))]
-
-    real = user = sys = -1.0
-
-    for _ in range(3):
-        line = input()
-        re_match = re.fullmatch(r"^(real|user|sys)\s+(\d+(?:\.\d*)?)$", line)
-        if re_match is None:
-            message = f"Unrecognized pattern: \"{line}\""
-            raise RuntimeError(message)
-
-        groups = re_match.groups()
-        value = float(groups[1])
-        match groups[0]:
-            case "real":
-                real = value
-            case "user":
-                user = value
-            case "sys":
-                sys = value
+    elapsed = float(input()) / 1000  # Convert ms to s
 
     data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
@@ -153,9 +136,8 @@ if __name__ == "__main__":
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
-        "real": real,
-        "user": user,
-        "sys": sys,
+        "elapsed": elapsed,
+        "url": namespace.url,
     }
     print(solution)
 

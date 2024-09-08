@@ -53,9 +53,8 @@ if __name__ == "__main__":
             "Feasible",
             "Initialization",
             "Last improved",
-            "real",
-            "user",
-            "sys",
+            "Elapsed",
+            "URL",
         ]
         csv.write(",".join(headers) + "\n")
 
@@ -82,8 +81,7 @@ if __name__ == "__main__":
                 str(int(result["solution"]["feasible"])),
                 result["initialization_label"],
                 str(result["last_improved"]),
-                str(result["real"]),
-                str(result["user"]),
-                str(result["sys"]),
+                str(result["elapsed"]),
+                csv_wrap(result["url"]) if result["url"] is not None else "",
             ]
             csv.write(",".join(segments) + "\n")

@@ -17,6 +17,7 @@ namespace d2d
     public:
         std::string initialization_label;
         std::size_t last_improved, iterations;
+        std::chrono::milliseconds elapsed;
 
         void log(
             const std::shared_ptr<ST> history,
@@ -131,6 +132,8 @@ namespace d2d
                     { return ptr->travel_cost; });
                 std::cout << costs << "\n";
             }
+
+            std::cout << elapsed.count() << "\n";
         }
     };
 
