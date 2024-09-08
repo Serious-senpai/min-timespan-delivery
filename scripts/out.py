@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import random
-import re
 import string
 import textwrap
 from typing_extensions import List, Optional, Tuple
