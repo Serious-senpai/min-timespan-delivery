@@ -285,7 +285,7 @@ if __name__ == "__main__":
                             angles="xy",
                             scale_units="xy",
                             scale=1,
-                            width=0.004,
+                            width=0.002,
                         )
 
                     for paths in truck_paths:
@@ -312,7 +312,7 @@ if __name__ == "__main__":
                             angles="xy",
                             scale_units="xy",
                             scale=1,
-                            width=0.004,
+                            width=0.002,
                         )
 
                     ax.scatter((0,), (0,), c="black", label="Depot")
