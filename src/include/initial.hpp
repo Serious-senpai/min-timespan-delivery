@@ -173,16 +173,38 @@ namespace d2d
             customers.begin(), customers.end(), angles.begin(),
             [&problem](const std::size_t &customer)
             {
-                return std::atan2(problem->customers[customer].y, problem->customers[customer].x) + M_PI; // range [0, 2 * M_PI]
+                double a = std::atan2(
+                    problem->customers[customer].y - problem->customers[0].y,
+                    problem->customers[customer].x - problem->customers[0].x);
+                if (a < 0)
+                {
+                    a += 2 * M_PI;
+                }
+
+                return a; // range [0, 2 * M_PI]
             });
 
-        std::vector<std::size_t> ordered(customers);
-        std::sort(
-            ordered.begin(), ordered.end(),
-            [&angles](const std::size_t &first, const std::size_t &second)
-            {
-                return angles[first] < angles[second];
-            });
+        std::vector<std::size_t> ordered(customers.size());
+
+        {
+            std::vector<std::size_t> index(customers.size());
+            std::iota(index.begin(), index.end(), 0);
+
+            std::sort(
+                index.begin(), index.end(),
+                [&angles](const std::size_t &first, const std::size_t &second)
+                {
+                    return angles[first] < angles[second];
+                });
+
+            std::transform(
+                index.begin(), index.end(), ordered.begin(),
+                [&customers](const std::size_t &i)
+                {
+                    return customers[i];
+                });
+        }
+
         std::sort(angles.begin(), angles.end());
 
         const auto angle_diff = [](const double &from, const double &to)
@@ -193,7 +215,7 @@ namespace d2d
 
         {
             std::size_t shift = 0;
-            double max_diff = std::numeric_limits<double>::max();
+            double max_diff = -1;
             for (std::size_t i = 0; i < angles.size(); i++)
             {
                 double diff = angle_diff(angles[(i + angles.size() - 1) % angles.size()], angles[i]);
@@ -213,37 +235,21 @@ namespace d2d
             std::rotate(angles.begin(), angles.begin() + shift, angles.end());
         }
 
-        const double base = angles.front();
-        std::transform(
-            angles.begin(), angles.end(), angles.begin(),
-            [&angle_diff, &base](const double &angle)
-            {
-                return angle_diff(base, angle);
-            });
-
-        double angle_shift = (angles.back() - angles.front()) / static_cast<double>(k);
-        auto cluster = clusters.begin();
-        for (std::size_t i = 0; i < angles.size(); i++)
         {
-            if (cluster->empty() || angles[i] - angles[cluster->front()] <= angle_shift)
-            {
-                cluster->push_back(i);
-            }
-            else
-            {
-                cluster++;
-                cluster->push_back(i);
-            }
+            const double base = angles.front();
+            std::transform(
+                angles.begin(), angles.end(), angles.begin(),
+                [&angle_diff, &base](const double &angle)
+                {
+                    return angle_diff(base, angle);
+                });
         }
 
-        for (auto &cluster : clusters)
+        double angle_shift = (angles.back() - angles.front()) / static_cast<double>(k);
+        for (std::size_t i = 0; i < angles.size(); i++)
         {
-            std::transform(
-                cluster.begin(), cluster.end(), cluster.begin(),
-                [&ordered](const std::size_t &index)
-                {
-                    return ordered[index];
-                });
+            auto cidx = std::min<std::size_t>(std::floor(angles[i] / angle_shift), k - 1);
+            clusters[cidx].push_back(ordered[i]);
         }
 
         return clusters;
@@ -269,7 +275,6 @@ namespace d2d
             clusters = clusterize_2(customers, vehicles_count);
         }
 
-        // std::cerr << "clusters = " << clusters << std::endl;
         for (auto &cluster : clusters)
         {
             cluster.push_back(0);
