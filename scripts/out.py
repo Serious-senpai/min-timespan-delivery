@@ -117,25 +117,7 @@ if __name__ == "__main__":
     last_improved = int(input())
 
     elite_set: List[List[float]] = [eval(input()) for _ in range(int(input()))]
-
-    real = user = sys = -1.0
-
-    for _ in range(3):
-        line = input()
-        re_match = re.fullmatch(r"^(real|user|sys)\s+(\d+(?:\.\d*)?)$", line)
-        if re_match is None:
-            message = f"Unrecognized pattern: \"{line}\""
-            raise RuntimeError(message)
-
-        groups = re_match.groups()
-        value = float(groups[1])
-        match groups[0]:
-            case "real":
-                real = value
-            case "user":
-                user = value
-            case "sys":
-                sys = value
+    elapsed = float(input()) / 1000  # Convert ms to s
 
     data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
@@ -155,10 +137,8 @@ if __name__ == "__main__":
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
+        "elapsed": elapsed,
         "url": namespace.url,
-        "real": real,
-        "user": user,
-        "sys": sys,
     }
     print(solution)
 

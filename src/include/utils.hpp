@@ -19,6 +19,12 @@ namespace utils
             report();
         }
 
+        template <typename T>
+        T elapsed() const
+        {
+            return std::chrono::duration_cast<T>(std::chrono::high_resolution_clock::now() - start);
+        }
+
         void report() const
         {
             report(message);
@@ -26,8 +32,7 @@ namespace utils
 
         void report(const std::string &message) const
         {
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-            std::cerr << message << " " << duration.count() << "ms\n";
+            std::cerr << message << " " << elapsed<std::chrono::milliseconds>().count() << "ms\n";
         }
     };
 
