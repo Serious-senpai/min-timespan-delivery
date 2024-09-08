@@ -117,10 +117,10 @@ jobs:
             python scripts/in.py ${{ matrix.problem }} > input.txt
             report_error
 
-            cat input.txt | time -po /dev/stdout build/main.exe > input.txt
+            cat input.txt | time -po /dev/stdout build/main.exe > input2.txt
             report_error
 
-            cat input.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             report_error
           done
 
