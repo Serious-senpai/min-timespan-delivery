@@ -225,7 +225,7 @@ namespace d2d
         auto cluster = clusters.begin();
         for (std::size_t i = 0; i < angles.size(); i++)
         {
-            if (cluster->empty() || angles[i] - angles[cluster->front()] < angle_shift)
+            if (cluster->empty() || angles[i] - angles[cluster->front()] <= angle_shift)
             {
                 cluster->push_back(i);
             }
