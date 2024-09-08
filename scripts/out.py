@@ -28,6 +28,7 @@ def random_str(length: int) -> str:
 
 class Namespace(argparse.Namespace):
     problem: str
+    url: Optional[str]
 
 
 def read_solution() -> Optional[SolutionJSON]:
@@ -64,6 +65,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
+parser.add_argument("--url", type=str, required=False, help="the GitHub Actions job URL")
 
 
 if __name__ == "__main__":
@@ -153,6 +155,7 @@ if __name__ == "__main__":
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
+        "url": namespace.url,
         "real": real,
         "user": user,
         "sys": sys,
