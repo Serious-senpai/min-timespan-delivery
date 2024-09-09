@@ -382,6 +382,6 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> truck_routes = _initial_helper<ST, _Clusterizer, TruckRoute>(truck_only, &leftover);
 
         _insert_leftover<ST>(leftover, truck_routes, drone_routes);
-        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, "initial-2"));
+        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, utils::format("initial-%d", _Clusterizer)));
     }
 }
