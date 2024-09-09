@@ -46,7 +46,7 @@ namespace d2d
 
         const std::shared_ptr<ParentInfo<Solution>> _parent;
 
-        template <typename RT, std::enable_if_t<std::disjunction_v<std::is_same<RT, TruckRoute>, std::is_same<RT, DroneRoute>>, bool> = true>
+        template <typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
         void _hamming_distance(const std::vector<std::vector<RT>> &vehicle_routes, std::vector<std::size_t> &repr) const
         {
             auto problem = Problem::get_instance();
@@ -154,27 +154,27 @@ namespace d2d
                 }
 
                 std::vector<bool> exists(problem->customers.size());
+                auto _constructor_check_exists = [&exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (auto &routes : vehicle_routes)
+                    {
+                        for (auto &route : routes)
+                        {
+                            for (auto &customer : route.customers())
+                            {
+                                if (exists[customer] && customer != 0)
+                                {
+                                    throw std::runtime_error(utils::format("Customer %lu is visited more than once", customer));
+                                }
 
-#define CHECK_ROUTES(vehicle_routes)                                                                             \
-    for (auto &routes : vehicle_routes)                                                                          \
-    {                                                                                                            \
-        for (auto &route : routes)                                                                               \
-        {                                                                                                        \
-            for (auto &customer : route.customers())                                                             \
-            {                                                                                                    \
-                if (exists[customer] && customer != 0)                                                           \
-                {                                                                                                \
-                    throw std::runtime_error(utils::format("Customer %lu is visited more than once", customer)); \
-                }                                                                                                \
-                                                                                                                 \
-                exists[customer] = true;                                                                         \
-            }                                                                                                    \
-        }                                                                                                        \
-    }
+                                exists[customer] = true;
+                            }
+                        }
+                    }
+                };
 
-                CHECK_ROUTES(truck_routes);
-                CHECK_ROUTES(drone_routes);
-#undef CHECK_ROUTES
+                _constructor_check_exists(truck_routes);
+                _constructor_check_exists(drone_routes);
 
                 for (std::size_t i = 0; i < exists.size(); i++)
                 {
@@ -460,18 +460,19 @@ namespace d2d
     {
         double result = 0;
 
-#define CALCULATE_D2D_ROUTES(vehicle_routes)      \
-    for (auto &routes : vehicle_routes)           \
-    {                                             \
-        for (auto &route : routes)                \
-        {                                         \
-            result += route.capacity_violation(); \
-        }                                         \
-    }
+        auto calculate = [&result]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+        {
+            for (auto &routes : vehicle_routes)
+            {
+                for (auto &route : routes)
+                {
+                    result += route.capacity_violation();
+                }
+            }
+        };
 
-        CALCULATE_D2D_ROUTES(truck_routes);
-        CALCULATE_D2D_ROUTES(drone_routes);
-#undef CALCULATE_D2D_ROUTES
+        calculate(truck_routes);
+        calculate(drone_routes);
 
         return result;
     }
