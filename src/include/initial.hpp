@@ -285,7 +285,7 @@ namespace d2d
             };
             std::vector<std::size_t> order = cluster.size() < 20
                                                  ? utils::held_karp_algorithm(cluster.size(), distance).second
-                                                 : utils::two_opt_heuristic(cluster.size(), distance).second;
+                                                 : utils::nearest_heuristic(cluster.size(), distance).second;
 
             std::vector<std::size_t> cluster_ordered(cluster.size());
             for (std::size_t i = 0; i < cluster.size(); i++)

@@ -15,7 +15,6 @@ namespace d2d
         std::vector<std::pair<std::string, std::vector<std::size_t>>> _neighborhoods;
 
     public:
-        std::string initialization_label;
         std::size_t last_improved, iterations;
         std::chrono::milliseconds elapsed;
 
@@ -83,6 +82,7 @@ namespace d2d
 
             print_solution(ptr);
 
+            std::string initialization_label;
             std::shared_ptr<ST> propagation = ptr;
             while (propagation != nullptr)
             {
@@ -91,6 +91,7 @@ namespace d2d
                 print_solution(propagation);
                 std::cout << parent->label << "\n";
 
+                initialization_label = parent->label;
                 propagation = parent->ptr;
             }
 
