@@ -302,26 +302,29 @@ namespace d2d
             std::vector<std::vector<TruckRoute>> new_truck_routes(result->truck_routes);
             std::vector<std::vector<DroneRoute>> new_drone_routes(result->drone_routes);
 
-            auto optimize_route = [&problem]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
+            auto parent = std::make_shared<ParentInfo<Solution>>(result, "TSP optimization");
+            auto optimize_route = [&problem, &result, &new_truck_routes, &new_drone_routes, &parent]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
             {
-                auto distance = [&problem](const std::size_t &i, const std::size_t &j)
-                {
-                    if constexpr (std::is_same_v<RT, TruckRoute>)
-                    {
-                        return problem->man_distances[i][j];
-                    }
-                    else
-                    {
-                        return problem->euc_distances[i][j];
-                    }
-                };
-
                 for (auto &routes : vehicle_routes)
                 {
                     for (auto &route : routes)
                     {
+                        RT old_route(route);
+
                         std::vector<std::size_t> customers(route.customers());
                         customers.push_back(0);
+
+                        auto distance = [&problem, &customers](const std::size_t &i, const std::size_t &j)
+                        {
+                            if constexpr (std::is_same_v<RT, TruckRoute>)
+                            {
+                                return problem->man_distances[customers[i]][customers[j]];
+                            }
+                            else
+                            {
+                                return problem->euc_distances[customers[i]][customers[j]];
+                            }
+                        };
 
                         std::vector<std::size_t> ordered(customers.size());
                         std::iota(ordered.begin(), ordered.end(), 0);
@@ -341,13 +344,19 @@ namespace d2d
 
                         new_customers.push_back(0);
                         route = RT(new_customers);
+
+                        auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent);
+                        if (!new_solution->feasible || new_solution->cost() >= result->cost())
+                        {
+                            route = old_route;
+                        }
                     }
                 }
             };
 
             optimize_route(new_truck_routes);
             optimize_route(new_drone_routes);
-            result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, std::make_shared<ParentInfo<Solution>>(result, "TSP optimization"));
+            result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent);
 
             if (problem->verbose)
             {
