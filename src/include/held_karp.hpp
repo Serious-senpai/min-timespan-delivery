@@ -132,9 +132,26 @@ namespace utils
 
     std::pair<double, std::vector<std::size_t>> two_opt_heuristic(
         const std::size_t &n,
-        const std::function<double(const std::size_t &, const std::size_t &)> &distance)
+        const std::function<double(const std::size_t &, const std::size_t &)> &distance,
+        const std::optional<std::vector<std::size_t>> initial = std::nullopt)
     {
-        auto [dist, path] = nearest_heuristic(n, distance);
+        double dist = 0;
+        std::vector<std::size_t> path;
+        if (initial.has_value())
+        {
+            path = *initial;
+            for (std::size_t i = 0; i < n; i++)
+            {
+                dist += distance(path[i], path[(i + 1) % n]);
+            }
+        }
+        else
+        {
+            auto p = nearest_heuristic(n, distance);
+            dist = p.first;
+            path = p.second;
+        }
+
         bool improved = true;
         while (improved)
         {
