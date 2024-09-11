@@ -166,10 +166,10 @@ namespace utils
                     std::reverse(new_path.begin() + i, new_path.begin() + (j + 1));
 
                     double new_distance = dist;
-                    dist -= distance(path[i], path[(i - 1) % n]);
+                    dist -= distance(path[i], path[i - 1]);
                     dist -= distance(path[j], path[(j + 1) % n]);
                     dist += distance(path[i], path[(j + 1) % n]);
-                    dist += distance(path[j], path[(i - 1) % n]);
+                    dist += distance(path[j], path[i - 1]);
 
                     if (dist < new_distance)
                     {
