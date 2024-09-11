@@ -86,6 +86,8 @@ if __name__ == "__main__":
             "Suboptimal travel cost",
             "Suboptimal truck paths",
             "Suboptimal drone paths",
+            "Optimal truck paths",
+            "Optimal drone paths",
         ]
         csv.write(",".join(headers) + "\n")
 
@@ -171,5 +173,7 @@ if __name__ == "__main__":
                 str(suboptimal_solution["travel_cost"]),
                 csv_wrap(suboptimal_solution["truck_paths"]),
                 csv_wrap(suboptimal_solution["drone_paths"]),
+                csv_wrap(optimal_truck_paths),
+                csv_wrap(optimal_drone_paths),
             ]
             csv.write(",".join(segments) + "\n")
