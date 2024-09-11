@@ -29,6 +29,7 @@ namespace d2d
             auto &vehicle_routes_i = utils::match_type<std::vector<std::vector<_RT_I>>>(truck_routes, drone_routes);
             auto &vehicle_routes_j = utils::match_type<std::vector<std::vector<_RT_J>>>(truck_routes, drone_routes);
             auto &vehicle_routes_k = utils::match_type<std::vector<std::vector<_RT_K>>>(truck_routes, drone_routes);
+
             auto &original_vehicle_routes_i = utils::match_type<std::vector<std::vector<_RT_I>>>(solution->truck_routes, solution->drone_routes);
             auto &original_vehicle_routes_j = utils::match_type<std::vector<std::vector<_RT_J>>>(solution->truck_routes, solution->drone_routes);
             auto &original_vehicle_routes_k = utils::match_type<std::vector<std::vector<_RT_K>>>(solution->truck_routes, solution->drone_routes);

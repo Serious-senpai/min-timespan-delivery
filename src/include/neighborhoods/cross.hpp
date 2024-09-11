@@ -35,8 +35,9 @@ namespace d2d
                 {
                     if constexpr (std::is_same_v<_RT_I, _RT_J>)
                     {
-                        if (_vehicle_i == _vehicle_j && route_i == route_j) /* same route */
+                        if (_vehicle_i == _vehicle_j && route_i >= route_j)
                         {
+                            route_j = route_i;
                             continue;
                         }
                     }
@@ -44,11 +45,22 @@ namespace d2d
                     const auto &customers_i = original_vehicle_routes_i[_vehicle_i][route_i].customers();
                     const auto &customers_j = original_vehicle_routes_j[_vehicle_j][route_j].customers();
 
-                    for (std::size_t i = 1; i + 1 < customers_i.size(); i++)
+                    for (std::size_t i = 1; i < customers_i.size(); i++)
                     {
-                        for (std::size_t j = 1; j + 1 < customers_j.size(); j++)
+                        for (std::size_t ix = i; ix < customers_i.size(); ix++)
                         {
-                            for (std::size_t ix = i; ix < customers_i.size(); ix++)
+                            if constexpr (std::is_same_v<_RT_I, TruckRoute> && std::is_same_v<_RT_J, DroneRoute>)
+                            {
+                                if (std::any_of(
+                                        customers_i.begin() + i, customers_i.begin() + ix,
+                                        [&problem](const std::size_t &c)
+                                        { return !problem->customers[c].dronable; }))
+                                {
+                                    continue;
+                                }
+                            }
+
+                            for (std::size_t j = 1; j < customers_j.size(); j++)
                             {
                                 for (std::size_t jx = j; jx < customers_j.size(); jx++)
                                 {
@@ -79,17 +91,6 @@ namespace d2d
                                         }
                                     }
 
-                                    if constexpr (std::is_same_v<_RT_I, TruckRoute> && std::is_same_v<_RT_J, DroneRoute>)
-                                    {
-                                        if (std::any_of(
-                                                customers_i.begin() + i, customers_i.begin() + ix,
-                                                [&problem](const std::size_t &c)
-                                                { return !problem->customers[c].dronable; }))
-                                        {
-                                            continue;
-                                        }
-                                    }
-
                                     /* Swap [i, ix) of route_i and [j, jx) of route_j */
                                     std::vector<std::size_t> ri(customers_i.begin(), customers_i.begin() + i);
                                     std::vector<std::size_t> rj(customers_j.begin(), customers_j.begin() + j);
@@ -100,21 +101,22 @@ namespace d2d
                                     ri.insert(ri.end(), customers_i.begin() + ix, customers_i.end());
                                     rj.insert(rj.end(), customers_j.begin() + jx, customers_j.end());
 
-                                    bool ri_empty = (ri.size() == 2), rj_empty = (rj.size() == 2); /* Note: These values can't be true at the same time */
-                                    if (ri_empty)
+                                    // Keep in mind that index of route i < j < k
+                                    if (rj.size() == 2)
                                     {
-                                        vehicle_routes_j[_vehicle_j][route_j] = _RT_J(rj);
-                                        vehicle_routes_i[_vehicle_i].erase(vehicle_routes_i[_vehicle_i].begin() + route_i);
-                                    }
-                                    else if (rj_empty)
-                                    {
-                                        vehicle_routes_i[_vehicle_i][route_i] = _RT_I(ri);
                                         vehicle_routes_j[_vehicle_j].erase(vehicle_routes_j[_vehicle_j].begin() + route_j);
                                     }
                                     else
                                     {
-                                        vehicle_routes_i[_vehicle_i][route_i] = _RT_I(ri);
                                         vehicle_routes_j[_vehicle_j][route_j] = _RT_J(rj);
+                                    }
+                                    if (ri.size() == 2)
+                                    {
+                                        vehicle_routes_i[_vehicle_i].erase(vehicle_routes_i[_vehicle_i].begin() + route_i);
+                                    }
+                                    else
+                                    {
+                                        vehicle_routes_i[_vehicle_i][route_i] = _RT_I(ri);
                                     }
 
                                     auto new_solution = this->construct(parent, truck_routes, drone_routes);
@@ -124,20 +126,10 @@ namespace d2d
                                     }
 
                                     /* Restore */
-                                    if (ri_empty)
+                                    vehicle_routes_i[_vehicle_i] = original_vehicle_routes_i[_vehicle_i];
+                                    if (vehicle_i != vehicle_j)
                                     {
-                                        vehicle_routes_i[_vehicle_i].insert(vehicle_routes_i[_vehicle_i].begin() + route_i, original_vehicle_routes_i[_vehicle_i][route_i]);
-                                        vehicle_routes_j[_vehicle_j][route_j] = original_vehicle_routes_j[_vehicle_j][route_j];
-                                    }
-                                    else if (rj_empty)
-                                    {
-                                        vehicle_routes_j[_vehicle_j].insert(vehicle_routes_j[_vehicle_j].begin() + route_j, original_vehicle_routes_j[_vehicle_j][route_j]);
-                                        vehicle_routes_i[_vehicle_i][route_i] = original_vehicle_routes_i[_vehicle_i][route_i];
-                                    }
-                                    else
-                                    {
-                                        vehicle_routes_i[_vehicle_i][route_i] = original_vehicle_routes_i[_vehicle_i][route_i];
-                                        vehicle_routes_j[_vehicle_j][route_j] = original_vehicle_routes_j[_vehicle_j][route_j];
+                                        vehicle_routes_j[_vehicle_j] = original_vehicle_routes_j[_vehicle_j];
                                     }
                                 }
                             }
@@ -175,30 +167,27 @@ namespace d2d
             {
                 for (std::size_t vehicle_j = vehicle_i; vehicle_j < problem->trucks_count + problem->drones_count; vehicle_j++)
                 {
-                    if (vehicle_i < problem->trucks_count)
+                    if (vehicle_j < problem->trucks_count)
                     {
-                        if (vehicle_j < problem->trucks_count)
-                        {
-                            _inter_route_internal<TruckRoute, TruckRoute>(
-                                solution,
-                                aspiration_criteria,
-                                parent, result,
-                                truck_routes,
-                                drone_routes,
-                                vehicle_i,
-                                vehicle_j);
-                        }
-                        else
-                        {
-                            _inter_route_internal<TruckRoute, DroneRoute>(
-                                solution,
-                                aspiration_criteria,
-                                parent, result,
-                                truck_routes,
-                                drone_routes,
-                                vehicle_i,
-                                vehicle_j);
-                        }
+                        _inter_route_internal<TruckRoute, TruckRoute>(
+                            solution,
+                            aspiration_criteria,
+                            parent, result,
+                            truck_routes,
+                            drone_routes,
+                            vehicle_i,
+                            vehicle_j);
+                    }
+                    else if (vehicle_i < problem->trucks_count)
+                    {
+                        _inter_route_internal<TruckRoute, DroneRoute>(
+                            solution,
+                            aspiration_criteria,
+                            parent, result,
+                            truck_routes,
+                            drone_routes,
+                            vehicle_i,
+                            vehicle_j);
                     }
                     else
                     {
