@@ -9,6 +9,7 @@
 #include "problem.hpp"
 #include "routes.hpp"
 #include "wrapper.hpp"
+#include "neighborhoods/cross_3.hpp"
 #include "neighborhoods/cross.hpp"
 #include "neighborhoods/ejection_chain.hpp"
 #include "neighborhoods/move_xy.hpp"
@@ -188,10 +189,8 @@ namespace d2d
             return result;
         }
 
-        double hamming_distance(std::shared_ptr<Solution> other) const
+        double hamming_distance(const std::shared_ptr<Solution> other) const
         {
-            auto problem = Problem::get_instance();
-
             std::vector<std::size_t> self_repr;
             _hamming_distance(truck_routes, self_repr);
             _hamming_distance(drone_routes, self_repr);
@@ -223,6 +222,7 @@ namespace d2d
                 inter_route.push_back(neighborhood);
                 intra_route.push_back(neighborhood);
             }
+            inter_route.push_back(std::make_shared<CrossExchange_3<Solution>>());
             inter_route.push_back(std::make_shared<CrossExchange<Solution>>());
             inter_route.push_back(std::make_shared<EjectionChain<Solution>>());
 
