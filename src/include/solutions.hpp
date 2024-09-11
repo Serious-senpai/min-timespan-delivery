@@ -312,7 +312,7 @@ namespace d2d
                         RT old_route(route);
 
                         std::vector<std::size_t> customers(route.customers());
-                        customers.push_back(0);
+                        customers.pop_back();
 
                         auto distance = [&problem, &customers](const std::size_t &i, const std::size_t &j)
                         {

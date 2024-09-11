@@ -12,11 +12,9 @@ permissions:
 jobs:
   build:
     name: Compile source files
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"]
 
     steps:
       - name: Checkout repository
@@ -28,47 +26,32 @@ jobs:
         id: alglib-cache
         uses: actions/cache@v4
         with:
-          key: ALGLIB-${{ matrix.os }}-${{ hashFiles('extern/alglib-cpp/**') }}
+          key: ALGLIB-ubuntu-latest-${{ hashFiles('extern/alglib-cpp/**') }}
           path: build/*.o
 
-      - name: Display hardware info (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Display hardware info
         run: lscpu
 
-      - name: Display hardware info (windows-latest)
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: systeminfo
-
-      - name: Compile ALGLIB (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' && steps.alglib-cache.outputs.cache-hit != 'true' }}
+      - name: Compile ALGLIB
+        if: ${{ steps.alglib-cache.outputs.cache-hit != 'true' }}
         run: scripts/build.sh alglib
 
-      - name: Compile ALGLIB (windows-latest)
-        if: ${{ matrix.os == 'windows-latest' && steps.alglib-cache.outputs.cache-hit != 'true' }}
-        run: scripts\build alglib
-
-      - name: Compile to executable in debug mode (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Compile to executable in debug mode
         run: scripts/build.sh debug
-
-      - name: Compile to executable in debug mode (windows-latest)
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: scripts\build debug
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
-          name: executable-${{ matrix.os }}
+          name: executable
           path: build/main.exe
 
   test-ubuntu:
     name: Run in debug mode
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     needs: build
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
         problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1"]
 
     steps:
@@ -85,28 +68,21 @@ jobs:
       - name: Download executable
         uses: actions/download-artifact@v4
         with:
-          name: executable-${{ matrix.os }}
+          name: executable
           path: build/
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install gdb (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Install gdb
         run: |
           sudo apt update
           sudo apt install gdb -y
 
-      - name: Initialize working space (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Initialize working space
         run: |
           mkdir result
           chmod +x build/main.exe
 
-      - name: Run executable in debug mode (ubuntu-latest)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Run executable in debug mode
         run: out=$(python scripts/in.py ${{ matrix.problem }} -v) && echo "$out" | time -p gdb --command=scripts/gdb.txt --return-child-result build/main.exe
-
-      - name: Run executable in debug mode (windows-latest)
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: python scripts/in.py ${{ matrix.problem }} -v | gdb --command=scripts/gdb.txt --return-child-result build\main
