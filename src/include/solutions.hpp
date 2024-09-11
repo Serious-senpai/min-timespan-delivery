@@ -51,7 +51,7 @@ namespace d2d
         void _hamming_distance(const std::vector<std::vector<RT>> &vehicle_routes, std::vector<std::size_t> &repr) const
         {
             auto problem = Problem::get_instance();
-            repr.resize(problem->customers.size() - 1);
+            repr.resize(problem->customers.size());
 
             for (auto &routes : vehicle_routes)
             {
@@ -191,7 +191,6 @@ namespace d2d
         double hamming_distance(std::shared_ptr<Solution> other) const
         {
             auto problem = Problem::get_instance();
-            const std::size_t n = problem->customers.size() - 1;
 
             std::vector<std::size_t> self_repr;
             _hamming_distance(truck_routes, self_repr);
@@ -202,7 +201,7 @@ namespace d2d
             _hamming_distance(other->drone_routes, other_repr);
 
             std::size_t result = 0;
-            for (std::size_t i = 0; i < n; i++)
+            for (std::size_t i = 0; i < self_repr.size(); i++)
             {
                 if (self_repr[i] != other_repr[i])
                 {
