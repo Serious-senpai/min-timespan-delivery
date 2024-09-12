@@ -74,7 +74,16 @@ if __name__ == "__main__":
     parser.parse_args(namespace=namespace)
 
     iterations = int(input())
+
+    tabu_size_factor = int(input())
+    reset_after_factor = int(input())
+    diversification_factor = int(input())
+
     tabu_size = int(input())
+    reset_after = int(input())
+    diversification = int(input())
+    max_elite_size = int(input())
+
     config = input()
     speed_type = input()
     range_type = input()
@@ -123,7 +132,13 @@ if __name__ == "__main__":
         "trucks_count": problem.trucks_count,
         "drones_count": problem.drones_count,
         "iterations": iterations,
+        "tabu_size_factor": tabu_size_factor,
+        "reset_after_factor": reset_after_factor,
+        "diversification_factor": diversification_factor,
         "tabu_size": tabu_size,
+        "reset_after": reset_after,
+        "diversification": diversification,
+        "max_elite_size": max_elite_size,
         "config": config,
         "speed_type": speed_type,
         "range_type": range_type,

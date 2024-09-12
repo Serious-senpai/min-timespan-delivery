@@ -48,9 +48,10 @@ namespace d2d
             const DroneLinearConfig *const linear,
             const DroneNonlinearConfig *const nonlinear,
             const DroneEnduranceConfig *const endurance,
-            const std::size_t &max_elite_size,
+
             const std::size_t &reset_after_factor,
-            const std::size_t &diversification_factor)
+            const std::size_t &diversification_factor,
+            const std::size_t &max_elite_size)
             : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
               trucks_count(trucks_count),
@@ -64,9 +65,11 @@ namespace d2d
               linear(linear),
               nonlinear(nonlinear),
               endurance(endurance),
-              max_elite_size(max_elite_size),
               reset_after_factor(reset_after_factor),
-              diversification_factor(diversification_factor) {}
+              diversification_factor(diversification_factor),
+              max_elite_size(max_elite_size)
+        {
+        }
 
         ~Problem()
         {
@@ -89,9 +92,9 @@ namespace d2d
         const DroneNonlinearConfig *const nonlinear;
         const DroneEnduranceConfig *const endurance;
 
-        const std::size_t max_elite_size;
         const std::size_t reset_after_factor;
         const std::size_t diversification_factor;
+        const std::size_t max_elite_size;
 
         // These will be calculated later
         std::size_t tabu_size;
@@ -280,9 +283,9 @@ namespace d2d
                 dynamic_cast<DroneLinearConfig *>(drone),
                 dynamic_cast<DroneNonlinearConfig *>(drone),
                 dynamic_cast<DroneEnduranceConfig *>(drone),
-                max_elite_size,
                 reset_after_factor,
-                diversification_factor);
+                diversification_factor,
+                max_elite_size);
         }
 
         return _instance;
