@@ -25,31 +25,27 @@ namespace utils
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
-        FloatingPointWrapper &operator+(const _FT &other)
+        FloatingPointWrapper operator+(const _FT &other)
         {
-            value += other;
-            return *this;
+            return value + other;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
-        FloatingPointWrapper &operator+(const FloatingPointWrapper<_FT> &other)
+        FloatingPointWrapper operator+(const FloatingPointWrapper<_FT> &other)
         {
-            value += other.value;
-            return *this;
+            return value + other.value;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
-        FloatingPointWrapper &operator-(const _FT &other)
+        FloatingPointWrapper operator-(const _FT &other)
         {
-            value -= other;
-            return *this;
+            return value - other;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
-        FloatingPointWrapper &operator-(const FloatingPointWrapper<_FT> &other)
+        FloatingPointWrapper operator-(const FloatingPointWrapper<_FT> &other)
         {
-            value -= other.value;
-            return *this;
+            return value - other.value;
         }
 
         template <typename _FT, std::enable_if_t<std::is_floating_point_v<_FT>, bool> = true>
