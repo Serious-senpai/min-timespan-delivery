@@ -35,36 +35,38 @@ namespace d2d
         static Problem *_instance;
 
         Problem(
-            const std::size_t &tabu_size,
+            const std::size_t &tabu_size_factor,
             const bool verbose,
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
             const std::vector<Customer> &customers,
             const std::vector<std::vector<double>> &distances,
+            const double &average_distance,
             const double &total_demand,
             const TruckConfig *const truck,
             const _BaseDroneConfig *const drone,
             const DroneLinearConfig *const linear,
             const DroneNonlinearConfig *const nonlinear,
             const DroneEnduranceConfig *const endurance,
-            const std::size_t &max_elite_set_size,
-            const std::size_t &reset_after,
-            const double &hamming_distance_factor)
-            : tabu_size(tabu_size),
+            const std::size_t &max_elite_size,
+            const std::size_t &reset_after_factor,
+            const std::size_t &diversification_factor)
+            : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
               trucks_count(trucks_count),
               drones_count(drones_count),
               customers(customers),
               distances(distances),
+              average_distance(average_distance),
               total_demand(total_demand),
               truck(truck),
               drone(drone),
               linear(linear),
               nonlinear(nonlinear),
               endurance(endurance),
-              max_elite_set_size(max_elite_set_size),
-              reset_after(reset_after),
-              hamming_distance_factor(hamming_distance_factor) {}
+              max_elite_size(max_elite_size),
+              reset_after_factor(reset_after_factor),
+              diversification_factor(diversification_factor) {}
 
         ~Problem()
         {
@@ -73,11 +75,12 @@ namespace d2d
         }
 
     public:
-        const std::size_t tabu_size;
+        const std::size_t tabu_size_factor;
         const bool verbose;
         const std::size_t trucks_count, drones_count;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
+        const double average_distance;
         const double maximum_waiting_time = 2 * ONE_HOUR; // hard-coded value
         const double total_demand;
         const TruckConfig *const truck;
@@ -86,8 +89,14 @@ namespace d2d
         const DroneNonlinearConfig *const nonlinear;
         const DroneEnduranceConfig *const endurance;
 
-        const std::size_t max_elite_set_size, reset_after;
-        const double hamming_distance_factor;
+        const std::size_t max_elite_size;
+        const std::size_t reset_after_factor;
+        const std::size_t diversification_factor;
+
+        // These will be calculated later
+        std::size_t tabu_size;
+        std::size_t reset_after;
+        std::size_t diversification;
 
         static Problem *get_instance();
     };
@@ -155,9 +164,20 @@ namespace d2d
                 }
             }
 
-            std::size_t tabu_size;
+            double average_distance = 0;
+            for (std::size_t i = 0; i < customers.size(); i++)
+            {
+                for (std::size_t j = i + 1; j < customers.size(); j++)
+                {
+                    average_distance += distances[i][j];
+                }
+            }
+
+            average_distance /= customers.size() * (customers.size() - 1) / 2;
+
+            std::size_t tabu_size_factor;
             bool verbose;
-            std::cin >> tabu_size >> verbose;
+            std::cin >> tabu_size_factor >> verbose;
 
             double truck_maximum_velocity, truck_capacity;
             std::cin >> truck_maximum_velocity >> truck_capacity;
@@ -240,17 +260,17 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
-            std::size_t max_elite_set_size, reset_after;
-            double hamming_distance_factor;
-            std::cin >> max_elite_set_size >> reset_after >> hamming_distance_factor;
+            std::size_t max_elite_size, reset_after_factor, diversification_factor;
+            std::cin >> max_elite_size >> reset_after_factor >> diversification_factor;
 
             _instance = new Problem(
-                tabu_size,
+                tabu_size_factor,
                 verbose,
                 trucks_count,
                 drones_count,
                 customers,
                 distances,
+                average_distance,
                 std::accumulate(
                     customers.begin(), customers.end(), 0.0,
                     [](const double &sum, const Customer &customer)
@@ -260,9 +280,9 @@ namespace d2d
                 dynamic_cast<DroneLinearConfig *>(drone),
                 dynamic_cast<DroneNonlinearConfig *>(drone),
                 dynamic_cast<DroneEnduranceConfig *>(drone),
-                max_elite_set_size,
-                reset_after,
-                hamming_distance_factor);
+                max_elite_size,
+                reset_after_factor,
+                diversification_factor);
         }
 
         return _instance;

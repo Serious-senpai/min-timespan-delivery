@@ -17,13 +17,95 @@
 
 namespace d2d
 {
+    struct ExtraPenalty
+    {
+    private:
+        std::vector<std::vector<std::size_t>> _edge_frequency;
+        std::size_t _total_frequency, _extra_penalty_iteration;
+
+    public:
+        ExtraPenalty()
+        {
+            auto problem = Problem::get_instance();
+            _edge_frequency.resize(problem->customers.size(), std::vector<std::size_t>(problem->customers.size()));
+            _total_frequency = _extra_penalty_iteration = 0;
+        }
+
+        void start_diversification()
+        {
+            auto problem = Problem::get_instance();
+            _extra_penalty_iteration = problem->diversification;
+        }
+
+        template <typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
+        void update(const std::vector<std::vector<RT>> &vehicle_routes)
+        {
+            for (auto &routes : vehicle_routes)
+            {
+                for (auto &route : routes)
+                {
+                    const std::vector<std::size_t> &customers = route.customers();
+                    for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                    {
+                        _edge_frequency[customers[i]][customers[i + 1]]++;
+                    }
+                }
+            }
+        }
+
+        double extra_penalty(
+            const std::vector<std::vector<TruckRoute>> &truck_routes,
+            const std::vector<std::vector<DroneRoute>> &drone_routes) const
+        {
+            double penalty = 0;
+
+            if (_extra_penalty_iteration > 0)
+            {
+                auto problem = Problem::get_instance();
+                std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
+
+                auto populate = [&exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (auto &routes : vehicle_routes)
+                    {
+                        for (auto &route : routes)
+                        {
+                            const auto &customers = route.customers();
+                            for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                            {
+                                exists[customers[i]][customers[i + 1]] = true;
+                            }
+                        }
+                    }
+                };
+
+                populate(truck_routes);
+                populate(drone_routes);
+
+                for (std::size_t i = 0; i < problem->customers.size(); i++)
+                {
+                    for (std::size_t j = 0; j < problem->customers.size(); j++)
+                    {
+                        double p = static_cast<double>(_edge_frequency[i][j]) / static_cast<double>(_total_frequency);
+                        penalty += exists[i][j] ? p : 1 - p;
+                    }
+                }
+
+                penalty *= problem->average_distance;
+            }
+
+            return penalty;
+        }
+    };
+
     /** @brief Represents a solution to the D2D problem. */
     class Solution
     {
     private:
         static double A1, A2, A3, A4, B;
 
-        static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> neighborhoods;
+        static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> _neighborhoods;
+        static ExtraPenalty _extra_penalty;
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
@@ -186,7 +268,7 @@ namespace d2d
             result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
 
-            return result;
+            return result + _extra_penalty.extra_penalty(truck_routes, drone_routes);
         }
 
         double hamming_distance(const std::shared_ptr<Solution> other) const
@@ -217,7 +299,7 @@ namespace d2d
             std::size_t iteration = 0;
 
             std::vector<std::shared_ptr<BaseNeighborhood<Solution>>> inter_route, intra_route;
-            for (auto &neighborhood : neighborhoods)
+            for (auto &neighborhood : _neighborhoods)
             {
                 inter_route.push_back(neighborhood);
                 intra_route.push_back(neighborhood);
@@ -258,6 +340,7 @@ namespace d2d
 
                     neighborhood->inter_route(result, aspiration_criteria);
 
+#ifdef LOGGING
                     logger.log(
                         result,
                         result,
@@ -265,6 +348,7 @@ namespace d2d
                         std::make_pair(
                             neighborhood->label() + "/post-optimization/inter-route",
                             ptr == nullptr ? std::vector<std::size_t>() : ptr->last_tabu()));
+#endif
                 }
             }
 
@@ -288,6 +372,7 @@ namespace d2d
 
                     neighborhood->intra_route(result, aspiration_criteria);
 
+#ifdef LOGGING
                     logger.log(
                         result,
                         result,
@@ -295,6 +380,7 @@ namespace d2d
                         std::make_pair(
                             neighborhood->label() + "/post-optimization/intra-route",
                             ptr == nullptr ? std::vector<std::size_t>() : ptr->last_tabu()));
+#endif
                 }
             }
 
@@ -377,13 +463,16 @@ namespace d2d
     double Solution::A4 = 1;
     double Solution::B = 1.5;
 
-    const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> Solution::neighborhoods = {
+    const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> Solution::_neighborhoods = {
         std::make_shared<MoveXY<Solution, 1, 0>>(),
         std::make_shared<MoveXY<Solution, 1, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 0>>(),
         std::make_shared<MoveXY<Solution, 2, 1>>(),
         std::make_shared<MoveXY<Solution, 2, 2>>(),
-        std::make_shared<TwoOpt<Solution>>()};
+        std::make_shared<TwoOpt<Solution>>(),
+    };
+
+    ExtraPenalty Solution::_extra_penalty;
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
@@ -551,24 +640,48 @@ namespace d2d
         std::vector<std::shared_ptr<Solution>> elite = {initial_impl<d2d::Solution, 1>(), initial_impl<d2d::Solution, 2>()};
         auto current = elite[0]->cost() < elite[1]->cost() ? elite[0] : elite[1], result = current;
 
+        std::size_t base_hyperparameter = (problem->customers.size() - 1) /
+                                          (std::accumulate(
+                                               current->truck_routes.begin(), current->truck_routes.end(), 0,
+                                               [](const std::size_t &s, const std::vector<TruckRoute> &routes)
+                                               { return s + !routes.empty(); }) +
+                                           std::accumulate(
+                                               current->drone_routes.begin(), current->drone_routes.end(), 0,
+                                               [](const std::size_t &s, const std::vector<DroneRoute> &routes)
+                                               { return s + !routes.empty(); }));
+
+        problem->tabu_size = base_hyperparameter;
+        problem->reset_after = problem->reset_after_factor * base_hyperparameter;
+        problem->diversification = problem->diversification_factor * base_hyperparameter;
+
+        std::cerr << "tabu_size = " << problem->tabu_size << "\n";
+        std::cerr << "verbose = " << problem->verbose << "\n";
+        std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
+        std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
+        std::cerr << "max_elite_size = " << problem->max_elite_size << ", reset_after = " << problem->reset_after << "\n";
+        std::cerr << "diversification = " << problem->diversification << "\n";
+
         logger.last_improved = 0;
         logger.iterations = 0;
 
         std::size_t neighborhood = 0;
         auto insert_elite = [&problem, &elite, &result]()
         {
-            std::sort(
-                elite.begin(), elite.end(),
-                [&result](const std::shared_ptr<Solution> &first, const std::shared_ptr<Solution> &second)
-                {
-                    return result->hamming_distance(first) < result->hamming_distance(second);
-                });
-
-            if (elite.size() == 10 || (!elite.empty() && result->hamming_distance(elite.front()) <= problem->hamming_distance_factor * problem->customers.size()))
+            if (elite.size() == problem->max_elite_size)
             {
-                elite.erase(elite.begin());
+                auto nearest = std::min_element(
+                    elite.begin(), elite.end(),
+                    [&result](const std::shared_ptr<Solution> &first, const std::shared_ptr<Solution> &second)
+                    {
+                        return result->hamming_distance(first) < result->hamming_distance(second);
+                    });
+
+                elite.erase(nearest);
             }
+
             elite.push_back(result);
+            _extra_penalty.update(result->truck_routes);
+            _extra_penalty.update(result->drone_routes);
         };
 
         for (std::size_t iteration = 0;; iteration++)
@@ -614,7 +727,7 @@ namespace d2d
                 return false;
             };
 
-            auto neighbor = neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
+            auto neighbor = _neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto current_cost = current->cost();
             if (logger.last_improved == iteration)
             {
@@ -625,6 +738,7 @@ namespace d2d
                 current = neighbor;
             }
 
+            // Pop from elite set
             if (iteration != logger.last_improved && (iteration - logger.last_improved) % problem->reset_after == 0)
             {
                 if (elite.empty())
@@ -637,11 +751,13 @@ namespace d2d
                 elite.erase(iter);
             }
 
+#ifdef LOGGING
             logger.log(
                 result,
                 current,
                 elite,
-                std::make_pair(neighborhoods[neighborhood]->label(), neighborhoods[neighborhood]->last_tabu()));
+                std::make_pair(_neighborhoods[neighborhood]->label(), _neighborhoods[neighborhood]->last_tabu()));
+#endif
 
             const auto violation_update = [](double &A, const double &violation)
             {
@@ -668,7 +784,7 @@ namespace d2d
             /* Compare current_cost with current->cost() AFTER updating penalty coefficients */
             if (neighbor == nullptr || current_cost <= current->cost())
             {
-                neighborhood = (neighborhood + 1) % neighborhoods.size();
+                neighborhood = (neighborhood + 1) % _neighborhoods.size();
             }
             else
             {
