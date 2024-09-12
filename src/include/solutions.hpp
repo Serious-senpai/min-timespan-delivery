@@ -37,6 +37,24 @@ namespace d2d
             _extra_penalty_iteration = problem->diversification;
         }
 
+        void end_diversification()
+        {
+            _extra_penalty_iteration = 0;
+        }
+
+        bool is_diversifying() const
+        {
+            return _extra_penalty_iteration > 0;
+        }
+
+        void iteration_update()
+        {
+            if (_extra_penalty_iteration > 0)
+            {
+                _extra_penalty_iteration--;
+            }
+        }
+
         template <typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
         void update(const std::vector<std::vector<RT>> &vehicle_routes)
         {
@@ -51,6 +69,8 @@ namespace d2d
                     }
                 }
             }
+
+            _total_frequency++;
         }
 
         double extra_penalty(
@@ -686,10 +706,11 @@ namespace d2d
 
         for (std::size_t iteration = 0;; iteration++)
         {
+            _extra_penalty.iteration_update();
             if (problem->verbose)
             {
                 std::string format_string = utils::format(
-                    "Iteration #%lu(%s/%s)",
+                    _extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
                     iteration + 1,
                     utils::fp_format_specifier(current->cost()),
                     utils::fp_format_specifier(result->cost()));
@@ -716,7 +737,7 @@ namespace d2d
 
             const auto aspiration_criteria = [&logger, &result, &insert_elite, &iteration](std::shared_ptr<Solution> ptr)
             {
-                if (ptr->feasible && ptr->cost() < result->cost())
+                if (ptr->feasible && ptr->cost() < result->cost() && (!result->feasible || ptr->working_time < result->working_time))
                 {
                     result = ptr;
                     logger.last_improved = iteration;
@@ -749,6 +770,7 @@ namespace d2d
                 auto iter = utils::random_element(elite);
                 current = *iter;
                 elite.erase(iter);
+                _extra_penalty.start_diversification();
             }
 
 #ifdef LOGGING
@@ -796,6 +818,8 @@ namespace d2d
         {
             std::cerr << std::endl;
         }
+
+        _extra_penalty.end_diversification();
 
         auto post_opt = result->post_optimization(logger);
         return post_opt;
