@@ -50,7 +50,7 @@ namespace d2d
             const DroneEnduranceConfig *const endurance,
 
             const std::size_t &reset_after_factor,
-            const std::size_t &diversification_factor,
+            const double &diversification_factor,
             const std::size_t &max_elite_size)
             : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
@@ -93,7 +93,7 @@ namespace d2d
         const DroneEnduranceConfig *const endurance;
 
         const std::size_t reset_after_factor;
-        const std::size_t diversification_factor;
+        const double diversification_factor;
         const std::size_t max_elite_size;
 
         // These will be calculated later
@@ -263,7 +263,8 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
-            std::size_t max_elite_size, reset_after_factor, diversification_factor;
+            std::size_t max_elite_size, reset_after_factor;
+            double diversification_factor;
             std::cin >> max_elite_size >> reset_after_factor >> diversification_factor;
 
             _instance = new Problem(

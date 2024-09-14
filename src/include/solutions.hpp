@@ -749,7 +749,6 @@ namespace d2d
             };
 
             auto neighbor = _neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
-            auto current_cost = current->cost();
             if (logger.last_improved == iteration)
             {
                 current = result;

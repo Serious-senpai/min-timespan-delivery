@@ -53,7 +53,7 @@ class ResultJSON(Generic[T], TypedDict):
     iterations: int
     tabu_size_factor: int
     reset_after_factor: int
-    diversification_factor: int
+    diversification_factor: float
     tabu_size: int
     reset_after: int
     diversification: int

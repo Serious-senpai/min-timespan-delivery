@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     tabu_size_factor = int(input())
     reset_after_factor = int(input())
-    diversification_factor = int(input())
+    diversification_factor = float(input())
 
     tabu_size = int(input())
     reset_after = int(input())
