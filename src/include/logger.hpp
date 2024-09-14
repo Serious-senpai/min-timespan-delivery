@@ -58,7 +58,15 @@ namespace d2d
 
             auto problem = d2d::Problem::get_instance();
             std::cout << iterations << "\n";
+
+            std::cout << problem->tabu_size_factor << "\n";
+            std::cout << problem->reset_after_factor << "\n";
+            std::cout << problem->diversification_factor << "\n";
+
             std::cout << problem->tabu_size << "\n";
+            std::cout << problem->reset_after << "\n";
+            std::cout << problem->diversification << "\n";
+            std::cout << problem->max_elite_size << "\n";
 
             if (problem->linear != nullptr)
             {
