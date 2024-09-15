@@ -76,6 +76,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.define-matrix.outputs.include) }}
+    env:
+      problem: ${{ matrix.instance }}_${{ matrix.depot-location }}_${{ matrix.dronable }}
 
     steps:
       - name: Checkout repository
@@ -122,13 +124,13 @@ jobs:
           for i in $(seq $begin $end)
           do
             echo "RUN #$i"
-            python scripts/in.py ${{ matrix.problem }} --drones-count ${{ matrix.drones-count }} --drone-speed ${{ matrix.drone-speed }} > input.txt
+            python scripts/in.py ${{ env.problem }} --drones-count ${{ matrix.drones-count }} --drone-speed ${{ matrix.drone-speed }} > input.txt
             report_error
 
             cat input.txt | build/main.exe > input2.txt
             report_error
 
-            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            cat input2.txt | python scripts/out.py ${{ env.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             report_error
           done
 
