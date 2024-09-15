@@ -73,6 +73,9 @@ if __name__ == "__main__":
     namespace = Namespace()
     parser.parse_args(namespace=namespace)
 
+    drones_count = int(input())
+    drone_speed = float(input())
+
     iterations = int(input())
 
     tabu_size_factor = int(input())
@@ -88,7 +91,7 @@ if __name__ == "__main__":
     speed_type = input()
     range_type = input()
 
-    problem = Problem.import_data(namespace.problem)
+    problem = Problem.import_data(namespace.problem, drones_count=drones_count)
 
     solution = read_solution()
     assert solution is not None
@@ -129,6 +132,7 @@ if __name__ == "__main__":
 
     data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
+        "drone_speed": drone_speed,
         "trucks_count": problem.trucks_count,
         "drones_count": problem.drones_count,
         "iterations": iterations,

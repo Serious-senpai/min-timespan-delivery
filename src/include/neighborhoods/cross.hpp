@@ -64,6 +64,22 @@ namespace d2d
                             {
                                 for (std::size_t jx = j; jx < customers_j.size(); jx++)
                                 {
+                                    if constexpr (std::is_same_v<_RT_I, DroneRoute>)
+                                    {
+                                        if (ix - i < jx - j)
+                                        {
+                                            continue;
+                                        }
+                                    }
+
+                                    if constexpr (std::is_same_v<_RT_J, DroneRoute>)
+                                    {
+                                        if (ix - i > jx - j)
+                                        {
+                                            continue;
+                                        }
+                                    }
+
                                     if constexpr (std::is_same_v<_RT_J, TruckRoute> && std::is_same_v<_RT_I, DroneRoute>)
                                     {
                                         if (std::any_of(

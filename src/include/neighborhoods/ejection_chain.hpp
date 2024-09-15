@@ -99,17 +99,20 @@ namespace d2d
 
                                 // std::cerr << "Temporary state " << vehicle_routes_i << " " << vehicle_routes_j << ", insert_k = " << insert_k << std::endl;
 
-                                /* Construct a new route of vehicle_k (temporary state lv2) */
-                                vehicle_routes_k[_vehicle_k].emplace_back(std::vector<std::size_t>{0, insert_k, 0});
-
-                                auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                                if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))
+                                if constexpr (std::is_same_v<_RT_K, DroneRoute>)
                                 {
-                                    result = new_solution;
-                                }
+                                    /* Construct a new route of vehicle_k (temporary state lv2) */
+                                    vehicle_routes_k[_vehicle_k].emplace_back(std::vector<std::size_t>{0, insert_k, 0});
 
-                                /* Restore temporary state lv1 */
-                                vehicle_routes_k[_vehicle_k].pop_back();
+                                    auto new_solution = this->construct(parent, truck_routes, drone_routes);
+                                    if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))
+                                    {
+                                        result = new_solution;
+                                    }
+
+                                    /* Restore temporary state lv1 */
+                                    vehicle_routes_k[_vehicle_k].pop_back();
+                                }
 
                                 // std::cerr << "1. Restore temporary state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
                                 /* Swap customers between 3 existing routes */
@@ -132,27 +135,30 @@ namespace d2d
                                         }
                                     }
 
-                                    std::size_t route_k_new = route_k - (ri.size() == 2 && same_ik && route_k >= route_i);
-                                    const auto &customers_k = original_vehicle_routes_k[_vehicle_k][route_k].customers();
-                                    for (std::size_t k = 1; k < customers_k.size(); k++)
+                                    if constexpr (std::is_same_v<_RT_K, TruckRoute>)
                                     {
-                                        /* Insert to position k */
-                                        std::vector<std::size_t> rk(customers_k);
-                                        rk.insert(rk.begin() + k, insert_k);
-
-                                        /* Temporary modify (temporary state lv2) */
-                                        vehicle_routes_k[_vehicle_k][route_k_new] = _RT_K(rk);
-
-                                        // std::cerr << "Constructing " << truck_routes << " " << drone_routes << std::endl;
-                                        auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                                        if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))
+                                        std::size_t route_k_new = route_k - (ri.size() == 2 && same_ik && route_k >= route_i);
+                                        const auto &customers_k = original_vehicle_routes_k[_vehicle_k][route_k].customers();
+                                        for (std::size_t k = 1; k < customers_k.size(); k++)
                                         {
-                                            result = new_solution;
-                                        }
+                                            /* Insert to position k */
+                                            std::vector<std::size_t> rk(customers_k);
+                                            rk.insert(rk.begin() + k, insert_k);
 
-                                        /* Restore temporary state lv1 */
-                                        vehicle_routes_k[_vehicle_k][route_k_new] = original_vehicle_routes_k[_vehicle_k][route_k];
-                                        // std::cerr << "2. Restore temporary state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
+                                            /* Temporary modify (temporary state lv2) */
+                                            vehicle_routes_k[_vehicle_k][route_k_new] = _RT_K(rk);
+
+                                            // std::cerr << "Constructing " << truck_routes << " " << drone_routes << std::endl;
+                                            auto new_solution = this->construct(parent, truck_routes, drone_routes);
+                                            if (aspiration_criteria(new_solution) && (result == nullptr || new_solution->cost() < result->cost()))
+                                            {
+                                                result = new_solution;
+                                            }
+
+                                            /* Restore temporary state lv1 */
+                                            vehicle_routes_k[_vehicle_k][route_k_new] = original_vehicle_routes_k[_vehicle_k][route_k];
+                                            // std::cerr << "2. Restore temporary state " << vehicle_routes_i << " " << vehicle_routes_j << std::endl;
+                                        }
                                     }
                                 }
 

@@ -109,6 +109,28 @@ namespace d2d
                                                 rj.insert(rj.end(), customers_j.begin() + jx, customers_j.end());
                                                 rk.insert(rk.end(), customers_k.begin() + kx, customers_k.end());
 
+                                                if constexpr (std::is_same_v<_RT_I, DroneRoute>)
+                                                {
+                                                    if (ri.size() > 3)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                if constexpr (std::is_same_v<_RT_J, DroneRoute>)
+                                                {
+                                                    if (rj.size() > 3)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                if constexpr (std::is_same_v<_RT_K, DroneRoute>)
+                                                {
+                                                    if (rk.size() > 3)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+
                                                 // Keep in mind that index of route i < j < k
                                                 if (rk.size() == 2)
                                                 {

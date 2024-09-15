@@ -48,6 +48,7 @@ class NeighborhoodJSON(TypedDict):
 
 class ResultJSON(Generic[T], TypedDict):
     problem: str
+    drone_speed: float
     trucks_count: int
     drones_count: int
     iterations: int

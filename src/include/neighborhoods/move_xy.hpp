@@ -20,6 +20,11 @@ namespace d2d
             const std::size_t &vehicle_i,
             const std::size_t &vehicle_j)
         {
+            if constexpr (X != Y && std::is_same_v<_RT_J, DroneRoute>)
+            {
+                return;
+            }
+
             auto problem = Problem::get_instance();
 
             std::size_t _vehicle_i = utils::ternary<std::is_same_v<_RT_I, TruckRoute>>(vehicle_i, vehicle_i - problem->trucks_count);
@@ -147,6 +152,21 @@ namespace d2d
                 {
                     for (std::size_t vehicle_dest = 0; vehicle_dest < problem->trucks_count + problem->drones_count; vehicle_dest++)
                     {
+                        if (vehicle_dest < problem->trucks_count)
+                        {
+                            if (!solution->truck_routes[vehicle_dest].empty())
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            if constexpr (Z != 1)
+                            {
+                                continue;
+                            }
+                        }
+
                         const auto &customers = original_vehicle_routes_src[vehicle_src][route_src].customers();
                         for (std::size_t i = 1; i + Z < customers.size(); i++)
                         {

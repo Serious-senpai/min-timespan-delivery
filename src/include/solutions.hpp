@@ -306,6 +306,25 @@ namespace d2d
                     throw std::runtime_error(utils::format("Expected %lu drone(s), not %lu", problem->drones_count, drone_routes.size()));
                 }
 
+                for (auto &routes : truck_routes)
+                {
+                    if (routes.size() > 1)
+                    {
+                        throw std::runtime_error(utils::format("Number of truck routes must be at most 1, not %lu", routes.size()));
+                    }
+                }
+
+                for (auto &routes : drone_routes)
+                {
+                    for (auto &route : routes)
+                    {
+                        if (route.customers().size() != 3)
+                        {
+                            throw std::runtime_error(utils::format("Each drone route can only served 1 customer, not %lu", route.customers().size() - 2));
+                        }
+                    }
+                }
+
                 std::vector<bool> exists(problem->customers.size());
                 auto _constructor_check_exists = [&exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
                 {

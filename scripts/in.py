@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing_extensions import Literal, Tuple, Union, TYPE_CHECKING
+from typing_extensions import Literal, TYPE_CHECKING
 
 from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig
 
@@ -18,6 +18,8 @@ class Namespace(argparse.Namespace):
         diversification_factor: float
         max_elite_size: int
         verbose: bool
+        drones_count: int
+        drone_speed: float
 
 
 parser = argparse.ArgumentParser(
@@ -33,7 +35,8 @@ parser.add_argument("--reset-after-factor", default=30, type=int, help="the numb
 parser.add_argument("--diversification-factor", default=0, type=float, help="the number of iterations to apply diversification = a2 * base")
 parser.add_argument("--max-elite-size", default=5, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
-
+parser.add_argument("--drones-count", default=1, type=int, help="the number of drones to use")
+parser.add_argument("--drone-speed", default=2, type=float, help="the speed of drone")
 
 if __name__ == "__main__":
     namespace = Namespace()
@@ -41,7 +44,7 @@ if __name__ == "__main__":
 
     print(namespace, file=sys.stderr)
 
-    problem = Problem.import_data(namespace.problem)
+    problem = Problem.import_data(namespace.problem, drones_count=namespace.drones_count)
     print(problem.customers_count, problem.trucks_count, problem.drones_count)
 
     print(*problem.x)
@@ -55,23 +58,21 @@ if __name__ == "__main__":
     print(namespace.tabu_size_factor)
     print(int(namespace.verbose))
 
-    truck = TruckConfig.import_data()
+    truck = TruckConfig(
+        maximum_velocity=1,
+        capacity=1,
+        coefficients=(1,),
+    )
     print(truck.maximum_velocity, truck.capacity)
     print(len(truck.coefficients), *truck.coefficients)
 
-    models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
-    if namespace.config == "linear":
-        models = DroneLinearConfig.import_data()
-    elif namespace.config == "non-linear":
-        models = DroneNonlinearConfig.import_data()
-    else:
-        models = DroneEnduranceConfig.import_data()
-
-    for model in models:
-        if model.speed_type == namespace.speed_type and model.range_type == namespace.range_type:
-            break
-    else:
-        raise RuntimeError("Cannot find a satisfying model from list", models)
+    model = DroneEnduranceConfig(
+        capacity=1,
+        speed_type="low",
+        range_type="low",
+        fixed_time=10 ** 9,
+        drone_speed=namespace.drone_speed,
+    )
 
     print(model.__class__.__name__)
     print(
