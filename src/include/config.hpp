@@ -15,14 +15,16 @@ namespace d2d
 
     public:
         const double capacity;
+        const double average_speed;
 
         TruckConfig(
-            const double maximum_velocity,
-            const std::vector<double> coefficients,
-            const double capacity)
+            const double &maximum_velocity,
+            const std::vector<double> &coefficients,
+            const double &capacity)
             : _maximum_velocity(maximum_velocity),
               _coefficients(coefficients),
-              capacity(capacity)
+              capacity(capacity),
+              average_speed(maximum_velocity * std::accumulate(coefficients.begin(), coefficients.end(), 0.0) / coefficients.size())
         {
         }
 

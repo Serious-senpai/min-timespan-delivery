@@ -30,7 +30,7 @@ parser.add_argument("-c", "--config", default="endurance", choices=["linear", "n
 parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
 parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
-parser.add_argument("--diversification-factor", default=1.0, type=float, help="the number of iterations to apply diversification = a2 * base")
+parser.add_argument("--diversification-factor", default=0, type=float, help="the number of iterations to apply diversification = a2 * base")
 parser.add_argument("--max-elite-size", default=5, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
 
