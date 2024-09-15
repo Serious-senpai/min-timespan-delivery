@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        problem: ["6.5.1", "6.20.4", "10.5.1", "10.20.4", "20.20.4", "50.10.1"]
+        problem: [att48_0_0, att48_0_60, att48_1_100, berlin52_1_0, berlin52_1_40, berlin52_0_100]
 
     steps:
       - name: Checkout repository

@@ -43,7 +43,7 @@ jobs:
         run: scripts/build.sh profile-generate
 
       - name: Run in profile mode
-        run: python scripts/in.py 50.40.4 | time -p build/main.exe
+        run: python scripts/in.py att48_0_0 | time -p build/main.exe
 
       - name: Compile in release mode
         run: scripts/build.sh profile-use
@@ -122,7 +122,7 @@ jobs:
           for i in $(seq $begin $end)
           do
             echo "RUN #$i"
-            python scripts/in.py ${{ matrix.problem }} > input.txt
+            python scripts/in.py ${{ matrix.problem }} --drones-count ${{ matrix.drones-count }} --drone-speed ${{ matrix.drone-speed }} > input.txt
             report_error
 
             cat input.txt | build/main.exe > input2.txt
