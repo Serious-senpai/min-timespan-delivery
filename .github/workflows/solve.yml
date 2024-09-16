@@ -109,7 +109,7 @@ jobs:
           exitcode=0
           set +e
           let begin=5*${{ matrix.steps }}+1
-          let end=$begin+4
+          let end=$begin+1
 
           report_error() {
             this_exitcode=$?

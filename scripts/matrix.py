@@ -18,8 +18,8 @@ Config = TypedDict(
 )
 
 
-instances = ["att48", "berlin52", "eil101", "gr120", "gr229", "pr152"]
-steps = [0, 1]
+instances = ["gr229"]
+steps = [0, 1, 2, 3, 4]
 
 dronable = [0, 20, 40, 60, 80, 100]
 drone_speed = [1, 2, 3, 4, 5]

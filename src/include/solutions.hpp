@@ -796,7 +796,8 @@ namespace d2d
             elite.push_back(result);
         };
 
-        for (std::size_t iteration = 0;; iteration++)
+        utils::PerformanceBenchmark stopwatch("Tabu search iterations");
+        for (std::size_t iteration = 0; stopwatch.elapsed<std::chrono::minutes>().count() < 165; iteration++)
         {
             _extra_penalty.iteration_update();
             if (problem->verbose)
