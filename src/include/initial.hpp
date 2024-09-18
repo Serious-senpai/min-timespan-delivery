@@ -275,76 +275,99 @@ namespace d2d
             clusters = clusterize_2(customers, vehicles_count);
         }
 
-        for (auto &cluster : clusters)
+        std::shuffle(clusters.begin(), clusters.end(), utils::rng);
+
+        bool new_route;
+        std::size_t vehicle;
+
+        std::vector<std::size_t> full_vehicle;
+        const auto select_vehicle = [&truck_routes, &drone_routes, &new_route, &vehicle, &full_vehicle]()
         {
-            cluster.push_back(0);
-
-            auto distance = [&problem, &cluster](const std::size_t &i, const std::size_t &j)
+            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            std::vector<double> working_time = utils::ternary<std::is_same_v<RT, TruckRoute>>(temp->truck_working_time, temp->drone_working_time);
+            for (auto &v : full_vehicle)
             {
-                return problem->distances[cluster[i]][cluster[j]];
-            };
-            std::vector<std::size_t> order = cluster.size() < 20
-                                                 ? utils::held_karp_algorithm(cluster.size(), distance).second
-                                                 : utils::nearest_heuristic(cluster.size(), distance).second;
-
-            std::vector<std::size_t> cluster_ordered(cluster.size());
-            for (std::size_t i = 0; i < cluster.size(); i++)
-            {
-                cluster_ordered[i] = cluster[order[i]];
+                working_time[v] = std::numeric_limits<double>::max();
             }
 
-            if (cluster_ordered.back() != 0)
-            {
-                std::rotate(
-                    cluster_ordered.begin(),
-                    std::find(cluster_ordered.begin(), cluster_ordered.end(), 0) + 1,
-                    cluster_ordered.end());
-            }
-            cluster_ordered.pop_back();
-            cluster = cluster_ordered;
-        }
+            new_route = true;
 
-        for (std::size_t cluster_i = 0; cluster_i < clusters.size(); cluster_i = (cluster_i + 1) % clusters.size())
+            auto min_iter = std::min_element(working_time.begin(), working_time.end());
+            vehicle = *min_iter == std::numeric_limits<double>::max() ? std::size_t(-1) : min_iter - working_time.begin();
+        };
+
+        select_vehicle();
+        std::size_t cluster_i = 0;
+
+        while (vehicle != std::size_t(-1) && std::any_of(clusters.begin(), clusters.end(), [](const std::vector<std::size_t> &c)
+                                                         { return !c.empty(); }))
         {
+            // Loop invariant: clusters[cluster_i] may be empty, inserting to vehicle route may yield infeasible route
             if (clusters[cluster_i].empty())
             {
-                if (std::all_of(clusters.begin(), clusters.end(), [](const std::vector<std::size_t> &cluster)
-                                { return cluster.empty(); }))
-                {
-                    break;
-                }
-
+                cluster_i = (cluster_i + 1) % clusters.size();
                 continue;
             }
 
-            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            const auto &working_time = utils::ternary<std::is_same_v<RT, TruckRoute>>(temp->truck_working_time, temp->drone_working_time);
-            std::size_t vehicle = std::min_element(working_time.begin(), working_time.end()) - working_time.begin();
-
-            std::size_t customer = clusters[cluster_i].back();
-            clusters[cluster_i].pop_back();
-
-            if (!_try_insert<ST>(vehicle_routes[vehicle], customer, truck_routes, drone_routes))
+            // clusters[cluster_i] is guaranteed to be non-empty now
+            if (new_route)
             {
-                if (unhandled_ptr != nullptr)
-                {
-                    unhandled_ptr->push_back(customer);
-                }
+                // Reorder customers in clusters[cluster_i]
+                clusters[cluster_i].insert(clusters[cluster_i].begin(), 0); // So that nearest_heuristic can start from depot
 
-                continue;
-            }
-
-            while (!clusters[cluster_i].empty())
-            {
-                std::size_t customer = clusters[cluster_i].back();
-                if (_try_insert<ST>(vehicle_routes[vehicle].back(), customer, truck_routes, drone_routes))
+                const auto distance = [&problem, &clusters, &cluster_i](const std::size_t &i, const std::size_t &j)
                 {
-                    clusters[cluster_i].pop_back();
+                    return problem->distances[clusters[cluster_i][i]][clusters[cluster_i][j]];
+                };
+
+                auto [_, order] = clusters[cluster_i].size() < 20
+                                      ? utils::held_karp_algorithm(clusters[cluster_i].size(), distance)
+                                      : utils::nearest_heuristic(clusters[cluster_i].size(), distance);
+
+                std::transform(
+                    order.begin(), order.end(), order.begin(),
+                    [&clusters, &cluster_i](const std::size_t &i)
+                    {
+                        return clusters[cluster_i][i];
+                    });
+
+                std::rotate(order.begin(), std::find(order.begin(), order.end(), 0), order.end());
+                std::reverse(order.begin(), order.end());
+                order.pop_back();
+
+                clusters[cluster_i] = order;
+
+                // Construct new vehicle route
+                if (!_try_insert<ST>(vehicle_routes[vehicle], clusters[cluster_i].back(), truck_routes, drone_routes))
+                {
+                    full_vehicle.push_back(vehicle);
+                    select_vehicle();
                 }
                 else
                 {
-                    break;
+                    clusters[cluster_i].pop_back();
                 }
+            }
+            else
+            {
+                // Insert customer to last route of vehicle
+                if (!_try_insert<ST>(vehicle_routes[vehicle].back(), clusters[cluster_i].back(), truck_routes, drone_routes))
+                {
+                    full_vehicle.clear();
+                    select_vehicle();
+                }
+                else
+                {
+                    clusters[cluster_i].pop_back();
+                }
+            }
+        }
+
+        if (unhandled_ptr != nullptr)
+        {
+            for (auto &cluster : clusters)
+            {
+                unhandled_ptr->insert(unhandled_ptr->end(), cluster.begin(), cluster.end());
             }
         }
 
