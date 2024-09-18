@@ -128,7 +128,7 @@ namespace d2d
             _total_frequency++;
         }
 
-        double extra_penalty(
+        double penalty(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes) const
         {
@@ -193,7 +193,6 @@ namespace d2d
         static double A1, A2, A3, A4, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> _neighborhoods;
-        static ExtraPenalty _extra_penalty;
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
@@ -239,6 +238,7 @@ namespace d2d
         }
 
     public:
+        static ExtraPenalty extra_penalty;
         static std::array<double, 4> penalty_coefficients();
 
         /** @brief Working time of truck routes */
@@ -347,6 +347,11 @@ namespace d2d
             return _parent;
         }
 
+        double current_extra_penalty() const
+        {
+            return extra_penalty.penalty(truck_routes, drone_routes);
+        }
+
         /** @brief Objective function evaluation, including penalties. */
         utils::FloatingPointWrapper<double> cost() const
         {
@@ -356,7 +361,7 @@ namespace d2d
             result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
 
-            return result + _extra_penalty.extra_penalty(truck_routes, drone_routes);
+            return result + current_extra_penalty();
         }
 
         double hamming_distance(const std::shared_ptr<Solution> other) const
@@ -560,7 +565,7 @@ namespace d2d
         std::make_shared<TwoOpt<Solution>>(),
     };
 
-    ExtraPenalty Solution::_extra_penalty;
+    ExtraPenalty Solution::extra_penalty;
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
@@ -772,11 +777,11 @@ namespace d2d
 
         for (std::size_t iteration = 0;; iteration++)
         {
-            _extra_penalty.iteration_update();
+            extra_penalty.iteration_update();
             if (problem->verbose)
             {
                 std::string format_string = utils::format(
-                    _extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
+                    extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
                     iteration + 1,
                     utils::fp_format_specifier(current->cost()),
                     utils::fp_format_specifier(result->cost()));
@@ -825,7 +830,7 @@ namespace d2d
                 current = neighbor;
             }
 
-            _extra_penalty.update(
+            extra_penalty.update(
                 old_current->truck_routes,
                 old_current->drone_routes,
                 current->truck_routes,
@@ -842,7 +847,7 @@ namespace d2d
                 auto iter = utils::random_element(elite);
                 current = *iter;
                 elite.erase(iter);
-                _extra_penalty.start_diversification();
+                extra_penalty.start_diversification();
             }
 
 #ifdef LOGGING
@@ -883,7 +888,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        _extra_penalty.end_diversification();
+        extra_penalty.end_diversification();
 
         auto post_opt = result->post_optimization(logger);
         return post_opt;
