@@ -346,6 +346,7 @@ namespace d2d
                 else
                 {
                     clusters[cluster_i].pop_back();
+                    new_route = false;
                 }
             }
             else
