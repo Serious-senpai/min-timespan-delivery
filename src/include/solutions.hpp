@@ -23,6 +23,8 @@ namespace d2d
         std::vector<std::vector<std::size_t>> _edge_frequency;
         std::size_t _total_frequency, _extra_penalty_iteration;
 
+        std::vector<std::vector<bool>> _base;
+
     public:
         ExtraPenalty()
         {
@@ -65,6 +67,32 @@ namespace d2d
             {
                 _extra_penalty_iteration--;
             }
+        }
+
+        template <typename ST>
+        void set_base(const std::shared_ptr<ST> &ptr)
+        {
+            auto problem = Problem::get_instance();
+            _base.clear();
+            _base.resize(problem->customers.size(), std::vector<bool>(problem->customers.size()));
+
+            auto update = [this]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+            {
+                for (auto &routes : vehicle_routes)
+                {
+                    for (auto &route : routes)
+                    {
+                        const auto &customers = route.customers();
+                        for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                        {
+                            _base[customers[i]][customers[i + 1]] = true;
+                        }
+                    }
+                }
+            };
+
+            update(ptr->truck_routes);
+            update(ptr->drone_routes);
         }
 
         void update(
@@ -139,7 +167,10 @@ namespace d2d
                 auto problem = Problem::get_instance();
                 std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
 
-                auto populate = [this, &penalty, &problem, &exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                double c_truck = problem->average_distance / problem->truck->average_speed;
+                double c_drone = problem->drone->cruise_time(problem->average_distance);
+
+                auto populate = [this, &penalty, &problem, &exists, &c_truck, &c_drone]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
                 {
                     for (auto &routes : vehicle_routes)
                     {
@@ -151,13 +182,16 @@ namespace d2d
                                 exists[customers[i]][customers[i + 1]] = true;
 
                                 double p = edge_frequency<double>(customers[i], customers[i + 1]) / total_frequency<double>();
-                                if constexpr (std::is_same_v<RT, TruckRoute>)
+                                if (!_base[customers[i]][customers[i + 1]])
                                 {
-                                    penalty += problem->average_distance / problem->truck->average_speed * p;
-                                }
-                                else
-                                {
-                                    penalty += problem->drone->cruise_time(problem->average_distance) * p;
+                                    if constexpr (std::is_same_v<RT, TruckRoute>)
+                                    {
+                                        penalty += c_truck * p;
+                                    }
+                                    else
+                                    {
+                                        penalty += c_drone * p;
+                                    }
                                 }
                             }
                         }
@@ -172,14 +206,14 @@ namespace d2d
                 {
                     for (std::size_t j = 0; j < problem->customers.size(); j++)
                     {
-                        if (!exists[i][j])
+                        if (_base[i][j] && !exists[i][j])
                         {
                             absent_edge_penalty += 1.0 - edge_frequency<double>(i, j) / total_frequency<double>();
                         }
                     }
                 }
 
-                penalty += absent_edge_penalty * (problem->average_distance / problem->truck->average_speed + problem->drone->cruise_time(problem->average_distance)) / 2.0;
+                penalty += absent_edge_penalty * (c_truck + c_drone) / 2.0;
             }
 
             return penalty;
@@ -819,6 +853,7 @@ namespace d2d
                 return false;
             };
 
+            extra_penalty.set_base(current);
             auto neighbor = _neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto old_current = current;
             if (logger.last_improved == iteration)
