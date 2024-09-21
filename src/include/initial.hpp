@@ -275,7 +275,7 @@ namespace d2d
             clusters = clusterize_2(customers, vehicles_count);
         }
 
-        std::shuffle(clusters.begin(), clusters.end(), utils::rng);
+        // std::shuffle(clusters.begin(), clusters.end(), utils::rng);
 
         bool new_route;
         std::size_t vehicle;
@@ -297,7 +297,7 @@ namespace d2d
         };
 
         select_vehicle();
-        std::size_t cluster_i = 0;
+        std::size_t cluster_i = 0, last_customer = std::size_t(-1);
 
         while (vehicle != std::size_t(-1) && std::any_of(clusters.begin(), clusters.end(), [](const std::vector<std::size_t> &c)
                                                          { return !c.empty(); }))
@@ -305,7 +305,16 @@ namespace d2d
             // Loop invariant: clusters[cluster_i] may be empty, inserting to vehicle route may yield infeasible route
             if (clusters[cluster_i].empty())
             {
-                cluster_i = (cluster_i + 1) % clusters.size();
+                std::vector<double> distances(clusters.size(), std::numeric_limits<double>::max());
+                for (std::size_t i = 0; i < clusters.size(); i++)
+                {
+                    for (auto &customer : clusters[i])
+                    {
+                        distances[i] = std::min(distances[i], problem->distances[last_customer][customer]);
+                    }
+                }
+                cluster_i = std::min_element(distances.begin(), distances.end()) - distances.begin();
+
                 continue;
             }
 
@@ -345,6 +354,7 @@ namespace d2d
                 }
                 else
                 {
+                    last_customer = clusters[cluster_i].back();
                     clusters[cluster_i].pop_back();
                     new_route = false;
                 }
@@ -359,6 +369,7 @@ namespace d2d
                 }
                 else
                 {
+                    last_customer = clusters[cluster_i].back();
                     clusters[cluster_i].pop_back();
                 }
             }
