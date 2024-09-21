@@ -874,6 +874,11 @@ namespace d2d
                 current = *iter;
                 elite.erase(iter);
                 extra_penalty.start_diversification();
+
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    neighborhood->clear();
+                }
             }
 
 #ifdef LOGGING
