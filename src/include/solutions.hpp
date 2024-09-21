@@ -170,7 +170,7 @@ namespace d2d
                 double c_truck = problem->average_distance / problem->truck->average_speed;
                 double c_drone = problem->drone->cruise_time(problem->average_distance);
 
-                auto populate = [this, &penalty, &problem, &exists, &c_truck, &c_drone]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                auto populate = [this, &exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
                 {
                     for (auto &routes : vehicle_routes)
                     {
@@ -180,19 +180,6 @@ namespace d2d
                             for (std::size_t i = 0; i + 1 < customers.size(); i++)
                             {
                                 exists[customers[i]][customers[i + 1]] = true;
-
-                                double p = edge_frequency<double>(customers[i], customers[i + 1]) / total_frequency<double>();
-                                if (!_base[customers[i]][customers[i + 1]])
-                                {
-                                    if constexpr (std::is_same_v<RT, TruckRoute>)
-                                    {
-                                        penalty += c_truck * p;
-                                    }
-                                    else
-                                    {
-                                        penalty += c_drone * p;
-                                    }
-                                }
                             }
                         }
                     }
@@ -201,19 +188,23 @@ namespace d2d
                 populate(truck_routes);
                 populate(drone_routes);
 
-                double absent_edge_penalty = 0;
                 for (std::size_t i = 0; i < problem->customers.size(); i++)
                 {
                     for (std::size_t j = 0; j < problem->customers.size(); j++)
                     {
-                        if (_base[i][j] && !exists[i][j])
+                        double p = edge_frequency<double>(i, j) / total_frequency<double>();
+                        if (exists[i][j] && !_base[i][j])
                         {
-                            absent_edge_penalty += 1.0 - edge_frequency<double>(i, j) / total_frequency<double>();
+                            penalty += p;
+                        }
+                        else if (_base[i][j] && !exists[i][j])
+                        {
+                            penalty += 1.0 - p;
                         }
                     }
                 }
 
-                penalty += absent_edge_penalty * (c_truck + c_drone) / 2.0;
+                penalty *= (c_truck + c_drone) / 2.0;
             }
 
             return penalty;
