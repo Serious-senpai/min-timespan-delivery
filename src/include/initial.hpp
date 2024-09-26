@@ -375,17 +375,20 @@ namespace d2d
                     {
                         for (std::size_t i = 0; i < clusters.size(); i++)
                         {
-                            _sort_cluster_with_starting_point(clusters[i], 0);
-                            if (_try_insert<ST>(vehicle_routes[vehicle[0]], clusters[i].back(), truck_routes, drone_routes))
+                            if (!clusters[i].empty())
                             {
-                                cluster_i = i;
+                                _sort_cluster_with_starting_point(clusters[i], 0);
+                                if (_try_insert<ST>(vehicle_routes[vehicle[0]], clusters[i].back(), truck_routes, drone_routes))
+                                {
+                                    cluster_i = i;
 
-                                last_customer = clusters[cluster_i].back();
-                                clusters[cluster_i].pop_back();
-                                new_route = false;
+                                    last_customer = clusters[cluster_i].back();
+                                    clusters[cluster_i].pop_back();
+                                    new_route = false;
 
-                                inserted = true;
-                                break;
+                                    inserted = true;
+                                    break;
+                                }
                             }
                         }
                     }
