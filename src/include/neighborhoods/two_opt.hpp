@@ -40,7 +40,8 @@ namespace d2d
                             vehicle_routes[index][route] = _RT(new_customers);
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(customers[i - 1], customers[j])) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
@@ -158,7 +159,8 @@ namespace d2d
                             }
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(customers_i[i], customers_j[j])) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;

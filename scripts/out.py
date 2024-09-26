@@ -111,23 +111,13 @@ if __name__ == "__main__":
     progress = [read_solution() for _ in range(int(input()))]
     coefficients: List[List[float]] = eval(input())
 
-    for i in range(len(coefficients)):
-        for d in (history[i], progress[i]):
-            if d is not None:
-                d["cost"] = (
-                    d["working_time"]
-                    + d["drone_energy_violation"] * coefficients[i][0]
-                    + d["capacity_violation"] * coefficients[i][1]
-                    + d["waiting_time_violation"] * coefficients[i][2]
-                    + d["fixed_time_violation"] * coefficients[i][3]
-                )
-
     neighborhoods: List[NeighborhoodJSON] = [{"label": input(), "pair": eval(input())} for _ in range(int(input()))]
 
     initialization_label = input()
     last_improved = int(input())
 
     elite_set: List[List[float]] = [eval(input()) for _ in range(int(input()))]
+    extra_penalty: List[float] = eval(input())
     elapsed = float(input()) / 1000  # Convert ms to s
 
     data: ResultJSON[SolutionJSON] = {
@@ -155,6 +145,7 @@ if __name__ == "__main__":
         "initialization_label": initialization_label,
         "last_improved": last_improved,
         "elite_set": elite_set,
+        "extra_penalty": extra_penalty,
         "elapsed": elapsed,
         "url": namespace.url,
     }
@@ -187,11 +178,11 @@ if __name__ == "__main__":
     csv_output = ROOT / "result" / f"{namespace.problem}-{index}.csv"
     with csv_output.open("w") as file:
         file.write("sep=,\n")
-        file.write("Fitness,Cost,a1,p1,a2,p2,a3,p3,a4,p4,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs,Note\n")
-        for row, (_progress, _coefficients, _neighborhood, _elite_set) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, strict=True), start=2):
+        file.write("Fitness,Working time,a1,p1,a2,p2,a3,p3,a4,p4,Extra penalty,Neighborhood,Pair,Truck routes,Drone routes,Elite set costs\n")
+        for row, (_progress, _coefficients, _neighborhood, _elite_set, _extra_penalty) in enumerate(zip(progress, coefficients, neighborhoods, elite_set, extra_penalty, strict=True), start=2):
             iteration = row - 2
             segments = [
-                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * j{row}"),
+                csv_wrap(f"=B{row} + C{row} * D{row} + E{row} * F{row} + G{row} * H{row} + I{row} * J{row} + K{row}"),
                 str("" if _progress is None else _progress["working_time"]),
                 str(_coefficients[0]),
                 str("" if _progress is None else _progress["drone_energy_violation"]),
@@ -201,6 +192,7 @@ if __name__ == "__main__":
                 str("" if _progress is None else _progress["waiting_time_violation"]),
                 str(_coefficients[3]),
                 str("" if _progress is None else _progress["fixed_time_violation"]),
+                str(_extra_penalty),
                 csv_wrap(_neighborhood["label"]),
                 csv_wrap(_neighborhood["pair"]),
                 csv_wrap("" if _progress is None else _progress["truck_paths"]),

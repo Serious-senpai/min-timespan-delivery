@@ -134,7 +134,7 @@ namespace d2d
         }
         matrix.setcontent(customers.size(), 2, xy.data());
 
-        alglib::clusterizersetpoints(state, matrix, 2); // ALGLIB only supports Euclidean clustering
+        alglib::clusterizersetpoints(state, matrix, 2);
         alglib::clusterizersetkmeanslimits(state, 1, 500);
 
         alglib::kmeansreport report;
@@ -256,6 +256,42 @@ namespace d2d
         return clusters;
     }
 
+    template <typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
+    void _sort_cluster_with_starting_point(std::vector<std::size_t> &cluster, const std::size_t &start)
+    {
+        auto problem = Problem::get_instance();
+        cluster.insert(cluster.begin(), start); // So that nearest_heuristic can start from starting point
+
+        const auto distance = [&problem, &cluster](const std::size_t &i, const std::size_t &j)
+        {
+            if constexpr (std::is_same_v<RT, TruckRoute>)
+            {
+                return problem->man_distances[cluster[i]][cluster[j]];
+            }
+            else
+            {
+                return problem->euc_distances[cluster[i]][cluster[j]];
+            }
+        };
+
+        auto [_, order] = cluster.size() < 20
+                              ? utils::held_karp_algorithm(cluster.size(), distance)
+                              : utils::nearest_heuristic(cluster.size(), distance);
+
+        std::transform(
+            order.begin(), order.end(), order.begin(),
+            [&cluster](const std::size_t &i)
+            {
+                return cluster[i];
+            });
+
+        std::rotate(order.begin(), std::find(order.begin(), order.end(), start), order.end());
+        std::reverse(order.begin(), order.end());
+        order.pop_back();
+
+        cluster = order;
+    }
+
     template <typename ST, int _Clusterizer, typename RT, std::enable_if_t<is_route_v<RT> && (_Clusterizer == 1 || _Clusterizer == 2), bool> = true>
     std::vector<std::vector<RT>> _initial_helper(const std::vector<std::size_t> &customers, std::vector<std::size_t> *unhandled_ptr)
     {
@@ -276,83 +312,141 @@ namespace d2d
             clusters = clusterize_2(customers, vehicles_count);
         }
 
-        for (auto &cluster : clusters)
+        std::iter_swap(clusters.begin(), utils::random_element(clusters));
+
+        bool new_route;
+        std::vector<std::size_t> vehicle(vehicles_count);
+        std::iota(vehicle.begin(), vehicle.end(), 0);
+
+        const auto select_vehicle = [&truck_routes, &drone_routes, &new_route, &vehicle]()
         {
-            cluster.push_back(0);
+            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            std::vector<double> working_time = utils::ternary<std::is_same_v<RT, TruckRoute>>(temp->truck_working_time, temp->drone_working_time);
 
-            auto distance = [&problem, &cluster](const std::size_t &i, const std::size_t &j)
-            {
-                if constexpr (std::is_same_v<RT, TruckRoute>)
+            new_route = true;
+            std::sort(
+                vehicle.begin(), vehicle.end(),
+                [&working_time](const std::size_t &i, const std::size_t &j)
                 {
-                    return problem->man_distances[cluster[i]][cluster[j]];
-                }
-                else
-                {
-                    return problem->euc_distances[cluster[i]][cluster[j]];
-                }
-            };
-            std::vector<std::size_t> order = cluster.size() < 20
-                                                 ? utils::held_karp_algorithm(cluster.size(), distance).second
-                                                 : utils::nearest_heuristic(cluster.size(), distance).second;
+                    return working_time[i] < working_time[j];
+                });
+        };
 
-            std::vector<std::size_t> cluster_ordered(cluster.size());
-            for (std::size_t i = 0; i < cluster.size(); i++)
-            {
-                cluster_ordered[i] = cluster[order[i]];
-            }
+        select_vehicle();
+        std::size_t cluster_i = 0, last_customer = std::size_t(-1);
 
-            if (cluster_ordered.back() != 0)
-            {
-                std::rotate(
-                    cluster_ordered.begin(),
-                    std::find(cluster_ordered.begin(), cluster_ordered.end(), 0) + 1,
-                    cluster_ordered.end());
-            }
-            cluster_ordered.pop_back();
-            cluster = cluster_ordered;
-        }
-
-        for (std::size_t cluster_i = 0; cluster_i < clusters.size(); cluster_i = (cluster_i + 1) % clusters.size())
+        while (std::any_of(clusters.begin(), clusters.end(), [](const std::vector<std::size_t> &c)
+                           { return !c.empty(); }))
         {
+            // Loop invariant: clusters[cluster_i] may be empty, inserting to vehicle route may yield infeasible route
             if (clusters[cluster_i].empty())
             {
-                if (std::all_of(clusters.begin(), clusters.end(), [](const std::vector<std::size_t> &cluster)
-                                { return cluster.empty(); }))
+                if (last_customer == std::size_t(-1))
                 {
-                    break;
+                    cluster_i = (cluster_i + 1) % clusters.size();
+                    continue;
                 }
 
+                std::vector<double> distances(clusters.size(), std::numeric_limits<double>::max());
+                for (std::size_t i = 0; i < clusters.size(); i++)
+                {
+                    for (auto &customer : clusters[i])
+                    {
+                        if constexpr (std::is_same_v<RT, TruckRoute>)
+                        {
+                            distances[i] = std::min(distances[i], problem->man_distances[last_customer][customer]);
+                        }
+                        else
+                        {
+                            distances[i] = std::min(distances[i], problem->euc_distances[last_customer][customer]);
+                        }
+                    }
+                }
+                cluster_i = std::min_element(distances.begin(), distances.end()) - distances.begin();
+
+                _sort_cluster_with_starting_point<RT>(clusters[cluster_i], last_customer);
                 continue;
             }
 
-            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            const auto &working_time = utils::ternary<std::is_same_v<RT, TruckRoute>>(temp->truck_working_time, temp->drone_working_time);
-            std::size_t vehicle = std::min_element(working_time.begin(), working_time.end()) - working_time.begin();
-
-            std::size_t customer = clusters[cluster_i].back();
-            clusters[cluster_i].pop_back();
-
-            if (!_try_insert<ST>(vehicle_routes[vehicle], customer, truck_routes, drone_routes))
+            // clusters[cluster_i] is guaranteed to be non-empty now
+            if (new_route)
             {
-                if (unhandled_ptr != nullptr)
-                {
-                    unhandled_ptr->push_back(customer);
-                }
+                // Reorder customers in clusters[cluster_i]
+                _sort_cluster_with_starting_point<RT>(clusters[cluster_i], 0);
 
-                continue;
-            }
-
-            while (!clusters[cluster_i].empty())
-            {
-                std::size_t customer = clusters[cluster_i].back();
-                if (_try_insert<ST>(vehicle_routes[vehicle].back(), customer, truck_routes, drone_routes))
+                // Construct new vehicle route
+                if (!_try_insert<ST>(vehicle_routes[vehicle[0]], clusters[cluster_i].back(), truck_routes, drone_routes))
                 {
-                    clusters[cluster_i].pop_back();
+                    bool inserted = false;
+                    for (std::size_t i = 1; i < vehicles_count; i++)
+                    {
+                        if (_try_insert<ST>(vehicle_routes[vehicle[i]], clusters[cluster_i].back(), truck_routes, drone_routes))
+                        {
+                            last_customer = clusters[cluster_i].back();
+                            clusters[cluster_i].pop_back();
+                            new_route = false;
+
+                            std::rotate(vehicle.begin(), vehicle.begin() + i, vehicle.end());
+
+                            inserted = true;
+                            break;
+                        }
+                    }
+
+                    if (!inserted)
+                    {
+                        for (std::size_t i = 0; i < clusters.size(); i++)
+                        {
+                            if (!clusters[i].empty())
+                            {
+                                _sort_cluster_with_starting_point<RT>(clusters[i], 0);
+                                if (_try_insert<ST>(vehicle_routes[vehicle[0]], clusters[i].back(), truck_routes, drone_routes))
+                                {
+                                    cluster_i = i;
+
+                                    last_customer = clusters[cluster_i].back();
+                                    clusters[cluster_i].pop_back();
+                                    new_route = false;
+
+                                    inserted = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!inserted)
+                    {
+                        break;
+                    }
                 }
                 else
                 {
-                    break;
+                    last_customer = clusters[cluster_i].back();
+                    clusters[cluster_i].pop_back();
+                    new_route = false;
                 }
+            }
+            else
+            {
+                // Insert customer to last route of vehicle
+                if (!_try_insert<ST>(vehicle_routes[vehicle[0]].back(), clusters[cluster_i].back(), truck_routes, drone_routes))
+                {
+                    select_vehicle();
+                }
+                else
+                {
+                    last_customer = clusters[cluster_i].back();
+                    clusters[cluster_i].pop_back();
+                }
+            }
+        }
+
+        if (unhandled_ptr != nullptr)
+        {
+            for (auto &cluster : clusters)
+            {
+                unhandled_ptr->insert(unhandled_ptr->end(), cluster.begin(), cluster.end());
             }
         }
 

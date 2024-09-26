@@ -108,7 +108,8 @@ namespace d2d
                             new_tabu.insert(new_tabu.end(), customers_j.begin() + j, customers_j.begin() + (j + Y));
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
@@ -229,7 +230,8 @@ namespace d2d
                             std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + Z));
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
@@ -370,7 +372,8 @@ namespace d2d
                             new_tabu.insert(new_tabu.end(), customers.begin() + j, customers.begin() + (j + _Y));
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
@@ -448,7 +451,8 @@ namespace d2d
                             std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + X));
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
@@ -470,7 +474,8 @@ namespace d2d
                             std::vector<std::size_t> new_tabu(customers.begin() + i, customers.begin() + (i + X));
 
                             auto new_solution = this->construct(parent, truck_routes, drone_routes);
-                            if ((aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
+                            if (solution->cost() != new_solution->cost() &&
+                                (aspiration_criteria(new_solution) || !this->is_tabu(new_tabu)) &&
                                 (result == nullptr || new_solution->cost() < result->cost()))
                             {
                                 result = new_solution;
