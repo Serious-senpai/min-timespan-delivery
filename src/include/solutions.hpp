@@ -23,6 +23,8 @@ namespace d2d
         std::vector<std::vector<std::size_t>> _edge_frequency;
         std::size_t _total_frequency, _extra_penalty_iteration;
 
+        std::vector<std::vector<bool>> _base;
+
     public:
         ExtraPenalty()
         {
@@ -65,6 +67,32 @@ namespace d2d
             {
                 _extra_penalty_iteration--;
             }
+        }
+
+        template <typename ST>
+        void set_base(const std::shared_ptr<ST> &ptr)
+        {
+            auto problem = Problem::get_instance();
+            _base.clear();
+            _base.resize(problem->customers.size(), std::vector<bool>(problem->customers.size()));
+
+            auto update = [this]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+            {
+                for (auto &routes : vehicle_routes)
+                {
+                    for (auto &route : routes)
+                    {
+                        const auto &customers = route.customers();
+                        for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                        {
+                            _base[customers[i]][customers[i + 1]] = true;
+                        }
+                    }
+                }
+            };
+
+            update(ptr->truck_routes);
+            update(ptr->drone_routes);
         }
 
         void update(
@@ -128,7 +156,7 @@ namespace d2d
             _total_frequency++;
         }
 
-        double extra_penalty(
+        double penalty(
             const std::vector<std::vector<TruckRoute>> &truck_routes,
             const std::vector<std::vector<DroneRoute>> &drone_routes) const
         {
@@ -139,7 +167,10 @@ namespace d2d
                 auto problem = Problem::get_instance();
                 std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
 
-                auto populate = [this, &penalty, &problem, &exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                double c_truck = problem->average_distance / problem->truck->average_speed;
+                double c_drone = problem->drone->cruise_time(problem->average_distance);
+
+                auto populate = [this, &exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
                 {
                     for (auto &routes : vehicle_routes)
                     {
@@ -149,16 +180,6 @@ namespace d2d
                             for (std::size_t i = 0; i + 1 < customers.size(); i++)
                             {
                                 exists[customers[i]][customers[i + 1]] = true;
-
-                                double p = edge_frequency<double>(customers[i], customers[i + 1]) / total_frequency<double>();
-                                if constexpr (std::is_same_v<RT, TruckRoute>)
-                                {
-                                    penalty += problem->average_distance / problem->truck->average_speed * p;
-                                }
-                                else
-                                {
-                                    penalty += problem->drone->cruise_time(problem->average_distance) * p;
-                                }
                             }
                         }
                     }
@@ -167,19 +188,23 @@ namespace d2d
                 populate(truck_routes);
                 populate(drone_routes);
 
-                double absent_edge_penalty = 0;
                 for (std::size_t i = 0; i < problem->customers.size(); i++)
                 {
                     for (std::size_t j = 0; j < problem->customers.size(); j++)
                     {
-                        if (!exists[i][j])
+                        double p = edge_frequency<double>(i, j) / total_frequency<double>();
+                        if (exists[i][j] && !_base[i][j])
                         {
-                            absent_edge_penalty += 1.0 - edge_frequency<double>(i, j) / total_frequency<double>();
+                            penalty += p;
+                        }
+                        else if (_base[i][j] && !exists[i][j])
+                        {
+                            penalty += 1.0 - p;
                         }
                     }
                 }
 
-                penalty += absent_edge_penalty * (problem->average_distance / problem->truck->average_speed + problem->drone->cruise_time(problem->average_distance)) / 2.0;
+                penalty *= (c_truck + c_drone) / 2.0;
             }
 
             return penalty;
@@ -193,7 +218,6 @@ namespace d2d
         static double A1, A2, A3, A4, B;
 
         static const std::vector<std::shared_ptr<Neighborhood<Solution, true>>> _neighborhoods;
-        static ExtraPenalty _extra_penalty;
 
         static std::vector<std::vector<std::vector<double>>> _calculate_truck_time_segments(
             const std::vector<std::vector<TruckRoute>> &truck_routes);
@@ -239,6 +263,7 @@ namespace d2d
         }
 
     public:
+        static ExtraPenalty extra_penalty;
         static std::array<double, 4> penalty_coefficients();
 
         /** @brief Working time of truck routes */
@@ -347,6 +372,11 @@ namespace d2d
             return _parent;
         }
 
+        double current_extra_penalty() const
+        {
+            return extra_penalty.penalty(truck_routes, drone_routes);
+        }
+
         /** @brief Objective function evaluation, including penalties. */
         utils::FloatingPointWrapper<double> cost() const
         {
@@ -356,7 +386,7 @@ namespace d2d
             result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
 
-            return result + _extra_penalty.extra_penalty(truck_routes, drone_routes);
+            return result + current_extra_penalty();
         }
 
         double hamming_distance(const std::shared_ptr<Solution> other) const
@@ -567,7 +597,7 @@ namespace d2d
         std::make_shared<TwoOpt<Solution>>(),
     };
 
-    ExtraPenalty Solution::_extra_penalty;
+    ExtraPenalty Solution::extra_penalty;
 
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
@@ -779,11 +809,11 @@ namespace d2d
 
         for (std::size_t iteration = 0;; iteration++)
         {
-            _extra_penalty.iteration_update();
+            extra_penalty.iteration_update();
             if (problem->verbose)
             {
                 std::string format_string = utils::format(
-                    _extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
+                    extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
                     iteration + 1,
                     utils::fp_format_specifier(current->cost()),
                     utils::fp_format_specifier(result->cost()));
@@ -821,6 +851,7 @@ namespace d2d
                 return false;
             };
 
+            extra_penalty.set_base(current);
             auto neighbor = _neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto old_current = current;
             if (logger.last_improved == iteration)
@@ -832,7 +863,7 @@ namespace d2d
                 current = neighbor;
             }
 
-            _extra_penalty.update(
+            extra_penalty.update(
                 old_current->truck_routes,
                 old_current->drone_routes,
                 current->truck_routes,
@@ -849,7 +880,12 @@ namespace d2d
                 auto iter = utils::random_element(elite);
                 current = *iter;
                 elite.erase(iter);
-                _extra_penalty.start_diversification();
+                extra_penalty.start_diversification();
+
+                for (auto &neighborhood : _neighborhoods)
+                {
+                    neighborhood->clear();
+                }
             }
 
 #ifdef LOGGING
@@ -890,7 +926,7 @@ namespace d2d
             std::cerr << std::endl;
         }
 
-        _extra_penalty.end_diversification();
+        extra_penalty.end_diversification();
 
         auto post_opt = result->post_optimization(logger);
         return post_opt;
