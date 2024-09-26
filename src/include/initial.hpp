@@ -332,6 +332,12 @@ namespace d2d
             // Loop invariant: clusters[cluster_i] may be empty, inserting to vehicle route may yield infeasible route
             if (clusters[cluster_i].empty())
             {
+                if (last_customer == std::size_t(-1))
+                {
+                    cluster_i = (cluster_i + 1) % clusters.size();
+                    continue;
+                }
+
                 std::vector<double> distances(clusters.size(), std::numeric_limits<double>::max());
                 for (std::size_t i = 0; i < clusters.size(); i++)
                 {
