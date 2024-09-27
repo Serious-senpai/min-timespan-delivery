@@ -10,14 +10,14 @@ from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfi
 class Namespace(argparse.Namespace):
     if TYPE_CHECKING:
         problem: str
-        tabu_size: int
+        tabu_size_factor: int
         config: Literal["linear", "non-linear", "endurance"]
         speed_type: Literal["low", "high"]
         range_type: Literal["low", "high"]
+        reset_after_factor: int
+        diversification_factor: float
+        max_elite_size: int
         verbose: bool
-        max_elite_set_size: int
-        reset_after: int
-        hamming_distance_factor: float
 
 
 parser = argparse.ArgumentParser(
@@ -25,13 +25,13 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
-parser.add_argument("-t", "--tabu-size", default=10, type=int, help="the tabu size for each neighborhood")
-parser.add_argument("--max-elite-set-size", default=10, type=int, help="the maximum size of the elite set")
-parser.add_argument("--reset-after", default=250, type=int, help="the number of non-improved iterations before resetting the current solution")
-parser.add_argument("--hamming-distance-factor", default=0.1, type=float, help="the factor F to remove an elite solution when hamming distance <= Fn")
-parser.add_argument("-c", "--config", default="linear", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
+parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a0 * base")
+parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
+parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
+parser.add_argument("--diversification-factor", default=0, type=float, help="the number of iterations to apply diversification = a2 * base")
+parser.add_argument("--max-elite-size", default=5, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
 
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     print(*problem.truck_service_time)
     print(*problem.drone_service_time)
 
-    print(namespace.tabu_size)
+    print(namespace.tabu_size_factor)
     print(int(namespace.verbose))
 
     truck = TruckConfig(maximum_velocity=problem.truck_speed, capacity=problem.truck_capacity, coefficients=(1,))
@@ -111,4 +111,4 @@ if __name__ == "__main__":
         problem.drone_unit_cost,
     )
 
-    print(namespace.max_elite_set_size, namespace.reset_after, namespace.hamming_distance_factor)
+    print(namespace.max_elite_size, namespace.reset_after_factor, namespace.diversification_factor)
