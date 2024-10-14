@@ -6,7 +6,7 @@ fonttools==4.53.1
 kiwisolver==1.4.7
 matplotlib==3.9.2
 mccabe==0.7.0
-mypy==1.11.2
+mypy==1.12.0
 mypy-extensions==1.0.0
 numpy==2.1.1
 packaging==24.1
