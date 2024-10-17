@@ -322,6 +322,7 @@ if __name__ == "__main__":
                     for index in range(1, 1 + customers_count):
                         ax.annotate(str(index), (x[index], y[index]))
 
+                    ax.set_aspect("equal")
                     ax.grid(True)
 
                 elif namespace.option == "history":
