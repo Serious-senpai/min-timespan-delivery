@@ -26,7 +26,7 @@ class TruckConfig:
         assert isinstance(coefficients_d, dict)
 
         return TruckConfig(
-            maximum_velocity=data["V_max (m/s)"],
+            maximum_velocity=data["V_max (miles/min)"],
             capacity=data["M_t (kg)"],
             coefficients=tuple(coefficients_d.values()),
         )
@@ -135,9 +135,9 @@ class DroneEnduranceConfig(_BaseDroneConfig):
         results: List[DroneEnduranceConfig] = []
         for d in data.values():
             item = DroneEnduranceConfig(
-                fixed_time=d["FixedTime (s)"],
-                # fixed_distance=d["FixedDistance (m)"],
-                drone_speed=d["Drone_speed (m/s)"],
+                fixed_time=d["FixedTime (min)"],
+                # fixed_distance=d["FixedDistance (miles)"],
+                drone_speed=d["V_max (miles/min)"],
                 capacity=d["capacity [kg]"],
                 speed_type=d["speed_type"],
                 range_type=d["range"],
@@ -158,7 +158,7 @@ class Problem:
     x: Tuple[float, ...]
     y: Tuple[float, ...]
     demands: Tuple[float, ...]
-    dronable: Tuple[bool, ...]
+    dronable: List[bool]
 
     truck_service_time: Tuple[float, ...]
     drone_service_time: Tuple[float, ...]
@@ -170,7 +170,7 @@ class Problem:
             data = file.read()
 
         customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
-        trucks_count = int(re.search(r"number_staff (\d+)", data).group(1))  # type: ignore
+        trucks_count = int(re.search(r"number_truck (\d+)", data).group(1))  # type: ignore
         drones_count = int(re.search(r"number_drone (\d+)", data).group(1))  # type: ignore
 
         x = [0.0]
@@ -179,14 +179,14 @@ class Problem:
         dronable = [True]
         truck_service_time = [0.0]
         drone_service_time = [0.0]
-        for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)\s+(0|1)\s+([\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
-            _x, _y, demand, truck_only, _truck_service_time, _drone_service_time = match.groups()
+        for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
+            _x, _y, demand = match.groups()
             x.append(float(_x))
             y.append(float(_y))
             demands.append(float(demand))
-            dronable.append(truck_only == "0")
-            truck_service_time.append(float(_truck_service_time))
-            drone_service_time.append(float(_drone_service_time))
+            dronable.append(True)
+            truck_service_time.append(0)
+            drone_service_time.append(0)
 
         return Problem(
             problem=problem,
@@ -196,7 +196,7 @@ class Problem:
             x=tuple(x),
             y=tuple(y),
             demands=tuple(demands),
-            dronable=tuple(dronable),
+            dronable=dronable,
             truck_service_time=tuple(truck_service_time),
             drone_service_time=tuple(drone_service_time),
         )

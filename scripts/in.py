@@ -4,7 +4,7 @@ import argparse
 import sys
 from typing_extensions import Literal, Tuple, Union, TYPE_CHECKING
 
-from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig
+from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig, euc_distance
 
 
 class Namespace(argparse.Namespace):
@@ -42,22 +42,15 @@ if __name__ == "__main__":
     print(namespace, file=sys.stderr)
 
     problem = Problem.import_data(namespace.problem)
-    print(problem.customers_count, problem.trucks_count, problem.drones_count)
-
-    print(*problem.x)
-    print(*problem.y)
-    print(*problem.demands)
-    print(*map(int, problem.dronable))
-
-    print(*problem.truck_service_time)
-    print(*problem.drone_service_time)
-
-    print(namespace.tabu_size_factor)
-    print(int(namespace.verbose))
 
     truck = TruckConfig.import_data()
-    print(truck.maximum_velocity, truck.capacity)
-    print(len(truck.coefficients), *truck.coefficients)
+
+    # Only when comparing to MILP
+    truck = TruckConfig(
+        maximum_velocity=0.58,
+        capacity=1800,
+        coefficients=(1,),
+    )
 
     models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
     if namespace.config == "linear":
@@ -72,6 +65,41 @@ if __name__ == "__main__":
             break
     else:
         raise RuntimeError("Cannot find a satisfying model from list", models)
+
+    # Only when comparing to MILP
+    model = DroneEnduranceConfig(
+        capacity=5,
+        speed_type="low",
+        range_type="low",
+        fixed_time=30,
+        drone_speed=0.83,
+    )
+
+    for index in range(problem.customers_count):
+        problem.dronable[index] = problem.dronable[index] and problem.demands[index] <= model.capacity
+
+    if isinstance(model, DroneEnduranceConfig):
+        for index in range(problem.customers_count):
+            problem.dronable[index] = (
+                problem.dronable[index]
+                and 2 * euc_distance(problem.x[index], problem.y[index]) <= model.fixed_time * model.drone_speed
+            )
+
+    print(problem.customers_count, problem.trucks_count, problem.drones_count)
+
+    print(*problem.x)
+    print(*problem.y)
+    print(*problem.demands)
+    print(*map(int, problem.dronable))
+
+    print(*problem.truck_service_time)
+    print(*problem.drone_service_time)
+
+    print(namespace.tabu_size_factor)
+    print(int(namespace.verbose))
+
+    print(truck.maximum_velocity, truck.capacity)
+    print(len(truck.coefficients), *truck.coefficients)
 
     print(model.__class__.__name__)
     print(

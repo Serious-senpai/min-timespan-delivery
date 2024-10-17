@@ -1,0 +1,45 @@
+{
+  "x": {
+    "x[2,7,0,0]": 1.0,
+    "x[6,2,0,0]": 1.0,
+    "x[0,6,0,0]": 1.0
+  },
+  "y": {
+    "y[1,4,0,0]": 1.0,
+    "y[3,5,0,0]": 1.0,
+    "y[4,3,0,0]": 1.0,
+    "y[5,7,0,0]": 1.0,
+    "y[0,1,0,0]": 1.0
+  },
+  "T1": {},
+  "T": {
+    "T[0,0]": 22.089525458708025
+  },
+  "A": {
+    "A[0]": 20.52836751193276
+  },
+  "B": {
+    "B[0]": 22.089525458708025
+  },
+  "L_w": 120,
+  "L_d": 30,
+  "staff_velocity": 0.58,
+  "drone_velocity": 0.83,
+  "M_t": 1400,
+  "M_d": 5,
+  "num_staff": 1,
+  "num_drone": 1,
+  "use_ejection": true,
+  "use_inter": true,
+  "use_intra": true,
+  "solver": "CPLEX",
+  "solver_log": false,
+  "num_worker": -1,
+  "time_limit": 18000,
+  "model_params": {},
+  "Optimal": 22.089525458708025,
+  "Solve_Time": 0.28476786613464355,
+  "num_constraint": 719,
+  "Number of variables": 641,
+  "status": "OPTIMAL"
+}

@@ -1,9 +1,22 @@
 from __future__ import annotations
 
 import json
-from typing_extensions import Iterable
+import re
+from typing_extensions import Dict, Iterable, Optional
 
-from package import ResultJSON, SolutionJSON, ROOT, csv_wrap
+from package import MILPResultJSON, ResultJSON, SolutionJSON, ROOT, csv_wrap
+
+
+def compare() -> Dict[str, MILPResultJSON]:
+    result: Dict[str, MILPResultJSON] = {}
+    for file in ROOT.joinpath("problems", "milp").iterdir():
+        match = re.search(r"\d+\.\d+\.\d+", file.name)
+        if file.is_file() and file.name.endswith(".json") and match is not None:
+            problem = match.group()
+            with file.open("r") as f:
+                result[problem] = json.load(f)
+
+    return result
 
 
 def result_reader() -> Iterable[ResultJSON[SolutionJSON]]:
@@ -11,10 +24,14 @@ def result_reader() -> Iterable[ResultJSON[SolutionJSON]]:
         if file.is_file() and file.name.endswith(".json") and not file.name.endswith("-pretty.json"):
             print(file.absolute())
             with file.open("r") as f:
-                yield json.load(f)
+                data = json.load(f)
+
+            yield data
 
 
 if __name__ == "__main__":
+    milp = compare()
+
     with ROOT.joinpath("result", "summary.csv").open("w") as csv:
         csv.write("sep=,\n")
         headers = [
@@ -34,10 +51,14 @@ if __name__ == "__main__":
             "Speed type",
             "Range type",
             "Cost",
+            "MILP cost",
+            "Improved [%]",
+            "MILP performance",
+            "MILP status",
             "Capacity violation",
             "Energy violation",
             "Waiting time violation",
-            "Fixed distance violation",
+            "Fixed time violation",
             "Truck paths",
             "Drone paths",
             "Feasible",
@@ -45,10 +66,20 @@ if __name__ == "__main__":
             "Last improved",
             "Elapsed [s]",
             "URL",
+            "Faster [%]",
         ]
         csv.write(",".join(headers) + "\n")
 
         for row, result in enumerate(result_reader(), start=2):
+            milp_available = result["problem"] in milp
+            milp_feasible = milp_available and milp[result["problem"]]["status"] != "INFEASIBLE"
+
+            milp_time: Optional[float] = None
+            if milp_feasible:
+                milp_time = milp[result["problem"]]["Solve_Time"]  # type: ignore
+            elif milp_available:
+                milp_time = 36000.0  # 10 hours without any feasible solutions
+
             segments = [
                 csv_wrap(result["problem"]),
                 csv_wrap(f"=VALUE(LEFT(A{row}, SEARCH(\"\".\"\", A{row}) - 1))"),
@@ -66,6 +97,10 @@ if __name__ == "__main__":
                 result["speed_type"],
                 result["range_type"],
                 str(result["solution"]["cost"]),
+                str(milp[result["problem"]]["Optimal"]) if milp_feasible else "",  # type: ignore
+                csv_wrap(f"=ROUND(100 * (Q{row} - P{row}) / Q{row}, 2)") if milp_feasible else "",
+                str(milp_time) if milp_time is not None else "",
+                str(milp[result["problem"]]["status"]) if milp_available else "",
                 str(result["solution"]["capacity_violation"]),
                 str(result["solution"]["drone_energy_violation"]),
                 str(result["solution"]["waiting_time_violation"]),
@@ -77,5 +112,6 @@ if __name__ == "__main__":
                 str(result["last_improved"]),
                 str(result["elapsed"]),
                 csv_wrap(result["url"]) if result["url"] is not None else "",
+                csv_wrap(f"=ROUND(100 * (S{row} - AD{row}) / S{row}, 2)") if milp_time is not None else "",
             ]
             csv.write(",".join(segments) + "\n")

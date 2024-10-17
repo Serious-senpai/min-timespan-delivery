@@ -154,6 +154,13 @@ namespace d2d
             new_customers.insert(new_customers.end() - 1, customer);
             *this = TruckRoute(new_customers);
         }
+
+        void pop_back()
+        {
+            std::vector<std::size_t> new_customers(_customers);
+            new_customers.erase(new_customers.end() - 2);
+            *this = TruckRoute(new_customers);
+        }
     };
 
     std::vector<double> TruckRoute::calculate_time_segments(
@@ -372,6 +379,13 @@ namespace d2d
         {
             std::vector<std::size_t> new_customers(_customers);
             new_customers.insert(new_customers.end() - 1, customer);
+            *this = DroneRoute(new_customers);
+        }
+
+        void pop_back()
+        {
+            std::vector<std::size_t> new_customers(_customers);
+            new_customers.erase(new_customers.end() - 2);
             *this = DroneRoute(new_customers);
         }
     };
