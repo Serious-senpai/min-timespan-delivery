@@ -387,8 +387,8 @@ namespace d2d
 
             while (!clusters[i].empty())
             {
-                std::cerr << "clusters = " << clusters[i] << std::endl;
-                std::cerr << "timestamps = " << timestamps << std::endl;
+                // std::cerr << "clusters = " << clusters[i] << std::endl;
+                // std::cerr << "timestamps = " << timestamps << std::endl;
                 auto packed = timestamps.begin();
                 // std::cerr << "timestamps = " << timestamps << std::endl;
                 // std::cerr << "clusters[" << i << "] = " << clusters[i] << std::endl;
@@ -471,9 +471,9 @@ namespace d2d
                 }
 
                 auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
-                std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
-                std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+                // std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
+                // std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
+                // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
             }
         }
 
