@@ -479,6 +479,46 @@ namespace d2d
 
         // TODO: Resize drone routes to `problem->drones_count`
 
-        return std::make_shared<ST>(truck_routes, drone_routes, std::make_shared<ParentInfo<ST>>(nullptr, utils::format("initial-%d", _Clusterizer)));
+        // TSP-optimizer
+        std::vector<std::vector<TruckRoute>> truck_routes_modified;
+        std::vector<std::vector<DroneRoute>> drone_routes_modified;
+
+        for (auto &routes : truck_routes)
+        {
+            truck_routes_modified.emplace_back();
+            for (auto &route : routes)
+            {
+                std::vector<std::size_t> customers(route.customers());
+                customers.pop_back();
+                customers.erase(customers.begin());
+
+                _sort_cluster_with_starting_point(customers, 0);
+                customers.insert(customers.begin(), 0);
+                customers.push_back(0);
+
+                truck_routes_modified.back().emplace_back(customers);
+            }
+        }
+        for (auto &routes : drone_routes)
+        {
+            drone_routes_modified.emplace_back();
+            for (auto &route : routes)
+            {
+                std::vector<std::size_t> customers(route.customers());
+                customers.pop_back();
+                customers.erase(customers.begin());
+
+                _sort_cluster_with_starting_point(customers, 0);
+                customers.insert(customers.begin(), 0);
+                customers.push_back(0);
+
+                drone_routes_modified.back().emplace_back(customers);
+            }
+        }
+
+        return std::make_shared<ST>(
+            truck_routes_modified,
+            drone_routes_modified,
+            std::make_shared<ParentInfo<ST>>(nullptr, utils::format("initial-%d", _Clusterizer)));
     }
 }
