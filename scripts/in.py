@@ -79,10 +79,11 @@ if __name__ == "__main__":
         problem.dronable[index] = problem.dronable[index] and problem.demands[index] <= model.capacity
 
     if isinstance(model, DroneEnduranceConfig):
-        for index in range(problem.customers_count):
+        for index in range(1, problem.customers_count + 1):
             problem.dronable[index] = (
                 problem.dronable[index]
                 and 2 * euc_distance(problem.x[index], problem.y[index]) <= model.fixed_time * model.drone_speed
+                and problem.demands[index] <= model.capacity
             )
 
     print(problem.customers_count, problem.trucks_count, problem.drones_count)
