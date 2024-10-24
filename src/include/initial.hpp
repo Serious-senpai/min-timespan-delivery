@@ -308,7 +308,42 @@ namespace d2d
         std::vector<std::vector<TruckRoute>> truck_routes(problem->trucks_count);
         std::vector<std::vector<DroneRoute>> drone_routes(problem->trucks_count); // Will resize to problem->drones_count later
 
-        std::set<std::pair<double, std::pair<std::pair<std::size_t, std::size_t>, bool>>> timestamps;
+        std::vector<std::size_t> clusters_mapping(problem->customers.size());
+        for (std::size_t i = 0; i < clusters.size(); i++)
+        {
+            for (auto &customer : clusters[i])
+            {
+                clusters_mapping[customer] = i;
+            }
+        }
+
+        struct iteration_info
+        {
+            double working_time;
+            std::size_t vehicle;
+            std::size_t before;
+            std::size_t customer;
+            bool is_truck;
+
+            iteration_info(
+                const double &working_time,
+                const std::size_t &vehicle,
+                const std::size_t &before,
+                const std::size_t &customer,
+                const bool &is_truck)
+                : working_time(working_time),
+                  vehicle(vehicle),
+                  before(before),
+                  customer(customer),
+                  is_truck(is_truck) {}
+
+            bool operator<(const iteration_info &other) const
+            {
+                return working_time < other.working_time;
+            }
+        };
+
+        std::multiset<iteration_info> timestamps;
         for (std::size_t i = 0; i < clusters.size(); i++)
         {
             // std::cerr << "At cluster " << i << ": " << clusters[i] << std::endl;
@@ -317,19 +352,8 @@ namespace d2d
                 { return problem->distances[0][i] < problem->distances[0][j]; });
             // std::cerr << "Sorted to " << clusters[i] << std::endl;
 
-            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            std::size_t truck = std::distance(
-                temp->truck_working_time.begin(),
-                std::min_element(temp->truck_working_time.begin(), temp->truck_working_time.end()));
-            std::size_t drone = std::distance(
-                temp->drone_working_time.begin(),
-                std::min_element(temp->drone_working_time.begin(), temp->drone_working_time.end()));
-
             auto truck_customer = clusters[i].back();
-            timestamps.insert(
-                std::make_pair(
-                    temp->truck_working_time[truck],
-                    std::make_pair(std::pair<std::size_t, std::size_t>(0, truck_customer), true)));
+            timestamps.emplace(0, i, 0, truck_customer, true);
 
             auto dronable_iter = std::find_if(
                 clusters[i].begin(), clusters[i].end(),
@@ -337,144 +361,154 @@ namespace d2d
                 { return problem->customers[c].dronable; });
             if (dronable_iter != clusters[i].end())
             {
-                timestamps.insert(
-                    std::make_pair(
-                        temp->drone_working_time[drone],
-                        std::make_pair(std::pair<std::size_t, std::size_t>(0, *dronable_iter), false)));
+                timestamps.emplace(0, i, 0, *dronable_iter, false);
             }
+        }
 
-            const auto truck_next = [&problem, &timestamps, &truck, &truck_routes, &drone_routes](std::size_t from, const std::vector<std::size_t> &cluster)
+        std::set<std::size_t> global_customers;
+        for (std::size_t i = 1; i < problem->customers.size(); i++)
+        {
+            global_customers.insert(global_customers.end(), i);
+        }
+
+        const auto truck_next = [&](std::size_t from, std::size_t truck)
+        {
+            std::size_t nearest;
+            const auto &cluster = clusters[clusters_mapping[from]];
+            if (!cluster.empty())
             {
-                auto nearest = std::min_element(
+                nearest = *std::min_element(
                     cluster.begin(), cluster.end(),
                     [&problem, &from](const std::size_t &i, const std::size_t &j)
                     {
                         return problem->distances[from][i] < problem->distances[from][j];
                     });
-
-                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                timestamps.insert(
-                    std::make_pair(
-                        temp->truck_working_time[truck],
-                        std::make_pair(std::pair<std::size_t, std::size_t>(from, *nearest), true)));
-            };
-
-            const auto drone_next = [&problem, &timestamps, &drone, &truck_routes, &drone_routes](std::size_t from, const std::vector<std::size_t> &cluster)
+            }
+            else
             {
-                std::vector<std::size_t> dronable(cluster.size());
-                auto end = std::remove_copy_if(
-                    cluster.begin(), cluster.end(), dronable.begin(),
-                    [&problem](const std::size_t &i)
-                    {
-                        return !problem->customers[i].dronable;
-                    });
-                auto nearest = std::min_element(
-                    dronable.begin(), end,
+                nearest = *std::min_element(
+                    global_customers.begin(), global_customers.end(),
                     [&problem, &from](const std::size_t &i, const std::size_t &j)
                     {
                         return problem->distances[from][i] < problem->distances[from][j];
                     });
+            }
 
-                if (nearest != end) // No dronable customers
-                {
-                    auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                    timestamps.insert(
-                        std::make_pair(
-                            temp->drone_working_time[drone],
-                            std::make_pair(std::pair<std::size_t, std::size_t>(from, *nearest), false)));
-                }
-            };
+            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            timestamps.emplace(temp->truck_working_time[truck], truck, from, nearest, true);
+        };
 
-            while (!clusters[i].empty())
+        const auto drone_next = [&](std::size_t from, std::size_t drone)
+        {
+            std::size_t nearest = std::numeric_limits<std::size_t>::max();
+            double min_distance = std::numeric_limits<double>::max();
+            for (auto &customer : clusters[clusters_mapping[from]])
             {
-                // std::cerr << "clusters = " << clusters[i] << std::endl;
-                // std::cerr << "timestamps = " << timestamps << std::endl;
-                auto packed = timestamps.begin();
-                // std::cerr << "timestamps = " << timestamps << std::endl;
-                // std::cerr << "clusters[" << i << "] = " << clusters[i] << std::endl;
-                // std::cerr << "packed = " << *packed << std::endl;
-                timestamps.erase(timestamps.begin());
-
-                auto [customers, is_truck] = packed->second;
-                auto [before, customer] = customers;
-                auto iter = std::find(clusters[i].begin(), clusters[i].end(), customer);
-                if (iter == clusters[i].end())
+                if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
                 {
-                    if (is_truck)
-                    {
-                        truck_next(before, clusters[i]);
-                    }
-                    else
-                    {
-                        drone_next(before, clusters[i]);
-                    }
-
-                    continue;
+                    min_distance = problem->distances[from][customer];
+                    nearest = customer;
                 }
+            }
 
-                clusters[i].erase(iter);
-
-                if (is_truck)
+            if (nearest == std::numeric_limits<std::size_t>::max()) // No dronable customers
+            {
+                for (auto &customer : global_customers)
                 {
-                    // std::cerr << "Inserting " << customer << " to truck routes " << truck_routes[truck] << std::endl;
-                    bool insertable;
-                    if (truck_routes[truck].empty())
+                    if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
                     {
-                        insertable = _try_insert<ST>(truck_routes[truck], customer, truck_routes, drone_routes);
+                        min_distance = problem->distances[from][customer];
+                        nearest = customer;
                     }
-                    else
-                    {
-                        insertable = _try_insert<ST>(truck_routes[truck].back(), customer, truck_routes, drone_routes);
-                    }
+                }
+            }
 
-                    if (!insertable)
-                    {
-                        auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                        truck = std::distance(
-                            temp->truck_working_time.begin(),
-                            std::min_element(temp->truck_working_time.begin(), temp->truck_working_time.end()));
-                        // std::cerr << "Moving to truck " << truck << ", current routes = " << truck_routes[truck] << std::endl;
+            if (nearest < std::numeric_limits<std::size_t>::max())
+            {
+                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+                timestamps.emplace(temp->drone_working_time[drone], drone, from, nearest, false);
+            }
+        };
 
-                        assert(_try_insert<ST>(truck_routes[truck], customer, truck_routes, drone_routes));
-                    }
+        while (!global_customers.empty())
+        {
+            iteration_info packed(*timestamps.begin());
+            timestamps.erase(timestamps.begin());
 
-                    // Insert to `timestamps`
-                    truck_next(customer, clusters[i]);
+            std::cerr << "Obtained new packed data:\n";
+            std::cerr << "packed.working_time = " << packed.working_time << std::endl;
+            std::cerr << "packed.vehicle = " << packed.vehicle << std::endl;
+            std::cerr << "packed.before = " << packed.before << std::endl;
+            std::cerr << "packed.customer = " << packed.customer << std::endl;
+            std::cerr << "packed.is_truck = " << packed.is_truck << std::endl;
+
+            std::size_t cluster = clusters_mapping[packed.customer];
+            auto iter = std::find(clusters[cluster].begin(), clusters[cluster].end(), packed.customer);
+            if (iter == clusters[cluster].end())
+            {
+                if (packed.is_truck)
+                {
+                    truck_next(packed.before, packed.vehicle);
                 }
                 else
                 {
-                    // std::cerr << "Inserting " << customer << " to drone routes " << drone_routes[drone] << std::endl;
-
-                    bool insertable;
-                    if (drone_routes[drone].empty())
-                    {
-                        insertable = _try_insert<ST>(drone_routes[drone], customer, truck_routes, drone_routes);
-                    }
-                    else
-                    {
-                        insertable = _try_insert<ST>(drone_routes[drone].back(), customer, truck_routes, drone_routes);
-                    }
-
-                    if (!insertable)
-                    {
-                        auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                        drone = std::distance(
-                            temp->drone_working_time.begin(),
-                            std::min_element(temp->drone_working_time.begin(), temp->drone_working_time.end()));
-                        // std::cerr << "Moving to drone " << drone << ", current routes = " << drone_routes[drone] << std::endl;
-
-                        assert(_try_insert<ST>(drone_routes[drone], customer, truck_routes, drone_routes));
-                    }
-
-                    // Insert to `timestamps`
-                    drone_next(customer, clusters[i]);
+                    drone_next(packed.before, packed.vehicle);
                 }
 
-                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-                // std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
-                // std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
-                // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+                continue;
             }
+
+            clusters[cluster].erase(iter);
+            global_customers.erase(packed.customer);
+
+            if (packed.is_truck)
+            {
+                // std::cerr << "Inserting " << customer << " to truck routes " << truck_routes[truck] << std::endl;
+                bool insertable;
+                if (truck_routes[packed.vehicle].empty())
+                {
+                    insertable = _try_insert<ST>(truck_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
+                }
+                else
+                {
+                    insertable = _try_insert<ST>(truck_routes[packed.vehicle].back(), packed.customer, truck_routes, drone_routes);
+                }
+
+                if (!insertable)
+                {
+                    assert(_try_insert<ST>(truck_routes[packed.vehicle], packed.customer, truck_routes, drone_routes));
+                }
+
+                // Insert to `timestamps`
+                truck_next(packed.customer, packed.vehicle);
+            }
+            else
+            {
+                // std::cerr << "Inserting " << customer << " to drone routes " << drone_routes[drone] << std::endl;
+
+                bool insertable;
+                if (drone_routes[packed.vehicle].empty())
+                {
+                    insertable = _try_insert<ST>(drone_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
+                }
+                else
+                {
+                    insertable = _try_insert<ST>(drone_routes[packed.vehicle].back(), packed.customer, truck_routes, drone_routes);
+                }
+
+                if (!insertable)
+                {
+                    assert(_try_insert<ST>(drone_routes[packed.vehicle], packed.customer, truck_routes, drone_routes));
+                }
+
+                // Insert to `timestamps`
+                drone_next(packed.customer, packed.vehicle);
+            }
+
+            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+            std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
+            std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
+            std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
         }
 
         // TODO: Resize drone routes to `problem->drones_count`
