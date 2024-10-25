@@ -286,6 +286,32 @@ namespace d2d
         cluster = order;
     }
 
+    struct _initialization_iteration_pack
+    {
+        double working_time;
+        std::size_t vehicle;
+        std::size_t before;
+        std::size_t customer;
+        bool is_truck;
+
+        _initialization_iteration_pack(
+            const double &working_time,
+            const std::size_t &vehicle,
+            const std::size_t &before,
+            const std::size_t &customer,
+            const bool &is_truck)
+            : working_time(working_time),
+              vehicle(vehicle),
+              before(before),
+              customer(customer),
+              is_truck(is_truck) {}
+
+        bool operator<(const _initialization_iteration_pack &other) const
+        {
+            return working_time < other.working_time;
+        }
+    };
+
     template <typename ST, int _Clusterizer>
     std::shared_ptr<ST> initial_impl()
     {
@@ -317,33 +343,7 @@ namespace d2d
             }
         }
 
-        struct iteration_info
-        {
-            double working_time;
-            std::size_t vehicle;
-            std::size_t before;
-            std::size_t customer;
-            bool is_truck;
-
-            iteration_info(
-                const double &working_time,
-                const std::size_t &vehicle,
-                const std::size_t &before,
-                const std::size_t &customer,
-                const bool &is_truck)
-                : working_time(working_time),
-                  vehicle(vehicle),
-                  before(before),
-                  customer(customer),
-                  is_truck(is_truck) {}
-
-            bool operator<(const iteration_info &other) const
-            {
-                return working_time < other.working_time;
-            }
-        };
-
-        std::multiset<iteration_info> timestamps;
+        std::multiset<_initialization_iteration_pack> timestamps;
         for (std::size_t i = 0; i < clusters.size(); i++)
         {
             // std::cerr << "At cluster " << i << ": " << clusters[i] << std::endl;
@@ -432,15 +432,9 @@ namespace d2d
 
         while (!global_customers.empty())
         {
-            iteration_info packed(*timestamps.begin());
+            std::cerr << "timestamps = " << timestamps << std::endl;
+            _initialization_iteration_pack packed(*timestamps.begin());
             timestamps.erase(timestamps.begin());
-
-            std::cerr << "Obtained new packed data:\n";
-            std::cerr << "packed.working_time = " << packed.working_time << std::endl;
-            std::cerr << "packed.vehicle = " << packed.vehicle << std::endl;
-            std::cerr << "packed.before = " << packed.before << std::endl;
-            std::cerr << "packed.customer = " << packed.customer << std::endl;
-            std::cerr << "packed.is_truck = " << packed.is_truck << std::endl;
 
             std::size_t cluster = clusters_mapping[packed.customer];
             auto iter = std::find(clusters[cluster].begin(), clusters[cluster].end(), packed.customer);
@@ -465,7 +459,7 @@ namespace d2d
             {
                 // std::cerr << "Inserting " << customer << " to truck routes " << truck_routes[truck] << std::endl;
                 bool insertable;
-                if (truck_routes[packed.vehicle].empty())
+                if (truck_routes[packed.vehicle].empty() || packed.before == 0)
                 {
                     insertable = _try_insert<ST>(truck_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
                 }
@@ -476,18 +470,47 @@ namespace d2d
 
                 if (!insertable)
                 {
-                    assert(_try_insert<ST>(truck_routes[packed.vehicle], packed.customer, truck_routes, drone_routes));
-                }
+                    // Re-insert
+                    clusters[cluster].push_back(packed.customer);
+                    global_customers.insert(packed.customer);
 
-                // Insert to `timestamps`
-                truck_next(packed.customer, packed.vehicle);
+                    std::set<std::size_t> pool(clusters[cluster].begin(), clusters[cluster].end());
+                    for (auto &p : timestamps)
+                    {
+                        pool.erase(p.customer);
+                    }
+
+                    if (pool.empty())
+                    {
+                        pool.insert(global_customers.begin(), global_customers.end());
+                        for (auto &p : timestamps)
+                        {
+                            pool.erase(p.customer);
+                        }
+                    }
+
+                    if (pool.empty())
+                    {
+                        continue;
+                    }
+
+                    auto next_customer = *std::max_element(
+                        pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
+                        { return problem->distances[0][i] < problem->distances[0][j]; });
+
+                    timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, false);
+                }
+                else
+                {
+                    // Insert to `timestamps`
+                    truck_next(packed.customer, packed.vehicle);
+                }
             }
             else
             {
                 // std::cerr << "Inserting " << customer << " to drone routes " << drone_routes[drone] << std::endl;
-
                 bool insertable;
-                if (drone_routes[packed.vehicle].empty())
+                if (drone_routes[packed.vehicle].empty() || packed.before == 0)
                 {
                     insertable = _try_insert<ST>(drone_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
                 }
@@ -498,11 +521,54 @@ namespace d2d
 
                 if (!insertable)
                 {
-                    assert(_try_insert<ST>(drone_routes[packed.vehicle], packed.customer, truck_routes, drone_routes));
-                }
+                    // Re-insert
+                    clusters[cluster].push_back(packed.customer);
+                    global_customers.insert(packed.customer);
 
-                // Insert to `timestamps`
-                drone_next(packed.customer, packed.vehicle);
+                    std::set<std::size_t> pool;
+                    for (auto &c : clusters[cluster])
+                    {
+                        if (problem->customers[c].dronable)
+                        {
+                            pool.insert(c);
+                        }
+                    }
+                    for (auto &p : timestamps)
+                    {
+                        pool.erase(p.customer);
+                    }
+
+                    if (pool.empty())
+                    {
+                        for (auto &c : global_customers)
+                        {
+                            if (problem->customers[c].dronable)
+                            {
+                                pool.insert(c);
+                            }
+                        }
+                        for (auto &p : timestamps)
+                        {
+                            pool.erase(p.customer);
+                        }
+                    }
+
+                    if (pool.empty())
+                    {
+                        continue;
+                    }
+
+                    auto next_customer = *std::min_element(
+                        pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
+                        { return problem->distances[0][i] < problem->distances[0][j]; });
+
+                    timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, false);
+                }
+                else
+                {
+                    // Insert to `timestamps`
+                    drone_next(packed.customer, packed.vehicle);
+                }
             }
 
             auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
@@ -554,5 +620,18 @@ namespace d2d
             truck_routes_modified,
             drone_routes_modified,
             std::make_shared<ParentInfo<ST>>(nullptr, utils::format("initial-%d", _Clusterizer)));
+    }
+}
+
+namespace std
+{
+    ostream &operator<<(ostream &stream, const d2d::_initialization_iteration_pack &packed)
+    {
+        stream << "packed(working_time=" << packed.working_time;
+        stream << ", vehicle=" << packed.vehicle;
+        stream << ", before=" << packed.before;
+        stream << ", customer=" << packed.customer;
+        stream << ", is_truck=" << packed.is_truck << ")";
+        return stream;
     }
 }
