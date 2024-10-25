@@ -433,6 +433,7 @@ namespace d2d
         while (!global_customers.empty())
         {
             std::cerr << "timestamps = " << timestamps << std::endl;
+            std::cerr << "global = " << global_customers << std::endl;
             _initialization_iteration_pack packed(*timestamps.begin());
             timestamps.erase(timestamps.begin());
 
@@ -480,8 +481,10 @@ namespace d2d
                         pool.erase(p.customer);
                     }
 
+                    std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
                     if (pool.empty())
                     {
+                        std::cerr << "Utilizing global_customers" << std::endl;
                         pool.insert(global_customers.begin(), global_customers.end());
                         for (auto &p : timestamps)
                         {
@@ -491,6 +494,7 @@ namespace d2d
 
                     if (pool.empty())
                     {
+                        std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
                         continue;
                     }
 
@@ -498,7 +502,7 @@ namespace d2d
                         pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
                         { return problem->distances[0][i] < problem->distances[0][j]; });
 
-                    timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, false);
+                    timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, true);
                 }
                 else
                 {
@@ -538,8 +542,10 @@ namespace d2d
                         pool.erase(p.customer);
                     }
 
+                    std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
                     if (pool.empty())
                     {
+                        std::cerr << "Utilizing global_customers" << std::endl;
                         for (auto &c : global_customers)
                         {
                             if (problem->customers[c].dronable)
@@ -555,6 +561,7 @@ namespace d2d
 
                     if (pool.empty())
                     {
+                        std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
                         continue;
                     }
 

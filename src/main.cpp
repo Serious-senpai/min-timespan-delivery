@@ -4,8 +4,8 @@ int main()
 {
     d2d::Logger<d2d::Solution> logger;
     utils::PerformanceBenchmark benchmark("Elapsed");
-    auto ptr = d2d::initial_impl<d2d::Solution, 2>();
-    // auto ptr = d2d::Solution::tabu_search(logger);
+    // auto ptr = d2d::initial_impl<d2d::Solution, 2>();
+    auto ptr = d2d::Solution::tabu_search(logger);
 
     std::cerr << "\e[31mResult = " << ptr->cost() << "\e[0m" << std::endl;
 
