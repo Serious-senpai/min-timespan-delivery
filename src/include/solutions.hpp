@@ -25,6 +25,9 @@ namespace d2d
 
         std::vector<std::vector<bool>> _base;
 
+        template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool> = true>
+        static void _populate(std::vector<std::vector<bool>> &exists, const std::vector<std::vector<_RT>> &vehicle_routes);
+
     public:
         ExtraPenalty()
         {
@@ -76,23 +79,8 @@ namespace d2d
             _base.clear();
             _base.resize(problem->customers.size(), std::vector<bool>(problem->customers.size()));
 
-            auto update = [this]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
-            {
-                for (auto &routes : vehicle_routes)
-                {
-                    for (auto &route : routes)
-                    {
-                        const auto &customers = route.customers();
-                        for (std::size_t i = 0; i + 1 < customers.size(); i++)
-                        {
-                            _base[customers[i]][customers[i + 1]] = true;
-                        }
-                    }
-                }
-            };
-
-            update(ptr->truck_routes);
-            update(ptr->drone_routes);
+            _populate(_base, ptr->truck_routes);
+            _populate(_base, ptr->drone_routes);
         }
 
         void update(
@@ -104,29 +92,12 @@ namespace d2d
             auto problem = Problem::get_instance();
             const auto n = problem->customers.size();
 
-            std::vector<std::size_t> old_edges(n), from_depot;
+            std::vector<std::vector<bool>> old(n, std::vector<bool>(n));
 
-            auto populate = [&old_edges, &from_depot]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(
-                                const std::vector<std::vector<RT>> &vehicle_routes)
-            {
-                for (auto &routes : vehicle_routes)
-                {
-                    for (auto &route : routes)
-                    {
-                        const auto &customers = route.customers();
-                        from_depot.push_back(customers[1]);
-                        for (std::size_t i = 0; i + 1 < customers.size(); i++)
-                        {
-                            old_edges[customers[i]] = customers[i + 1];
-                        }
-                    }
-                }
-            };
+            _populate(old, old_truck_routes);
+            _populate(old, old_drone_routes);
 
-            populate(old_truck_routes);
-            populate(old_drone_routes);
-
-            auto populate_new = [this, &old_edges, &from_depot]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(
+            auto populate_new = [this, &old]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(
                                     const std::vector<std::vector<RT>> &vehicle_routes)
             {
                 for (auto &routes : vehicle_routes)
@@ -134,14 +105,9 @@ namespace d2d
                     for (auto &route : routes)
                     {
                         const auto &customers = route.customers();
-                        if (std::find(from_depot.begin(), from_depot.end(), customers[1]) == from_depot.end())
-                        {
-                            _edge_frequency[0][customers[1]]++;
-                        }
-
                         for (std::size_t i = 0; i + 1 < customers.size(); i++)
                         {
-                            if (old_edges[customers[i]] != customers[i + 1])
+                            if (!old[customers[i]][customers[i + 1]])
                             {
                                 _edge_frequency[customers[i]][customers[i + 1]]++;
                             }
@@ -165,28 +131,13 @@ namespace d2d
             if (_extra_penalty_iteration > 0)
             {
                 auto problem = Problem::get_instance();
-                std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
 
                 double c_truck = problem->average_distance / problem->truck->average_speed;
                 double c_drone = problem->drone->cruise_time(problem->average_distance);
 
-                auto populate = [this, &exists]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
-                {
-                    for (auto &routes : vehicle_routes)
-                    {
-                        for (auto &route : routes)
-                        {
-                            const auto &customers = route.customers();
-                            for (std::size_t i = 0; i + 1 < customers.size(); i++)
-                            {
-                                exists[customers[i]][customers[i + 1]] = true;
-                            }
-                        }
-                    }
-                };
-
-                populate(truck_routes);
-                populate(drone_routes);
+                std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
+                _populate(exists, truck_routes);
+                _populate(exists, drone_routes);
 
                 for (std::size_t i = 0; i < problem->customers.size(); i++)
                 {
@@ -210,6 +161,22 @@ namespace d2d
             return penalty;
         }
     };
+
+    template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool>>
+    void ExtraPenalty::_populate(std::vector<std::vector<bool>> &exists, const std::vector<std::vector<_RT>> &vehicle_routes)
+    {
+        for (auto &routes : vehicle_routes)
+        {
+            for (auto &route : routes)
+            {
+                const auto &customers = route.customers();
+                for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                {
+                    exists[customers[i]][customers[i + 1]] = true;
+                }
+            }
+        }
+    }
 
     /** @brief Represents a solution to the D2D problem. */
     class Solution

@@ -432,8 +432,8 @@ namespace d2d
 
         while (!global_customers.empty())
         {
-            std::cerr << "timestamps = " << timestamps << std::endl;
-            std::cerr << "global = " << global_customers << std::endl;
+            // std::cerr << "timestamps = " << timestamps << std::endl;
+            // std::cerr << "global = " << global_customers << std::endl;
             _initialization_iteration_pack packed(*timestamps.begin());
             timestamps.erase(timestamps.begin());
 
@@ -481,10 +481,10 @@ namespace d2d
                         pool.erase(p.customer);
                     }
 
-                    std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
+                    // std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
                     if (pool.empty())
                     {
-                        std::cerr << "Utilizing global_customers" << std::endl;
+                        // std::cerr << "Utilizing global_customers" << std::endl;
                         pool.insert(global_customers.begin(), global_customers.end());
                         for (auto &p : timestamps)
                         {
@@ -494,7 +494,7 @@ namespace d2d
 
                     if (pool.empty())
                     {
-                        std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
+                        // std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
                         continue;
                     }
 
@@ -542,10 +542,10 @@ namespace d2d
                         pool.erase(p.customer);
                     }
 
-                    std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
+                    // std::cerr << "pool = " << pool << ", timestamps = " << timestamps << std::endl;
                     if (pool.empty())
                     {
-                        std::cerr << "Utilizing global_customers" << std::endl;
+                        // std::cerr << "Utilizing global_customers" << std::endl;
                         for (auto &c : global_customers)
                         {
                             if (problem->customers[c].dronable)
@@ -561,7 +561,7 @@ namespace d2d
 
                     if (pool.empty())
                     {
-                        std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
+                        // std::cerr << "\e[31mPool is empty!\e[0m" << std::endl;
                         continue;
                     }
 
@@ -579,9 +579,9 @@ namespace d2d
             }
 
             auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
-            std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
-            std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+            // std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
+            // std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
+            // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
         }
 
         // TODO: Resize drone routes to `problem->drones_count`
