@@ -13,7 +13,6 @@ namespace d2d
         std::vector<std::array<double, 4>> _coefficients;
         std::vector<std::vector<std::shared_ptr<ST>>> _elite_set;
         std::vector<std::pair<std::string, std::vector<std::size_t>>> _neighborhoods;
-        std::vector<double> _extra_penalties;
 
     public:
         std::size_t last_improved, iterations;
@@ -30,7 +29,6 @@ namespace d2d
             _coefficients.push_back(ST::penalty_coefficients());
             _elite_set.push_back(elite_set);
             _neighborhoods.push_back(neighborhood);
-            _extra_penalties.push_back(progress->current_extra_penalty());
         }
 
         void print_solution(std::shared_ptr<ST> ptr)
@@ -63,11 +61,9 @@ namespace d2d
 
             std::cout << problem->tabu_size_factor << "\n";
             std::cout << problem->reset_after_factor << "\n";
-            std::cout << problem->diversification_factor << "\n";
 
             std::cout << problem->tabu_size << "\n";
             std::cout << problem->reset_after << "\n";
-            std::cout << problem->diversification << "\n";
             std::cout << problem->max_elite_size << "\n";
 
             if (problem->linear != nullptr)
@@ -144,10 +140,7 @@ namespace d2d
                 std::cout << costs << "\n";
             }
 
-            std::cout << _extra_penalties << "\n";
-
             std::cout << elapsed.count() << "\n";
         }
     };
-
 }

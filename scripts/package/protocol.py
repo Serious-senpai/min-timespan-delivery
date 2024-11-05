@@ -54,10 +54,8 @@ class ResultJSON(Generic[T], TypedDict):
     iterations: int
     tabu_size_factor: int
     reset_after_factor: int
-    diversification_factor: float
     tabu_size: int
     reset_after: int
-    diversification: int
     max_elite_size: int
     config: str
     speed_type: str
@@ -71,7 +69,6 @@ class ResultJSON(Generic[T], TypedDict):
     initialization_label: str
     last_improved: int
     elite_set: List[List[float]]
-    extra_penalty: List[float]
     elapsed: float
     url: Optional[str]
 

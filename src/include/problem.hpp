@@ -50,7 +50,6 @@ namespace d2d
             const DroneEnduranceConfig *const endurance,
 
             const std::size_t &reset_after_factor,
-            const double &diversification_factor,
             const std::size_t &max_elite_size)
             : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
@@ -66,7 +65,6 @@ namespace d2d
               nonlinear(nonlinear),
               endurance(endurance),
               reset_after_factor(reset_after_factor),
-              diversification_factor(diversification_factor),
               max_elite_size(max_elite_size)
         {
         }
@@ -93,13 +91,11 @@ namespace d2d
         const DroneEnduranceConfig *const endurance;
 
         const std::size_t reset_after_factor;
-        const double diversification_factor;
         const std::size_t max_elite_size;
 
         // These will be calculated later
         std::size_t tabu_size;
         std::size_t reset_after;
-        std::size_t diversification;
 
         static Problem *get_instance();
     };
@@ -264,8 +260,7 @@ namespace d2d
             }
 
             std::size_t max_elite_size, reset_after_factor;
-            double diversification_factor;
-            std::cin >> max_elite_size >> reset_after_factor >> diversification_factor;
+            std::cin >> max_elite_size >> reset_after_factor;
 
             _instance = new Problem(
                 tabu_size_factor,
@@ -285,7 +280,6 @@ namespace d2d
                 dynamic_cast<DroneNonlinearConfig *>(drone),
                 dynamic_cast<DroneEnduranceConfig *>(drone),
                 reset_after_factor,
-                diversification_factor,
                 max_elite_size);
         }
 
