@@ -264,16 +264,23 @@ namespace d2d
 
                 const auto _destroy = [&customer]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
                 {
-                    for (auto &routes : vehicle_routes)
+                    for (std::size_t vehicle = 0; vehicle < vehicle_routes.size(); vehicle++)
                     {
-                        for (auto &route : routes)
+                        for (std::size_t route = 0; route < vehicle_routes[vehicle].size(); route++)
                         {
-                            std::vector<std::size_t> new_customers(route.customers());
+                            std::vector<std::size_t> new_customers(vehicle_routes[vehicle][route].customers());
                             auto iter = std::find(new_customers.begin(), new_customers.end(), customer);
                             if (iter != new_customers.end())
                             {
                                 new_customers.erase(iter);
-                                route = RT(new_customers);
+                                if (new_customers.size() == 2)
+                                {
+                                    vehicle_routes[vehicle].erase(vehicle_routes[vehicle].begin() + route);
+                                }
+                                else
+                                {
+                                    vehicle_routes[vehicle][route] = RT(new_customers);
+                                }
                                 return true;
                             }
                         }
@@ -321,6 +328,8 @@ namespace d2d
                                 route = RT(new_customers);
 
                                 auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                                std::cerr << "new_solution->feasible = " << new_solution->feasible << " " << new_solution->capacity_violation << " " << new_solution->waiting_time_violation << " " << new_solution->fixed_time_violation << std::endl;
+                                std::cerr << "new_solution->working_time = " << new_solution->working_time << std::endl;
                                 if (new_solution->feasible && new_solution->working_time < best_working_time)
                                 {
                                     best_working_time = new_solution->working_time;
@@ -352,6 +361,8 @@ namespace d2d
                             routes.emplace_back(std::vector<std::size_t>{0, customer, 0});
 
                             auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                            std::cerr << "new_solution->feasible = " << new_solution->feasible << " " << new_solution->capacity_violation << " " << new_solution->waiting_time_violation << " " << new_solution->fixed_time_violation << std::endl;
+                            std::cerr << "new_solution->working_time = " << new_solution->working_time << std::endl;
                             if (new_solution->feasible && new_solution->working_time < best_working_time)
                             {
                                 best_working_time = new_solution->working_time;
@@ -368,6 +379,17 @@ namespace d2d
                     if (problem->customers[customer].dronable)
                     {
                         _try_append(new_drone_routes);
+                    }
+
+                    if (best_working_time == std::numeric_limits<double>::max())
+                    {
+                        // This should never happen. There is always at least 1 feasible insertion, which is restoring the original feasible solution.
+                        throw std::runtime_error("Unreachable code was reached");
+                    }
+                    else
+                    {
+                        new_truck_routes = optimal_truck_routes;
+                        new_drone_routes = optimal_drone_routes;
                     }
                 }
                 else
