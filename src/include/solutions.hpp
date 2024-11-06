@@ -383,7 +383,14 @@ namespace d2d
 
                     if (best_working_time == std::numeric_limits<double>::max())
                     {
-                        // This should never happen. There is always at least 1 feasible insertion, which is restoring the original feasible solution.
+                        std::cerr << "Current routes:" << std::endl;
+                        std::cerr << new_truck_routes << std::endl;
+                        std::cerr << new_drone_routes << std::endl;
+                        auto ptr = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                        std::cerr << "feasible = " << ptr->feasible << " " << ptr->capacity_violation << " " << ptr->waiting_time_violation << " " << ptr->fixed_time_violation << std::endl;
+                        std::cerr << "Original: feasible = " << feasible << " " << capacity_violation << " " << waiting_time_violation << " " << fixed_time_violation << std::endl;
+
+                        // This should never happen. Appending a new route to a feasible solution should always yield another feasible one.
                         throw std::runtime_error("Unreachable code was reached");
                     }
                     else
@@ -785,8 +792,19 @@ namespace d2d
     std::shared_ptr<Solution> Solution::tabu_search(Logger<Solution> &logger)
     {
         auto problem = Problem::get_instance();
-        std::vector<std::shared_ptr<Solution>> elite = {initial_impl<d2d::Solution, 1>(), initial_impl<d2d::Solution, 2>()};
-        auto current = elite[0]->cost() < elite[1]->cost() ? elite[0] : elite[1], result = current;
+        auto initial_1 = initial_impl<d2d::Solution, 1>(), initial_2 = initial_impl<d2d::Solution, 2>();
+
+        std::vector<std::shared_ptr<Solution>> elite;
+        if (initial_1->feasible)
+        {
+            elite.push_back(initial_1);
+        }
+        if (initial_2->feasible)
+        {
+            elite.push_back(initial_2);
+        }
+
+        auto current = initial_1->cost() < initial_2->cost() ? initial_1 : initial_2, result = current;
 
         std::size_t base_hyperparameter = (problem->customers.size() - 1) /
                                           (std::accumulate(
