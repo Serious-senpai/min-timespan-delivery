@@ -217,7 +217,7 @@ namespace d2d
             std::set<std::size_t> move; // Set of destroyed customers
             while (move.size() < problem->customers.size() / 5)
             {
-                std::cerr << "move = " << move << std::endl;
+                // std::cerr << "move = " << move << std::endl;
                 std::vector<std::size_t> scores(problem->customers.size());
                 const auto _calculate_scores = [this, &scores]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
                 {
@@ -229,7 +229,7 @@ namespace d2d
                             for (std::size_t i = 1; i + 1 < customers.size(); i++)
                             {
                                 scores[customers[i]] = best_with_edges[customers[i - 1]][customers[i]] + best_with_edges[customers[i]][customers[i + 1]];
-                                std::cerr << "scores[" << customers[i] << "] = " << best_with_edges[customers[i - 1]][customers[i]] << " + " << best_with_edges[customers[i]][customers[i + 1]] << " = " << scores[customers[i]] << std::endl;
+                                // std::cerr << "scores[" << customers[i] << "] = " << best_with_edges[customers[i - 1]][customers[i]] << " + " << best_with_edges[customers[i]][customers[i + 1]] << " = " << scores[customers[i]] << std::endl;
                             }
                         }
                     }
@@ -237,7 +237,7 @@ namespace d2d
 
                 _calculate_scores(new_truck_routes);
                 _calculate_scores(new_drone_routes);
-                std::cerr << "scores = " << scores << std::endl;
+                // std::cerr << "scores = " << scores << std::endl;
 
                 std::vector<std::size_t> customers;
                 for (std::size_t i = 1; i < problem->customers.size(); i++)
@@ -260,7 +260,7 @@ namespace d2d
                 const auto customer = customers[index];
                 move.insert(customer);
 
-                std::cerr << "customers = " << customers << ", index = " << index << ", customer = " << customer << std::endl;
+                // std::cerr << "customers = " << customers << ", index = " << index << ", customer = " << customer << std::endl;
 
                 const auto _destroy = [&customer]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
                 {
@@ -294,8 +294,6 @@ namespace d2d
                     _destroy(new_drone_routes);
                 }
             }
-
-            std::cerr << "Reparing customers \e[31m" << move << "\e[0m" << std::endl;
 
             // Repair phase
             std::vector<std::size_t> move_customers(move.begin(), move.end());
@@ -411,7 +409,9 @@ namespace d2d
             std::cerr << "Destroy & repair to:\n";
             std::cerr << new_truck_routes << " " << new_drone_routes << std::endl;
 
-            return std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
+            auto result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
+            std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
+            return result;
         }
 
         /** @brief Objective function evaluation, including penalties. */
