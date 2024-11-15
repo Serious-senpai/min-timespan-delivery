@@ -215,7 +215,7 @@ namespace d2d
 
             // Destroy phase
             std::set<std::size_t> move; // Set of destroyed customers
-            while (move.size() < problem->customers.size() / 5)
+            while (move.size() < problem->customers.size() / 10)
             {
                 // std::cerr << "move = " << move << std::endl;
                 std::vector<std::size_t> scores(problem->customers.size());
@@ -302,7 +302,6 @@ namespace d2d
             const auto parent = std::make_shared<ParentInfo<Solution>>(std::make_shared<Solution>(*this), "destroy & repair");
             for (const auto &customer : move_customers)
             {
-                std::cerr << "Inserting customer " << customer << ", dronable = " << problem->customers[customer].dronable << std::endl;
                 double best_working_time = std::numeric_limits<double>::max();
                 std::vector<std::vector<TruckRoute>> optimal_truck_routes;
                 std::vector<std::vector<DroneRoute>> optimal_drone_routes;
@@ -313,8 +312,6 @@ namespace d2d
                     {
                         for (auto &route : routes)
                         {
-                            std::cerr << "Inserting to route " << route << std::endl;
-
                             const RT original(route);
                             const auto &customers = original.customers();
                             for (std::size_t i = 1; i + 1 < customers.size(); i++)
@@ -326,8 +323,6 @@ namespace d2d
                                 route = RT(new_customers);
 
                                 auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
-                                std::cerr << "new_solution->feasible = " << new_solution->feasible << " " << new_solution->capacity_violation << " " << new_solution->waiting_time_violation << " " << new_solution->fixed_time_violation << std::endl;
-                                std::cerr << "new_solution->working_time = " << new_solution->working_time << std::endl;
                                 if (new_solution->feasible && new_solution->working_time < best_working_time)
                                 {
                                     best_working_time = new_solution->working_time;
@@ -355,12 +350,9 @@ namespace d2d
                     {
                         for (auto &routes : vehicle_routes)
                         {
-                            std::cerr << "Appending to " << routes << std::endl;
                             routes.emplace_back(std::vector<std::size_t>{0, customer, 0});
 
                             auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
-                            std::cerr << "new_solution->feasible = " << new_solution->feasible << " " << new_solution->capacity_violation << " " << new_solution->waiting_time_violation << " " << new_solution->fixed_time_violation << std::endl;
-                            std::cerr << "new_solution->working_time = " << new_solution->working_time << std::endl;
                             if (new_solution->feasible && new_solution->working_time < best_working_time)
                             {
                                 best_working_time = new_solution->working_time;
@@ -381,12 +373,9 @@ namespace d2d
 
                     if (best_working_time == std::numeric_limits<double>::max())
                     {
-                        std::cerr << "Current routes:" << std::endl;
                         std::cerr << new_truck_routes << std::endl;
                         std::cerr << new_drone_routes << std::endl;
                         auto ptr = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
-                        std::cerr << "feasible = " << ptr->feasible << " " << ptr->capacity_violation << " " << ptr->waiting_time_violation << " " << ptr->fixed_time_violation << std::endl;
-                        std::cerr << "Original: feasible = " << feasible << " " << capacity_violation << " " << waiting_time_violation << " " << fixed_time_violation << std::endl;
 
                         // This should never happen. Appending a new route to a feasible solution should always yield another feasible one.
                         throw std::runtime_error("Unreachable code was reached");
@@ -411,6 +400,7 @@ namespace d2d
 
             auto result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
             std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
+            std::cerr << "Cost = " << cost << " -> " << result->cost() << std::endl;
             return result;
         }
 

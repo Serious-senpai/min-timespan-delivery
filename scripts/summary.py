@@ -94,7 +94,7 @@ if __name__ == "__main__":
                 result["range_type"],
                 str(result["solution"]["cost"]),
                 str(milp[result["problem"]]["Optimal"]) if milp_feasible else "",  # type: ignore
-                csv_wrap(f"=ROUND(100 * (Q{row} - P{row}) / Q{row}, 2)") if milp_feasible else "",
+                csv_wrap(f"=ROUND(100 * (O{row} - N{row}) / O{row}, 2)") if milp_feasible else "",
                 str(milp_time) if milp_time is not None else "",
                 str(milp[result["problem"]]["status"]) if milp_available else "",
                 str(result["solution"]["capacity_violation"]),
