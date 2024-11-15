@@ -215,7 +215,7 @@ namespace d2d
 
             // Destroy phase
             std::set<std::size_t> move; // Set of destroyed customers
-            while (move.size() < problem->customers.size() / 10)
+            while (move.size() < problem->customers.size() / 20)
             {
                 // std::cerr << "move = " << move << std::endl;
                 std::vector<std::size_t> scores(problem->customers.size());
