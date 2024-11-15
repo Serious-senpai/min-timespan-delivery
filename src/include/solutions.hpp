@@ -400,7 +400,7 @@ namespace d2d
 
             auto result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
             std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
-            std::cerr << "Cost = " << cost << " -> " << result->cost() << std::endl;
+            std::cerr << "Cost = " << cost() << " -> " << result->cost() << std::endl;
             return result;
         }
 
