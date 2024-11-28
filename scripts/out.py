@@ -81,6 +81,7 @@ if __name__ == "__main__":
     tabu_size = int(input())
     reset_after = int(input())
     max_elite_size = int(input())
+    destroy_rate = int(input())
 
     config = input()
     speed_type = input()
@@ -124,6 +125,7 @@ if __name__ == "__main__":
         "tabu_size": tabu_size,
         "reset_after": reset_after,
         "max_elite_size": max_elite_size,
+        "destroy_rate": destroy_rate,
         "config": config,
         "speed_type": speed_type,
         "range_type": range_type,

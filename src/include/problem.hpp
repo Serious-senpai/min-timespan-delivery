@@ -50,7 +50,8 @@ namespace d2d
             const DroneEnduranceConfig *const endurance,
 
             const std::size_t &reset_after_factor,
-            const std::size_t &max_elite_size)
+            const std::size_t &max_elite_size,
+            const std::size_t &destroy_rate)
             : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
               trucks_count(trucks_count),
@@ -65,7 +66,8 @@ namespace d2d
               nonlinear(nonlinear),
               endurance(endurance),
               reset_after_factor(reset_after_factor),
-              max_elite_size(max_elite_size)
+              max_elite_size(max_elite_size),
+              destroy_rate(destroy_rate)
         {
         }
 
@@ -92,6 +94,7 @@ namespace d2d
 
         const std::size_t reset_after_factor;
         const std::size_t max_elite_size;
+        const std::size_t destroy_rate;
 
         // These will be calculated later
         std::size_t tabu_size;
@@ -259,8 +262,8 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
-            std::size_t max_elite_size, reset_after_factor;
-            std::cin >> max_elite_size >> reset_after_factor;
+            std::size_t max_elite_size, reset_after_factor, destroy_rate;
+            std::cin >> max_elite_size >> reset_after_factor >> destroy_rate;
 
             _instance = new Problem(
                 tabu_size_factor,
@@ -280,7 +283,8 @@ namespace d2d
                 dynamic_cast<DroneNonlinearConfig *>(drone),
                 dynamic_cast<DroneEnduranceConfig *>(drone),
                 reset_after_factor,
-                max_elite_size);
+                max_elite_size,
+                destroy_rate);
         }
 
         return _instance;

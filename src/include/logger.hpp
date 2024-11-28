@@ -65,6 +65,7 @@ namespace d2d
             std::cout << problem->tabu_size << "\n";
             std::cout << problem->reset_after << "\n";
             std::cout << problem->max_elite_size << "\n";
+            std::cout << problem->destroy_rate << "\n";
 
             if (problem->linear != nullptr)
             {

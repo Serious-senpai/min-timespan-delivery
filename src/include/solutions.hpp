@@ -216,8 +216,8 @@ namespace d2d
             // Destroy phase
             std::set<std::size_t> move; // Set of destroyed customers
 
-            // Hard-code the destroy rate, since I'm too lazy to integrate it to the input workflow.
-            while (move.size() < problem->customers.size() * 0)
+            auto destroy_count = problem->customers.size() * problem->destroy_rate / 100;
+            while (move.size() < destroy_count)
             {
                 // std::cerr << "move = " << move << std::endl;
                 std::vector<std::size_t> scores(problem->customers.size());

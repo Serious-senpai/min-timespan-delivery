@@ -57,6 +57,7 @@ class ResultJSON(Generic[T], TypedDict):
     tabu_size: int
     reset_after: int
     max_elite_size: int
+    destroy_rate: int
     config: str
     speed_type: str
     range_type: str
