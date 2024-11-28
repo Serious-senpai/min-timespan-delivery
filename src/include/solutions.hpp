@@ -823,6 +823,11 @@ namespace d2d
         std::size_t neighborhood = 0;
         auto insert_elite = [&problem, &elite, &result]()
         {
+            if (problem->max_elite_size == 0)
+            {
+                return;
+            }
+
             if (elite.size() == problem->max_elite_size)
             {
                 auto nearest = std::min_element(
