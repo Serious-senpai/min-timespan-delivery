@@ -211,8 +211,6 @@ namespace d2d
             std::vector<std::vector<TruckRoute>> new_truck_routes(truck_routes);
             std::vector<std::vector<DroneRoute>> new_drone_routes(drone_routes);
 
-            std::cerr << std::endl;
-
             // Destroy phase
             std::set<std::size_t> move; // Set of destroyed customers
 
@@ -375,9 +373,8 @@ namespace d2d
 
                     if (best_working_time == std::numeric_limits<double>::max())
                     {
-                        std::cerr << new_truck_routes << std::endl;
-                        std::cerr << new_drone_routes << std::endl;
-                        auto ptr = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                        // std::cerr << new_truck_routes << std::endl;
+                        // std::cerr << new_drone_routes << std::endl;
 
                         // This should never happen. Appending a new route to a feasible solution should always yield another feasible one.
                         throw std::runtime_error("Unreachable code was reached");
@@ -395,14 +392,14 @@ namespace d2d
                 }
             }
 
-            std::cerr << "Destroy & repair from:\n";
-            std::cerr << truck_routes << " " << drone_routes << std::endl;
-            std::cerr << "Destroy & repair to:\n";
-            std::cerr << new_truck_routes << " " << new_drone_routes << std::endl;
+            // std::cerr << "Destroy & repair from:\n";
+            // std::cerr << truck_routes << " " << drone_routes << std::endl;
+            // std::cerr << "Destroy & repair to:\n";
+            // std::cerr << new_truck_routes << " " << new_drone_routes << std::endl;
 
             auto result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
-            std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
-            std::cerr << "Cost = " << cost() << " -> " << result->cost() << std::endl;
+            // std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
+            // std::cerr << "Cost = " << cost() << " -> " << result->cost() << std::endl;
             return result;
         }
 
