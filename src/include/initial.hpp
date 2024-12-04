@@ -584,7 +584,82 @@ namespace d2d
             // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
         }
 
-        // TODO: Resize drone routes to `problem->drones_count`
+        // Resize drone routes to `problem->drones_count`
+        {
+            std::vector<d2d::DroneRoute> all_routes;
+            for (auto &routes : drone_routes)
+            {
+                for (auto &route : routes)
+                {
+                    all_routes.push_back(route);
+                }
+            }
+
+            drone_routes.clear();
+            drone_routes.resize(problem->drones_count);
+
+            double _optimal = std::numeric_limits<double>::max();
+            std::vector<std::pair<double, std::vector<d2d::DroneRoute *>>> _temp(problem->drones_count);
+            std::vector<bool> _inserted(all_routes.size());
+
+            utils::PerformanceBenchmark _benchmark("Reorder drone routes");
+            std::function<void(const std::size_t &, const std::size_t &)> _try;
+            _try = [&](const std::size_t &drone, const std::size_t &inserted_count)
+            {
+                if (_benchmark.elapsed<std::chrono::seconds>().count() >= 10)
+                {
+                    return;
+                }
+
+                for (std::size_t i = 0; i < all_routes.size(); i++)
+                {
+                    if (!_inserted[i])
+                    {
+                        _inserted[i] = true;
+                        _temp[drone].first += all_routes[i].working_time();
+                        _temp[drone].second.push_back(&all_routes[i]);
+
+                        if (_temp[drone].first < _optimal)
+                        {
+                            if (inserted_count + 1 == all_routes.size())
+                            {
+                                double global_working_time = 0;
+                                for (auto &[working_time, _] : _temp)
+                                {
+                                    global_working_time = std::max(global_working_time, working_time);
+                                }
+
+                                if (global_working_time < _optimal)
+                                {
+                                    _optimal = global_working_time;
+                                    for (std::size_t drone = 0; drone < problem->drones_count; drone++)
+                                    {
+                                        drone_routes[drone].clear();
+                                        for (auto &ptr : _temp[drone].second)
+                                        {
+                                            drone_routes[drone].push_back(*ptr);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (std::size_t d = 0; d < problem->drones_count; d++)
+                                {
+                                    _try((drone + d + 1) % problem->drones_count, inserted_count + 1);
+                                }
+                            }
+                        }
+
+                        _temp[drone].second.pop_back();
+                        _temp[drone].first -= all_routes[i].working_time();
+                        _inserted[i] = false;
+                    }
+                }
+            };
+
+            _try(0, 0);
+        }
 
         // TSP-optimizer
         std::vector<std::vector<TruckRoute>> truck_routes_modified;
