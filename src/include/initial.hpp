@@ -598,7 +598,9 @@ namespace d2d
             drone_routes.clear();
             drone_routes.resize(problem->drones_count);
 
-            double _optimal = std::numeric_limits<double>::max();
+            // Pair of maximum working time and difference between maximum and minimum working time among drones
+            auto _optimal = std::make_pair(std::numeric_limits<double>::max(), 0.0);
+
             std::vector<std::pair<double, std::vector<d2d::DroneRoute *>>> _temp(problem->drones_count);
             std::vector<bool> _inserted(all_routes.size());
 
@@ -619,19 +621,26 @@ namespace d2d
                         _temp[drone].first += all_routes[i].working_time();
                         _temp[drone].second.push_back(&all_routes[i]);
 
-                        if (_temp[drone].first < _optimal)
+                        if (_temp[drone].first < _optimal.first)
                         {
                             if (inserted_count + 1 == all_routes.size())
                             {
-                                double global_working_time = 0;
+                                double maximum = 0, minimum = std::numeric_limits<double>::max();
                                 for (auto &[working_time, _] : _temp)
                                 {
-                                    global_working_time = std::max(global_working_time, working_time);
+                                    maximum = std::max(maximum, working_time);
+                                    minimum = std::min(minimum, working_time);
                                 }
 
-                                if (global_working_time < _optimal)
+                                auto cost = std::make_pair(maximum, maximum - minimum);
+
+                                // Compensate for floating-point error
+                                auto cost_cmp = std::make_pair(cost.first + 1e-4, cost.second + 1e-4);
+
+                                if (cost_cmp < _optimal)
                                 {
-                                    _optimal = global_working_time;
+                                    _optimal = cost;
+                                    // std::cerr << "_optimal = " << _optimal << std::endl;
                                     for (std::size_t drone = 0; drone < problem->drones_count; drone++)
                                     {
                                         drone_routes[drone].clear();
