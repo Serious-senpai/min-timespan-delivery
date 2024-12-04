@@ -352,7 +352,7 @@ namespace d2d
                 { return problem->distances[0][i] < problem->distances[0][j]; });
             // std::cerr << "Sorted to " << clusters[i] << std::endl;
 
-            auto truck_customer = clusters[i].back();
+            auto truck_customer = *utils::random_element(clusters[i]);
             timestamps.emplace(0, i, 0, truck_customer, true);
 
             auto dronable_iter = std::find_if(

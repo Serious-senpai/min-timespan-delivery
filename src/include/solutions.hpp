@@ -17,167 +17,6 @@
 
 namespace d2d
 {
-    struct ExtraPenalty
-    {
-    private:
-        std::vector<std::vector<std::size_t>> _edge_frequency;
-        std::size_t _total_frequency, _extra_penalty_iteration;
-
-        std::vector<std::vector<bool>> _base;
-
-        template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool> = true>
-        static void _populate(std::vector<std::vector<bool>> &exists, const std::vector<std::vector<_RT>> &vehicle_routes);
-
-    public:
-        ExtraPenalty()
-        {
-            auto problem = Problem::get_instance();
-            _edge_frequency.resize(problem->customers.size(), std::vector<std::size_t>(problem->customers.size()));
-            _total_frequency = _extra_penalty_iteration = 0;
-        }
-
-        template <typename T>
-        T total_frequency() const
-        {
-            return static_cast<T>(_total_frequency);
-        }
-
-        template <typename T>
-        T edge_frequency(const std::size_t &i, const std::size_t &j) const
-        {
-            return static_cast<T>(_edge_frequency[i][j]);
-        }
-
-        void start_diversification()
-        {
-            auto problem = Problem::get_instance();
-            _extra_penalty_iteration = problem->diversification;
-        }
-
-        void end_diversification()
-        {
-            _extra_penalty_iteration = 0;
-        }
-
-        bool is_diversifying() const
-        {
-            return _extra_penalty_iteration > 0;
-        }
-
-        void iteration_update()
-        {
-            if (_extra_penalty_iteration > 0)
-            {
-                _extra_penalty_iteration--;
-            }
-        }
-
-        template <typename ST>
-        void set_base(const std::shared_ptr<ST> &ptr)
-        {
-            auto problem = Problem::get_instance();
-            _base.clear();
-            _base.resize(problem->customers.size(), std::vector<bool>(problem->customers.size()));
-
-            _populate(_base, ptr->truck_routes);
-            _populate(_base, ptr->drone_routes);
-        }
-
-        void update(
-            const std::vector<std::vector<TruckRoute>> &old_truck_routes,
-            const std::vector<std::vector<DroneRoute>> &old_drone_routes,
-            const std::vector<std::vector<TruckRoute>> &new_truck_routes,
-            const std::vector<std::vector<DroneRoute>> &new_drone_routes)
-        {
-            auto problem = Problem::get_instance();
-            const auto n = problem->customers.size();
-
-            std::vector<std::vector<bool>> old(n, std::vector<bool>(n));
-
-            _populate(old, old_truck_routes);
-            _populate(old, old_drone_routes);
-
-            auto populate_new = [this, &old]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(
-                                    const std::vector<std::vector<RT>> &vehicle_routes)
-            {
-                for (auto &routes : vehicle_routes)
-                {
-                    for (auto &route : routes)
-                    {
-                        const auto &customers = route.customers();
-                        for (std::size_t i = 0; i + 1 < customers.size(); i++)
-                        {
-                            if (!old[customers[i]][customers[i + 1]])
-                            {
-                                _edge_frequency[customers[i]][customers[i + 1]]++;
-                            }
-                        }
-                    }
-                }
-            };
-
-            populate_new(new_truck_routes);
-            populate_new(new_drone_routes);
-
-            _total_frequency++;
-        }
-
-        double penalty(
-            const std::vector<std::vector<TruckRoute>> &truck_routes,
-            const std::vector<std::vector<DroneRoute>> &drone_routes) const
-        {
-            double penalty = 0;
-
-            if (_extra_penalty_iteration > 0)
-            {
-                auto problem = Problem::get_instance();
-
-                double c_truck = problem->average_distance / problem->truck->average_speed;
-                double c_drone = problem->drone->cruise_time(problem->average_distance);
-
-                std::vector<std::vector<bool>> exists(problem->customers.size(), std::vector<bool>(problem->customers.size()));
-                _populate(exists, truck_routes);
-                _populate(exists, drone_routes);
-
-                for (std::size_t i = 0; i < problem->customers.size(); i++)
-                {
-                    for (std::size_t j = 0; j < problem->customers.size(); j++)
-                    {
-                        double p = edge_frequency<double>(i, j) / total_frequency<double>();
-                        if (exists[i][j] && !_base[i][j])
-                        {
-                            penalty += p;
-                        }
-                        else if (_base[i][j] && !exists[i][j])
-                        {
-                            penalty += 1.0 - p;
-                        }
-                    }
-                }
-
-                penalty *= (c_truck + c_drone) / 2.0;
-            }
-
-            return penalty;
-        }
-    };
-
-    template <typename _RT, std::enable_if_t<is_route_v<_RT>, bool>>
-    void ExtraPenalty::_populate(std::vector<std::vector<bool>> &exists, const std::vector<std::vector<_RT>> &vehicle_routes)
-    {
-        for (auto &routes : vehicle_routes)
-        {
-            for (auto &route : routes)
-            {
-                const auto &customers = route.customers();
-                for (std::size_t i = 0; i + 1 < customers.size(); i++)
-                {
-                    exists[customers[i]][customers[i + 1]] = true;
-                }
-            }
-        }
-    }
-
     /** @brief Represents a solution to the D2D problem. */
     class Solution
     {
@@ -230,8 +69,8 @@ namespace d2d
         }
 
     public:
-        static ExtraPenalty extra_penalty;
         static std::array<double, 4> penalty_coefficients();
+        static std::vector<std::vector<double>> best_with_edges;
 
         /** @brief Working time of truck routes */
         const std::vector<double> truck_working_time;
@@ -285,10 +124,36 @@ namespace d2d
                   utils::approximate(waiting_time_violation, 0.0) &&
                   utils::approximate(fixed_time_violation, 0.0))
         {
+            const auto problem = Problem::get_instance();
+
+            if (feasible && debug_check)
+            {
+                const auto n = problem->customers.size();
+                best_with_edges.resize(n, std::vector<double>(n, std::numeric_limits<double>::max()));
+
+                const auto _populate = [this]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(
+                                           const std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (auto &routes : vehicle_routes)
+                    {
+                        for (auto &route : routes)
+                        {
+                            const auto &customers = route.customers();
+                            for (std::size_t i = 0; i + 1 < customers.size(); i++)
+                            {
+                                double &current = best_with_edges[customers[i]][customers[i + 1]];
+                                current = std::min(current, working_time);
+                            }
+                        }
+                    }
+                };
+                _populate(truck_routes);
+                _populate(drone_routes);
+            }
+
             if (debug_check)
             {
 #ifdef DEBUG
-                auto problem = Problem::get_instance();
                 if (truck_routes.size() != problem->trucks_count)
                 {
                     throw std::runtime_error(utils::format("Expected %lu truck(s), not %lu", problem->trucks_count, truck_routes.size()));
@@ -339,9 +204,203 @@ namespace d2d
             return _parent;
         }
 
-        double current_extra_penalty() const
+        std::shared_ptr<Solution> destroy_and_repair() const
         {
-            return extra_penalty.penalty(truck_routes, drone_routes);
+            const auto problem = Problem::get_instance();
+
+            std::vector<std::vector<TruckRoute>> new_truck_routes(truck_routes);
+            std::vector<std::vector<DroneRoute>> new_drone_routes(drone_routes);
+
+            // Destroy phase
+            std::set<std::size_t> move; // Set of destroyed customers
+
+            auto destroy_count = problem->customers.size() * problem->destroy_rate / 100;
+            while (move.size() < destroy_count)
+            {
+                // std::cerr << "move = " << move << std::endl;
+                std::vector<std::size_t> scores(problem->customers.size());
+                const auto _calculate_scores = [this, &scores]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(const std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (auto &routes : vehicle_routes)
+                    {
+                        for (auto &route : routes)
+                        {
+                            const auto &customers = route.customers();
+                            for (std::size_t i = 1; i + 1 < customers.size(); i++)
+                            {
+                                scores[customers[i]] = best_with_edges[customers[i - 1]][customers[i]] + best_with_edges[customers[i]][customers[i + 1]];
+                                // std::cerr << "scores[" << customers[i] << "] = " << best_with_edges[customers[i - 1]][customers[i]] << " + " << best_with_edges[customers[i]][customers[i + 1]] << " = " << scores[customers[i]] << std::endl;
+                            }
+                        }
+                    }
+                };
+
+                _calculate_scores(new_truck_routes);
+                _calculate_scores(new_drone_routes);
+                // std::cerr << "scores = " << scores << std::endl;
+
+                std::vector<std::size_t> customers;
+                for (std::size_t i = 1; i < problem->customers.size(); i++)
+                {
+                    if (move.find(i) == move.end())
+                    {
+                        customers.push_back(i);
+                    }
+                }
+
+                std::sort(
+                    customers.begin(), customers.end(),
+                    [&scores](const std::size_t &first, const std::size_t &second)
+                    {
+                        return scores[first] > scores[second];
+                    });
+
+                std::size_t index = static_cast<double>(customers.size()) * std::pow(utils::random<double>(0, 1), 2.0);
+
+                const auto customer = customers[index];
+                move.insert(customer);
+
+                // std::cerr << "customers = " << customers << ", index = " << index << ", customer = " << customer << std::endl;
+
+                const auto _destroy = [&customer]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (std::size_t vehicle = 0; vehicle < vehicle_routes.size(); vehicle++)
+                    {
+                        for (std::size_t route = 0; route < vehicle_routes[vehicle].size(); route++)
+                        {
+                            std::vector<std::size_t> new_customers(vehicle_routes[vehicle][route].customers());
+                            auto iter = std::find(new_customers.begin(), new_customers.end(), customer);
+                            if (iter != new_customers.end())
+                            {
+                                new_customers.erase(iter);
+                                if (new_customers.size() == 2)
+                                {
+                                    vehicle_routes[vehicle].erase(vehicle_routes[vehicle].begin() + route);
+                                }
+                                else
+                                {
+                                    vehicle_routes[vehicle][route] = RT(new_customers);
+                                }
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                };
+
+                if (!_destroy(new_truck_routes))
+                {
+                    _destroy(new_drone_routes);
+                }
+            }
+
+            // Repair phase
+            std::vector<std::size_t> move_customers(move.begin(), move.end());
+            std::shuffle(move_customers.begin(), move_customers.end(), utils::rng);
+
+            const auto parent = std::make_shared<ParentInfo<Solution>>(std::make_shared<Solution>(*this), "destroy & repair");
+            for (const auto &customer : move_customers)
+            {
+                double best_working_time = std::numeric_limits<double>::max();
+                std::vector<std::vector<TruckRoute>> optimal_truck_routes;
+                std::vector<std::vector<DroneRoute>> optimal_drone_routes;
+
+                const auto _try_insert = [&]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
+                {
+                    for (auto &routes : vehicle_routes)
+                    {
+                        for (auto &route : routes)
+                        {
+                            const RT original(route);
+                            const auto &customers = original.customers();
+                            for (std::size_t i = 1; i + 1 < customers.size(); i++)
+                            {
+                                std::vector<std::size_t> new_customers(customers);
+                                new_customers.insert(new_customers.begin() + i, customer);
+
+                                // Temporary modify
+                                route = RT(new_customers);
+
+                                auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                                if (new_solution->feasible && new_solution->working_time < best_working_time)
+                                {
+                                    best_working_time = new_solution->working_time;
+                                    optimal_truck_routes = new_truck_routes;
+                                    optimal_drone_routes = new_drone_routes;
+                                }
+
+                                // Restore
+                                route = original;
+                            }
+                        }
+                    }
+                };
+
+                _try_insert(new_truck_routes);
+                if (problem->customers[customer].dronable)
+                {
+                    _try_insert(new_drone_routes);
+                }
+
+                if (best_working_time == std::numeric_limits<double>::max())
+                {
+                    // Insertion is not possible, we make new single-customer routes
+                    const auto _try_append = [&]<typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>(std::vector<std::vector<RT>> &vehicle_routes)
+                    {
+                        for (auto &routes : vehicle_routes)
+                        {
+                            routes.emplace_back(std::vector<std::size_t>{0, customer, 0});
+
+                            auto new_solution = std::make_shared<Solution>(new_truck_routes, new_drone_routes, parent, false);
+                            if (new_solution->feasible && new_solution->working_time < best_working_time)
+                            {
+                                best_working_time = new_solution->working_time;
+                                optimal_truck_routes = new_truck_routes;
+                                optimal_drone_routes = new_drone_routes;
+                            }
+
+                            // Restore
+                            routes.pop_back();
+                        }
+                    };
+
+                    _try_append(new_truck_routes);
+                    if (problem->customers[customer].dronable)
+                    {
+                        _try_append(new_drone_routes);
+                    }
+
+                    if (best_working_time == std::numeric_limits<double>::max())
+                    {
+                        // std::cerr << new_truck_routes << std::endl;
+                        // std::cerr << new_drone_routes << std::endl;
+
+                        // This should never happen. Appending a new route to a feasible solution should always yield another feasible one.
+                        throw std::runtime_error("Unreachable code was reached");
+                    }
+                    else
+                    {
+                        new_truck_routes = optimal_truck_routes;
+                        new_drone_routes = optimal_drone_routes;
+                    }
+                }
+                else
+                {
+                    new_truck_routes = optimal_truck_routes;
+                    new_drone_routes = optimal_drone_routes;
+                }
+            }
+
+            // std::cerr << "Destroy & repair from:\n";
+            // std::cerr << truck_routes << " " << drone_routes << std::endl;
+            // std::cerr << "Destroy & repair to:\n";
+            // std::cerr << new_truck_routes << " " << new_drone_routes << std::endl;
+
+            auto result = std::make_shared<Solution>(new_truck_routes, new_drone_routes, _parent);
+            // std::cerr << "Hamming distance = \e[31m" << hamming_distance(result) << "\e[0m" << std::endl;
+            // std::cerr << "Cost = " << cost() << " -> " << result->cost() << std::endl;
+            return result;
         }
 
         /** @brief Objective function evaluation, including penalties. */
@@ -353,7 +412,7 @@ namespace d2d
             result += A3 * waiting_time_violation;
             result += A4 * fixed_time_violation;
 
-            return result + current_extra_penalty();
+            return result;
         }
 
         double hamming_distance(const std::shared_ptr<Solution> other) const
@@ -557,8 +616,6 @@ namespace d2d
         std::make_shared<TwoOpt<Solution>>(),
     };
 
-    ExtraPenalty Solution::extra_penalty;
-
     std::vector<std::vector<std::vector<double>>> Solution::_calculate_truck_time_segments(
         const std::vector<std::vector<TruckRoute>> &truck_routes)
     {
@@ -719,11 +776,24 @@ namespace d2d
         return {A1, A2, A3, A4};
     }
 
+    std::vector<std::vector<double>> Solution::best_with_edges;
+
     std::shared_ptr<Solution> Solution::tabu_search(Logger<Solution> &logger)
     {
         auto problem = Problem::get_instance();
-        std::vector<std::shared_ptr<Solution>> elite = {initial_impl<d2d::Solution, 1>(), initial_impl<d2d::Solution, 2>()};
-        auto current = elite[0]->cost() < elite[1]->cost() ? elite[0] : elite[1], result = current;
+        auto initial_1 = initial_impl<d2d::Solution, 1>(), initial_2 = initial_impl<d2d::Solution, 2>();
+
+        std::vector<std::shared_ptr<Solution>> elite;
+        if (initial_1->feasible)
+        {
+            elite.push_back(initial_1);
+        }
+        if (initial_2->feasible)
+        {
+            elite.push_back(initial_2);
+        }
+
+        auto current = initial_1->cost() < initial_2->cost() ? initial_1 : initial_2, result = current;
 
         std::size_t base_hyperparameter = (problem->customers.size() - 1) /
                                           (std::accumulate(
@@ -737,14 +807,12 @@ namespace d2d
 
         problem->tabu_size = base_hyperparameter;
         problem->reset_after = problem->reset_after_factor * base_hyperparameter;
-        problem->diversification = problem->diversification_factor * base_hyperparameter;
 
         std::cerr << "tabu_size = " << problem->tabu_size << "\n";
         std::cerr << "verbose = " << problem->verbose << "\n";
         std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
         std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
         std::cerr << "max_elite_size = " << problem->max_elite_size << ", reset_after = " << problem->reset_after << "\n";
-        std::cerr << "diversification = " << problem->diversification << "\n";
 
         logger.last_improved = 0;
         logger.iterations = 0;
@@ -752,6 +820,11 @@ namespace d2d
         std::size_t neighborhood = 0;
         auto insert_elite = [&problem, &elite, &result]()
         {
+            if (problem->max_elite_size == 0)
+            {
+                return;
+            }
+
             if (elite.size() == problem->max_elite_size)
             {
                 auto nearest = std::min_element(
@@ -769,11 +842,10 @@ namespace d2d
 
         for (std::size_t iteration = 0;; iteration++)
         {
-            extra_penalty.iteration_update();
             if (problem->verbose)
             {
                 std::string format_string = utils::format(
-                    extra_penalty.is_diversifying() ? "Iteration #%lu(%s/%s, diversification)" : "Iteration #%lu(%s/%s)",
+                    "Iteration #%lu(%s/%s)",
                     iteration + 1,
                     utils::fp_format_specifier(current->cost()),
                     utils::fp_format_specifier(result->cost()));
@@ -811,7 +883,6 @@ namespace d2d
                 return false;
             };
 
-            extra_penalty.set_base(current);
             auto neighbor = _neighborhoods[neighborhood]->move(current, aspiration_criteria); // result is updated by aspiration_criteria
             auto old_current = current;
             if (logger.last_improved == iteration)
@@ -823,12 +894,6 @@ namespace d2d
                 current = neighbor;
             }
 
-            extra_penalty.update(
-                old_current->truck_routes,
-                old_current->drone_routes,
-                current->truck_routes,
-                current->drone_routes);
-
             // Pop from elite set
             if (iteration != logger.last_improved && (iteration - logger.last_improved) % problem->reset_after == 0)
             {
@@ -838,9 +903,8 @@ namespace d2d
                 }
 
                 auto iter = utils::random_element(elite);
-                current = *iter;
+                current = (*iter)->destroy_and_repair();
                 elite.erase(iter);
-                extra_penalty.start_diversification();
 
                 for (auto &neighborhood : _neighborhoods)
                 {
@@ -885,8 +949,6 @@ namespace d2d
         {
             std::cerr << std::endl;
         }
-
-        extra_penalty.end_diversification();
 
         auto post_opt = result->post_optimization(logger);
         return post_opt;
