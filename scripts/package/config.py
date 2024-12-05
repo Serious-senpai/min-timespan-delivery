@@ -184,7 +184,7 @@ class Problem:
 
         x = []
         y = []
-        demands = [0] + [1] * customers_count
+        demands = []
         dronable = [True] * (1 + customers_count)
         truck_service_time = [0.0] * (1 + customers_count)
         drone_service_time = [0.0] * (1 + customers_count)
@@ -192,6 +192,10 @@ class Problem:
             _x, _y = match.groups()
             x.append(float(_x))
             y.append(float(_y))
+
+        for match in re.finditer(r"^\d+\s*(\d+)$", data, re.MULTILINE):
+            demand = float(match.group(1))
+            demands.append(demand)
 
         return Problem(
             problem=problem,

@@ -124,6 +124,21 @@ namespace d2d
                             ri.insert(ri.end(), customers_j.begin() + (j + 1), customers_j.end());
                             rj.insert(rj.end(), customers_i.begin() + (i + 1), customers_i.end());
 
+                            if constexpr (std::is_same_v<_RT_I, DroneRoute>)
+                            {
+                                if (ri.size() > 3)
+                                {
+                                    continue;
+                                }
+                            }
+                            if constexpr (std::is_same_v<_RT_J, DroneRoute>)
+                            {
+                                if (rj.size() > 3)
+                                {
+                                    continue;
+                                }
+                            }
+
                             /* Temporary modify */
                             bool ri_empty = (ri.size() == 2), rj_empty = (rj.size() == 2); /* Note: At least 1 flag is false */
                             if (ri_empty)

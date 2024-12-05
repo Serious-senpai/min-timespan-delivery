@@ -20,6 +20,11 @@ namespace d2d
             const std::size_t &vehicle_j,
             const std::size_t &vehicle_k)
         {
+            if constexpr (std::is_same_v<_RT_K, DroneRoute>)
+            {
+                return;
+            }
+
             auto problem = Problem::get_instance();
 
             std::size_t _vehicle_i = utils::ternary<std::is_same_v<_RT_I, TruckRoute>>(vehicle_i, vehicle_i - problem->trucks_count);

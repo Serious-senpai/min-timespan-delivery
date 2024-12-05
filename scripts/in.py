@@ -68,10 +68,10 @@ if __name__ == "__main__":
 
     # For comparison only
     model = DroneEnduranceConfig(
-        capacity=1,
+        capacity=10 ** 6,
         speed_type="low",
         range_type="low",
-        fixed_time=1000000,
+        fixed_time=10 ** 6,
         drone_speed=1,
     )
 

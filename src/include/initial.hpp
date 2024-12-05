@@ -19,6 +19,17 @@ namespace d2d
             }
         }
 
+        for (auto &routes : drone_routes)
+        {
+            for (auto &route : routes)
+            {
+                if (route.customers().size() != 3)
+                {
+                    return false;
+                }
+            }
+        }
+
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
     }
 
@@ -438,7 +449,7 @@ namespace d2d
             }
         };
 
-        while (!global_customers.empty())
+        while (!timestamps.empty())
         {
             // std::cerr << "\e[31mtimestamps = " << timestamps << "\e[0m" << std::endl;
             // std::cerr << "global = " << global_customers << std::endl;
@@ -514,8 +525,8 @@ namespace d2d
                 }
                 else
                 {
-                    // Insert to `timestamps`
-                    truck_next(packed.customer, packed.vehicle);
+                    // Insert to `timestamps` (in this compare problem, actually no)
+                    // truck_next(packed.customer, packed.vehicle);
                 }
             }
             else
@@ -590,6 +601,14 @@ namespace d2d
             // std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
             // std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
             // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+        }
+
+        while (!global_customers.empty())
+        {
+            // Insert all customers to a random drone since we are going to reorder them later anyway.
+            auto customer = *global_customers.begin();
+            global_customers.erase(global_customers.begin());
+            assert(_try_insert<ST>(drone_routes[0], customer, truck_routes, drone_routes));
         }
 
         // Resize drone routes to `problem->drones_count`
