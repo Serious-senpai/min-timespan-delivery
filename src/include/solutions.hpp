@@ -340,7 +340,7 @@ namespace d2d
                 _try_insert(new_truck_routes);
                 if (problem->customers[customer].dronable)
                 {
-                    _try_insert(new_drone_routes);
+                    // _try_insert(new_drone_routes);
                 }
 
                 if (best_working_time == std::numeric_limits<double>::max())
@@ -365,7 +365,7 @@ namespace d2d
                         }
                     };
 
-                    _try_append(new_truck_routes);
+                    // _try_append(new_truck_routes);
                     if (problem->customers[customer].dronable)
                     {
                         _try_append(new_drone_routes);
