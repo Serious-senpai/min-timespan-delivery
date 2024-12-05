@@ -43,7 +43,7 @@ jobs:
         run: scripts/build.sh profile-generate
 
       - name: Run in profile mode
-        run: python scripts/in.py CMT-1 | time -p build/main.exe
+        run: python scripts/in.py CMT1 | time -p build/main.exe
 
       - name: Compile in release mode
         run: scripts/build.sh profile-use
@@ -61,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        problem: ["CMT-1", "CMT-2", "CMT-3", "CMT-4", "CMT-5"]
+        problem: ["CMT1", "CMT2", "CMT3", "CMT4", "CMT5"]
         steps: [0, 1, 2, 3, 4]
 
     steps:
