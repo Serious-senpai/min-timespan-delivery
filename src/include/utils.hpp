@@ -159,16 +159,22 @@ namespace utils
         return low;
     }
 
-    template <typename T>
-    T distance(const T &dx, const T &dy)
-    {
-        return sqrt(pow2(dx) + pow2(dy));
-    }
-
     template <typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
     T abs(const T &value)
     {
         return value > 0 ? value : -value;
+    }
+
+    template <typename T>
+    T man_distance(const T &dx, const T &dy)
+    {
+        return abs(dx) + abs(dy);
+    }
+
+    template <typename T>
+    T euc_distance(const T &dx, const T &dy)
+    {
+        return sqrt(pow2(dx) + pow2(dy));
     }
 
     template <typename T, std::enable_if_t<std::negation_v<std::is_floating_point<T>>, bool> = true>

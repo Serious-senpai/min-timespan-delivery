@@ -146,7 +146,7 @@ namespace d2d
             {
                 for (std::size_t route_src = 0; route_src < original_vehicle_routes_src[vehicle_src].size(); route_src++)
                 {
-                    for (std::size_t vehicle_dest = 0; vehicle_dest < problem->trucks_count + problem->drones_count; vehicle_dest++)
+                    for (std::size_t vehicle_dest = problem->trucks_count; vehicle_dest < problem->trucks_count + problem->drones_count; vehicle_dest++)
                     {
                         const auto &customers = original_vehicle_routes_src[vehicle_src][route_src].customers();
                         for (std::size_t i = 1; i + Z < customers.size(); i++)

@@ -41,14 +41,14 @@ if __name__ == "__main__":
 
     print(namespace, file=sys.stderr)
 
-    problem = Problem.import_data(namespace.problem)
+    problem, truck_capacity = Problem.import_data(namespace.problem)
 
     truck = TruckConfig.import_data()
 
     # For comparison only
     truck = TruckConfig(
-        maximum_velocity=0.58,
-        capacity=1800,
+        maximum_velocity=1,
+        capacity=truck_capacity,
         coefficients=(1,),
     )
 
@@ -68,11 +68,11 @@ if __name__ == "__main__":
 
     # For comparison only
     model = DroneEnduranceConfig(
-        capacity=5,
+        capacity=1,
         speed_type="low",
         range_type="low",
-        fixed_time=30,
-        drone_speed=0.83,
+        fixed_time=1000000,
+        drone_speed=1,
     )
 
     for index in range(problem.customers_count):

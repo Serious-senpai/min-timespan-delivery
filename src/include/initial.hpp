@@ -11,6 +11,14 @@ namespace d2d
         const std::vector<std::vector<TruckRoute>> &truck_routes,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
+        for (auto &routes : truck_routes)
+        {
+            if (routes.size() > 1)
+            {
+                return false;
+            }
+        }
+
         return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
     }
 
@@ -265,7 +273,7 @@ namespace d2d
 
         const auto distance = [&problem, &cluster](const std::size_t &i, const std::size_t &j)
         {
-            return problem->distances[cluster[i]][cluster[j]];
+            return problem->euc_distances[cluster[i]][cluster[j]];
         };
 
         auto [_, order] = cluster.size() < 20
@@ -349,7 +357,7 @@ namespace d2d
             // std::cerr << "At cluster " << i << ": " << clusters[i] << std::endl;
             std::sort(
                 clusters[i].begin(), clusters[i].end(), [&problem](const std::size_t &i, const std::size_t &j)
-                { return problem->distances[0][i] < problem->distances[0][j]; });
+                { return problem->euc_distances[0][i] < problem->euc_distances[0][j]; });
             // std::cerr << "Sorted to " << clusters[i] << std::endl;
 
             auto truck_customer = *utils::random_element(clusters[i]);
@@ -381,7 +389,7 @@ namespace d2d
                     cluster.begin(), cluster.end(),
                     [&problem, &from](const std::size_t &i, const std::size_t &j)
                     {
-                        return problem->distances[from][i] < problem->distances[from][j];
+                        return problem->euc_distances[from][i] < problem->euc_distances[from][j];
                     });
             }
             else
@@ -390,7 +398,7 @@ namespace d2d
                     global_customers.begin(), global_customers.end(),
                     [&problem, &from](const std::size_t &i, const std::size_t &j)
                     {
-                        return problem->distances[from][i] < problem->distances[from][j];
+                        return problem->euc_distances[from][i] < problem->euc_distances[from][j];
                     });
             }
 
@@ -404,9 +412,9 @@ namespace d2d
             double min_distance = std::numeric_limits<double>::max();
             for (auto &customer : clusters[clusters_mapping[from]])
             {
-                if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
+                if (problem->customers[customer].dronable && problem->euc_distances[from][customer] < min_distance)
                 {
-                    min_distance = problem->distances[from][customer];
+                    min_distance = problem->euc_distances[from][customer];
                     nearest = customer;
                 }
             }
@@ -415,9 +423,9 @@ namespace d2d
             {
                 for (auto &customer : global_customers)
                 {
-                    if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
+                    if (problem->customers[customer].dronable && problem->euc_distances[from][customer] < min_distance)
                     {
-                        min_distance = problem->distances[from][customer];
+                        min_distance = problem->euc_distances[from][customer];
                         nearest = customer;
                     }
                 }
@@ -499,7 +507,7 @@ namespace d2d
 
                     auto next_customer = *std::max_element(
                         pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
-                        { return problem->distances[0][i] < problem->distances[0][j]; });
+                        { return problem->euc_distances[0][i] < problem->euc_distances[0][j]; });
 
                     // std::cerr << "next_customer = " << next_customer << std::endl;
                     timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, true);
@@ -567,7 +575,7 @@ namespace d2d
 
                     auto next_customer = *std::min_element(
                         pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
-                        { return problem->distances[0][i] < problem->distances[0][j]; });
+                        { return problem->euc_distances[0][i] < problem->euc_distances[0][j]; });
 
                     timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, false);
                 }

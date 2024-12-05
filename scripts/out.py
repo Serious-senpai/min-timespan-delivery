@@ -87,7 +87,7 @@ if __name__ == "__main__":
     speed_type = input()
     range_type = input()
 
-    problem = Problem.import_data(namespace.problem)
+    problem, _ = Problem.import_data(namespace.problem)
 
     solution = read_solution()
     assert solution is not None

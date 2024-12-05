@@ -164,29 +164,34 @@ class Problem:
     drone_service_time: Tuple[float, ...]
 
     @staticmethod
-    def import_data(problem: str, /) -> Problem:
-        problem = problem.removesuffix(".txt")
-        with ROOT.joinpath("problems", "data", f"{problem}.txt").open("r") as file:
+    def import_data(problem: str, /) -> Tuple[Problem, float]:
+        problem = problem.removesuffix(".vrp")
+        with ROOT.joinpath("problems", "compare", f"{problem}.vrp").open("r") as file:
             data = file.read()
 
-        customers_count = int(re.search(r"Customers (\d+)", data).group(1))  # type: ignore
-        trucks_count = int(re.search(r"number_truck (\d+)", data).group(1))  # type: ignore
-        drones_count = int(re.search(r"number_drone (\d+)", data).group(1))  # type: ignore
+        customers_count = int(re.search(r"DIMENSION\s*:\s*(\d+)", data).group(1)) - 1  # type: ignore
+        truck_capacity = float(re.search(r"CAPACITY\s*:\s*(\d+)", data).group(1))  # type: ignore
+        if problem == "CMT1":
+            trucks_count, drones_count = 3, 2
+        elif problem == "CMT2":
+            trucks_count, drones_count = 5, 5
+        elif problem == "CMT3":
+            trucks_count, drones_count = 4, 4
+        elif problem == "CMT4":
+            trucks_count, drones_count = 6, 6
+        elif problem == "CMT5":
+            trucks_count, drones_count = 9, 8
 
-        x = [0.0]
-        y = [0.0]
-        demands = [0.0]
-        dronable = [True]
-        truck_service_time = [0.0]
-        drone_service_time = [0.0]
-        for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
-            _x, _y, demand = match.groups()
+        x = []
+        y = []
+        demands = [0] + [1] * customers_count
+        dronable = [True] * (1 + customers_count)
+        truck_service_time = [0.0] * (1 + customers_count)
+        drone_service_time = [0.0] * (1 + customers_count)
+        for match in re.finditer(r"^\d+\s*(\d+\.\d+)\s*(\d+\.\d+)$", data, re.MULTILINE):
+            _x, _y = match.groups()
             x.append(float(_x))
             y.append(float(_y))
-            demands.append(float(demand))
-            dronable.append(True)
-            truck_service_time.append(0)
-            drone_service_time.append(0)
 
         return Problem(
             problem=problem,
@@ -199,4 +204,4 @@ class Problem:
             dronable=dronable,
             truck_service_time=tuple(truck_service_time),
             drone_service_time=tuple(drone_service_time),
-        )
+        ), truck_capacity

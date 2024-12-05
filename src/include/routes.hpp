@@ -8,6 +8,7 @@ namespace d2d
     class _BaseRoute
     {
     protected:
+        template <bool _Euclide>
         static double _calculate_distance(const std::vector<std::size_t> &customers);
         static double _calculate_weight(const std::vector<std::size_t> &customers);
 
@@ -70,13 +71,21 @@ namespace d2d
         }
     };
 
+    template <bool _Euclide>
     double _BaseRoute::_calculate_distance(const std::vector<std::size_t> &customers)
     {
         auto problem = Problem::get_instance();
         double distance = 0;
         for (std::size_t i = 1; i < customers.size(); i++)
         {
-            distance += problem->distances[customers[i - 1]][customers[i]];
+            if constexpr (_Euclide)
+            {
+                distance += problem->euc_distances[customers[i - 1]][customers[i]];
+            }
+            else
+            {
+                distance += problem->man_distances[customers[i - 1]][customers[i]];
+            }
         }
 
         return distance;
@@ -135,7 +144,7 @@ namespace d2d
 
         /** @brief Construct a `TruckRoute` from a list of customers in order. */
         TruckRoute(const std::vector<std::size_t> &customers)
-            : TruckRoute(customers, _calculate_distance(customers), _calculate_weight(customers)) {}
+            : TruckRoute(customers, _calculate_distance<false>(customers), _calculate_weight(customers)) {}
 
         double capacity_violation() const override
         {
@@ -185,7 +194,7 @@ namespace d2d
         time_segments.reserve(customers.size() - 1);
         for (std::size_t i = 0; i + 1 < customers.size(); i++)
         {
-            double time_segment = 0, distance = problem->distances[customers[i]][customers[i + 1]];
+            double time_segment = 0, distance = problem->man_distances[customers[i]][customers[i + 1]];
 
             shift(&time_segment, problem->customers[customers[i]].truck_service_time);
             while (distance > 0)
@@ -289,7 +298,7 @@ namespace d2d
             : DroneRoute(
                   customers,
                   time_segments,
-                  _calculate_distance(customers),
+                  _calculate_distance<true>(customers),
                   _calculate_weight(customers),
                   _calculate_energy_consumption(customers)) {}
 
@@ -402,7 +411,7 @@ namespace d2d
             time_segments.push_back(
                 problem->customers[customers[i]].drone_service_time +
                 drone->takeoff_time() +
-                drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) +
+                drone->cruise_time(problem->euc_distances[customers[i]][customers[i + 1]]) +
                 drone->landing_time());
         }
 
@@ -433,7 +442,7 @@ namespace d2d
         {
             weight += problem->customers[customers[i]].demand;
             energy += drone->takeoff_time() * drone->takeoff_power(weight) +
-                      drone->cruise_time(problem->distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight) +
+                      drone->cruise_time(problem->euc_distances[customers[i]][customers[i + 1]]) * drone->cruise_power(weight) +
                       drone->landing_time() * drone->landing_power(weight);
         }
 

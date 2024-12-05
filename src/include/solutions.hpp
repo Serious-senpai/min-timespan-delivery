@@ -545,7 +545,14 @@ namespace d2d
 
                         auto distance = [&problem, &customers](const std::size_t &i, const std::size_t &j)
                         {
-                            return problem->distances[customers[i]][customers[j]];
+                            if constexpr (std::is_same_v<RT, TruckRoute>)
+                            {
+                                return problem->man_distances[customers[i]][customers[j]];
+                            }
+                            else
+                            {
+                                return problem->euc_distances[customers[i]][customers[j]];
+                            }
                         };
 
                         std::vector<std::size_t> ordered(customers.size());
