@@ -432,9 +432,9 @@ namespace d2d
 
         while (!global_customers.empty())
         {
-            // std::cerr << "timestamps = " << timestamps << std::endl;
+            // std::cerr << "\e[31mtimestamps = " << timestamps << "\e[0m" << std::endl;
             // std::cerr << "global = " << global_customers << std::endl;
-            _initialization_iteration_pack packed(*timestamps.begin());
+            const _initialization_iteration_pack packed(*timestamps.begin());
             timestamps.erase(timestamps.begin());
 
             std::size_t cluster = clusters_mapping[packed.customer];
@@ -458,7 +458,6 @@ namespace d2d
 
             if (packed.is_truck)
             {
-                // std::cerr << "Inserting " << customer << " to truck routes " << truck_routes[truck] << std::endl;
                 bool insertable;
                 if (truck_routes[packed.vehicle].empty() || packed.before == 0)
                 {
@@ -502,6 +501,7 @@ namespace d2d
                         pool.begin(), pool.end(), [&problem](const std::size_t &i, const std::size_t &j)
                         { return problem->distances[0][i] < problem->distances[0][j]; });
 
+                    // std::cerr << "next_customer = " << next_customer << std::endl;
                     timestamps.emplace(packed.working_time, packed.vehicle, 0, next_customer, true);
                 }
                 else
@@ -604,11 +604,11 @@ namespace d2d
             std::vector<std::pair<double, std::vector<d2d::DroneRoute *>>> _temp(problem->drones_count);
             std::vector<bool> _inserted(all_routes.size());
 
-            utils::PerformanceBenchmark _benchmark("Reorder drone routes");
+            auto _benchmark = std::make_unique<utils::PerformanceBenchmark>("Reorder drone routes");
             std::function<void(const std::size_t &, const std::size_t &)> _try;
             _try = [&](const std::size_t &drone, const std::size_t &inserted_count)
             {
-                if (_benchmark.elapsed<std::chrono::seconds>().count() >= 10)
+                if (_benchmark->elapsed<std::chrono::seconds>().count() >= 10)
                 {
                     return;
                 }

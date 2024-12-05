@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     truck = TruckConfig.import_data()
 
-    # Only when comparing to MILP
+    # For comparison only
     truck = TruckConfig(
         maximum_velocity=0.58,
         capacity=1800,
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     else:
         raise RuntimeError("Cannot find a satisfying model from list", models)
 
-    # Only when comparing to MILP
+    # For comparison only
     model = DroneEnduranceConfig(
         capacity=5,
         speed_type="low",
