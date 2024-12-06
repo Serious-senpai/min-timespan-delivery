@@ -72,7 +72,7 @@ if __name__ == "__main__":
         speed_type="low",
         range_type="low",
         fixed_time=10 ** 6,
-        drone_speed=1,
+        drone_speed=1.5,
     )
 
     for index in range(problem.customers_count):
