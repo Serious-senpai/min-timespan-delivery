@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing_extensions import Literal, Tuple, Union, TYPE_CHECKING
+from typing_extensions import Literal, Optional, Tuple, Union, TYPE_CHECKING
 
 from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig, euc_distance
 
@@ -14,6 +14,8 @@ class Namespace(argparse.Namespace):
         config: Literal["linear", "non-linear", "endurance"]
         speed_type: Literal["low", "high"]
         range_type: Literal["low", "high"]
+        trucks_count: Optional[int]
+        drones_count: Optional[int]
         reset_after_factor: int
         max_elite_size: int
         destroy_rate: int
@@ -29,6 +31,8 @@ parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu 
 parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
+parser.add_argument("--trucks-count", type=int, required=False, help="the number of trucks to override")
+parser.add_argument("--drones-count", type=int, required=False, help="the number of drones to override")
 parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
 parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("--destroy-rate", default=10, type=int, help="the perentage of an elite solution to destroy = a4")
@@ -66,15 +70,6 @@ if __name__ == "__main__":
     else:
         raise RuntimeError("Cannot find a satisfying model from list", models)
 
-    # For comparison only
-    model = DroneEnduranceConfig(
-        capacity=5,
-        speed_type="low",
-        range_type="low",
-        fixed_time=30,
-        drone_speed=0.83,
-    )
-
     for index in range(problem.customers_count):
         problem.dronable[index] = problem.dronable[index] and problem.demands[index] <= model.capacity
 
@@ -86,7 +81,11 @@ if __name__ == "__main__":
                 and problem.demands[index] <= model.capacity
             )
 
-    print(problem.customers_count, problem.trucks_count, problem.drones_count)
+    print(
+        problem.customers_count,
+        namespace.trucks_count or problem.trucks_count,
+        namespace.drones_count or problem.drones_count,
+    )
 
     print(*problem.x)
     print(*problem.y)

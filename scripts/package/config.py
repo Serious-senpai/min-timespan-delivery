@@ -55,7 +55,7 @@ class _VariableDroneConfig(_BaseDroneConfig):
             landing_speed=data["landingSpeed [m/s]"],
             altitude=data["cruiseAlt [m]"],
             battery=data["batteryPower [Joule]"],
-            capacity=data["capacity [kg]"],
+            capacity=data["capacity [lb]"],
             speed_type=data["speed_type"],
             range_type=data["range"],
         )
@@ -138,7 +138,7 @@ class DroneEnduranceConfig(_BaseDroneConfig):
                 fixed_time=d["FixedTime (min)"],
                 # fixed_distance=d["FixedDistance (miles)"],
                 drone_speed=d["V_max (miles/min)"],
-                capacity=d["capacity [kg]"],
+                capacity=d["capacity [lb]"],
                 speed_type=d["speed_type"],
                 range_type=d["range"],
             )
