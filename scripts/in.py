@@ -47,7 +47,7 @@ parser.add_argument("--trucks-count", type=int, required=False, help="the number
 parser.add_argument("--drones-count", type=int, required=False, help="the number of drones to override")
 parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
 parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
-parser.add_argument("--destroy-rate", default=10, type=int, help="the perentage of an elite solution to destroy = a4")
+parser.add_argument("--destroy-rate", default=0, type=int, help="the perentage of an elite solution to destroy = a4")
 parser.add_argument("--evaluate", type=Path, required=False, help="evaluate a provided solution JSON instead of solving")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
 
