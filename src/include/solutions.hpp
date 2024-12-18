@@ -194,6 +194,10 @@ namespace d2d
                     }
                 }
 
+                if (parent == nullptr)
+                {
+                    throw std::runtime_error("Solution parent must not be a nullptr. Construct a parent with its `ptr` as a nullptr instead.");
+                }
 #endif
             }
         }

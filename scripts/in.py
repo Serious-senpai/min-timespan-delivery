@@ -1,10 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
-from typing_extensions import Literal, Optional, Tuple, Union, TYPE_CHECKING
+from pathlib import Path
+from typing_extensions import List, Literal, Optional, Tuple, Union, TYPE_CHECKING
 
-from package import DroneEnduranceConfig, DroneLinearConfig, DroneNonlinearConfig, Problem, TruckConfig, euc_distance
+from package import (
+    DroneEnduranceConfig,
+    DroneLinearConfig,
+    DroneNonlinearConfig,
+    Problem,
+    ResultJSON,
+    SolutionJSON,
+    TruckConfig,
+    euc_distance,
+)
 
 
 class Namespace(argparse.Namespace):
@@ -19,6 +30,7 @@ class Namespace(argparse.Namespace):
         reset_after_factor: int
         max_elite_size: int
         destroy_rate: int
+        evaluate: Optional[Path]
         verbose: bool
 
 
@@ -36,6 +48,7 @@ parser.add_argument("--drones-count", type=int, required=False, help="the number
 parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
 parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("--destroy-rate", default=10, type=int, help="the perentage of an elite solution to destroy = a4")
+parser.add_argument("--evaluate", type=Path, required=False, help="evaluate a provided solution JSON instead of solving")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
 
 
@@ -132,3 +145,19 @@ if __name__ == "__main__":
         )
 
     print(namespace.max_elite_size, namespace.reset_after_factor, namespace.destroy_rate)
+
+    print(int(namespace.evaluate is not None))
+    if namespace.evaluate is not None:
+        with namespace.evaluate.open("r", encoding="utf-8") as file:
+            data: ResultJSON[SolutionJSON] = json.load(file)
+
+        def print_routes(routes: List[List[int]]) -> None:
+            print(len(routes))
+            for route in routes:
+                print(len(route), *route)
+
+        for routes in data["solution"]["truck_paths"]:
+            print_routes(routes)
+
+        for routes in data["solution"]["drone_paths"]:
+            print_routes(routes)

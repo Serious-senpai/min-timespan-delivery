@@ -77,7 +77,14 @@ namespace d2d
             }
             else if (problem->endurance != nullptr)
             {
-                std::cout << "endurance\n";
+                if (problem->endurance->fixed_time == 1e9)
+                {
+                    std::cout << "unlimited\n";
+                }
+                else
+                {
+                    std::cout << "endurance\n";
+                }
             }
             else
             {

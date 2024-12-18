@@ -51,7 +51,9 @@ namespace d2d
 
             const std::size_t &reset_after_factor,
             const std::size_t &max_elite_size,
-            const std::size_t &destroy_rate)
+            const std::size_t &destroy_rate,
+
+            const std::optional<std::pair<std::vector<std::vector<std::vector<std::size_t>>>, std::vector<std::vector<std::vector<std::size_t>>>>> &evaluate)
             : tabu_size_factor(tabu_size_factor),
               verbose(verbose),
               trucks_count(trucks_count),
@@ -67,7 +69,8 @@ namespace d2d
               endurance(endurance),
               reset_after_factor(reset_after_factor),
               max_elite_size(max_elite_size),
-              destroy_rate(destroy_rate)
+              destroy_rate(destroy_rate),
+              evaluate(evaluate)
         {
         }
 
@@ -95,6 +98,8 @@ namespace d2d
         const std::size_t reset_after_factor;
         const std::size_t max_elite_size;
         const std::size_t destroy_rate;
+
+        const std::optional<std::pair<std::vector<std::vector<std::vector<std::size_t>>>, std::vector<std::vector<std::vector<std::size_t>>>>> evaluate;
 
         // These will be calculated later
         std::size_t tabu_size;
@@ -265,6 +270,46 @@ namespace d2d
             std::size_t max_elite_size, reset_after_factor, destroy_rate;
             std::cin >> max_elite_size >> reset_after_factor >> destroy_rate;
 
+            bool has_evaluate;
+            std::optional<std::pair<std::vector<std::vector<std::vector<std::size_t>>>, std::vector<std::vector<std::vector<std::size_t>>>>> evaluate;
+            std::cin >> has_evaluate;
+            if (has_evaluate)
+            {
+                std::vector<std::vector<std::vector<std::size_t>>> truck_routes(trucks_count), drone_routes(drones_count);
+                for (std::size_t truck = 0; truck < trucks_count; truck++)
+                {
+                    std::size_t routes_count;
+                    std::cin >> routes_count;
+                    for (std::size_t route = 0; route < routes_count; route++)
+                    {
+                        std::size_t customers_count;
+                        std::cin >> customers_count;
+                        truck_routes[truck].emplace_back(customers_count);
+                        for (std::size_t i = 0; i < customers_count; i++)
+                        {
+                            std::cin >> truck_routes[truck][route][i];
+                        }
+                    }
+                }
+                for (std::size_t drone = 0; drone < drones_count; drone++)
+                {
+                    std::size_t routes_count;
+                    std::cin >> routes_count;
+                    for (std::size_t route = 0; route < routes_count; route++)
+                    {
+                        std::size_t customers_count;
+                        std::cin >> customers_count;
+                        drone_routes[drone].emplace_back(customers_count);
+                        for (std::size_t i = 0; i < customers_count; i++)
+                        {
+                            std::cin >> drone_routes[drone][route][i];
+                        }
+                    }
+                }
+
+                evaluate = std::make_pair(truck_routes, drone_routes);
+            }
+
             _instance = new Problem(
                 tabu_size_factor,
                 verbose,
@@ -284,7 +329,8 @@ namespace d2d
                 dynamic_cast<DroneEnduranceConfig *>(drone),
                 reset_after_factor,
                 max_elite_size,
-                destroy_rate);
+                destroy_rate,
+                evaluate);
         }
 
         return _instance;
