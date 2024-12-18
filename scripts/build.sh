@@ -21,7 +21,7 @@ then
 
 else
     echo "Building main.exe"
-    params="-Wall -I src/include -I extern/alglib-cpp/src -D LOGGING -std=c++20"
+    params="-Wall -I src/include -I extern/alglib-cpp/src -std=c++20"
     if [ "$1" == "debug" ]
     then
         params="$params -g -D DEBUG"
