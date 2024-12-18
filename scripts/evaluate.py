@@ -25,11 +25,11 @@ class Namespace(argparse.Namespace):
 
 
 parser = argparse.ArgumentParser(
-    description="Evaluate a provided solution JSON using another model",
+    description="Evaluate a provided solution using another model",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("evaluate", type=Path, help="path to the solution JSON to evaluate")
-parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the new energy consumption model to use for evaluation")
+parser.add_argument("-c", "--config", required=True, choices=["linear", "non-linear", "endurance", "unlimited"], help="the new energy consumption model to use for evaluation")
 
 
 if __name__ == "__main__":
