@@ -11,7 +11,14 @@ namespace d2d
         const std::vector<std::vector<TruckRoute>> &truck_routes,
         const std::vector<std::vector<DroneRoute>> &drone_routes)
     {
-        return std::make_shared<ST>(truck_routes, drone_routes, nullptr, false)->feasible;
+        auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+        if (!temp->feasible)
+        {
+            // std::cerr << "Insertion would violate " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+            return false;
+        }
+
+        return true;
     }
 
     template <typename ST, typename RT, std::enable_if_t<is_route_v<RT>, bool> = true>
@@ -461,10 +468,12 @@ namespace d2d
                 bool insertable;
                 if (truck_routes[packed.vehicle].empty() || packed.before == 0)
                 {
+                    // std::cerr << "Constructing new route for truck " << packed.vehicle << " with customer " << packed.customer << std::endl;
                     insertable = _try_insert<ST>(truck_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
                 }
                 else
                 {
+                    // std::cerr << "Inserting to truck route " << truck_routes[packed.vehicle].back() << " with customer " << packed.customer << std::endl;
                     insertable = _try_insert<ST>(truck_routes[packed.vehicle].back(), packed.customer, truck_routes, drone_routes);
                 }
 
@@ -512,14 +521,15 @@ namespace d2d
             }
             else
             {
-                // std::cerr << "Inserting " << customer << " to drone routes " << drone_routes[drone] << std::endl;
                 bool insertable;
                 if (drone_routes[packed.vehicle].empty() || packed.before == 0)
                 {
+                    // std::cerr << "Constructing new route for drone " << packed.vehicle << " with customer " << packed.customer << std::endl;
                     insertable = _try_insert<ST>(drone_routes[packed.vehicle], packed.customer, truck_routes, drone_routes);
                 }
                 else
                 {
+                    // std::cerr << "Inserting to drone route " << drone_routes[packed.vehicle].back() << " with customer " << packed.customer << std::endl;
                     insertable = _try_insert<ST>(drone_routes[packed.vehicle].back(), packed.customer, truck_routes, drone_routes);
                 }
 

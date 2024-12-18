@@ -2,29 +2,29 @@
     "1": {
         "speed_type": "low",
         "range": "low",
-        "capacity [lb]": 5,
-        "FixedTime (min)": 30,
-        "V_max (miles/min)": 0.83
+        "capacity [kg]": 2.27,
+        "FixedTime (s)": 1800,
+        "V_max (m/s)": 22.26259
     },
     "2": {
         "speed_type": "low",
         "range": "high",
-        "capacity [lb]": 5,
-        "FixedTime (min)": 60,
-        "V_max (miles/min)": 0.83
+        "capacity [kg]": 2.27,
+        "FixedTime (s)": 3600,
+        "V_max (m/s)": 22.26259
     },
     "3": {
         "speed_type": "high",
         "range": "low",
-        "capacity [lb]": 5,
-        "FixedTime (min)": 30,
-        "V_max (miles/min)": 1.66
+        "capacity [kg]": 2.27,
+        "FixedTime (s)": 1800,
+        "V_max (m/s)": 44.52518
     },
     "4": {
         "speed_type": "high",
         "range": "high",
-        "capacity [lb]": 5,
-        "FixedTime (min)": 60,
-        "V_max (miles/min)": 1.66
+        "capacity [kg]": 2.27,
+        "FixedTime (s)": 3600,
+        "V_max (m/s)": 44.52518
     }
 }

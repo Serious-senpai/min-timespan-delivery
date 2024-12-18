@@ -94,7 +94,7 @@ if __name__ == "__main__":
                 result["config"],
                 result["speed_type"],
                 result["range_type"],
-                str(result["solution"]["cost"]),
+                str(result["solution"]["cost"] / 60),
                 str(milp[result["problem"]]["Optimal"]) if milp_feasible else "",  # type: ignore
                 csv_wrap(f"=ROUND(100 * (P{row} - O{row}) / P{row}, 2)") if milp_feasible else "",
                 str(milp_time) if milp_time is not None else "",

@@ -26,7 +26,7 @@ class TruckConfig:
         assert isinstance(coefficients_d, dict)
 
         return TruckConfig(
-            maximum_velocity=data["V_max (miles/min)"],
+            maximum_velocity=data["V_max (m/s)"],
             capacity=data["M_t (kg)"],
             coefficients=tuple(coefficients_d.values()),
         )
@@ -55,7 +55,7 @@ class _VariableDroneConfig(_BaseDroneConfig):
             landing_speed=data["landingSpeed [m/s]"],
             altitude=data["cruiseAlt [m]"],
             battery=data["batteryPower [Joule]"],
-            capacity=data["capacity [lb]"],
+            capacity=data["capacity [kg]"],
             speed_type=data["speed_type"],
             range_type=data["range"],
         )
@@ -135,10 +135,10 @@ class DroneEnduranceConfig(_BaseDroneConfig):
         results: List[DroneEnduranceConfig] = []
         for d in data.values():
             item = DroneEnduranceConfig(
-                fixed_time=d["FixedTime (min)"],
+                fixed_time=d["FixedTime (s)"],
                 # fixed_distance=d["FixedDistance (miles)"],
-                drone_speed=d["V_max (miles/min)"],
-                capacity=d["capacity [lb]"],
+                drone_speed=d["V_max (m/s)"],
+                capacity=d["capacity [kg]"],
                 speed_type=d["speed_type"],
                 range_type=d["range"],
             )
@@ -181,9 +181,9 @@ class Problem:
         drone_service_time = [0.0]
         for match in re.finditer(r"^([-\d\.]+)\s+([-\d\.]+)\s+([\d\.]+)$", data, re.MULTILINE):
             _x, _y, demand = match.groups()
-            x.append(float(_x))
-            y.append(float(_y))
-            demands.append(float(demand))
+            x.append(1609.34 * float(_x))
+            y.append(1609.34 * float(_y))
+            demands.append(0.453592 * float(demand))
             dronable.append(True)
             truck_service_time.append(0)
             drone_service_time.append(0)

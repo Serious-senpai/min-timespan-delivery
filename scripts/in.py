@@ -11,7 +11,7 @@ class Namespace(argparse.Namespace):
     if TYPE_CHECKING:
         problem: str
         tabu_size_factor: int
-        config: Literal["linear", "non-linear", "endurance"]
+        config: Literal["linear", "non-linear", "endurance", "unlimited"]
         speed_type: Literal["low", "high"]
         range_type: Literal["low", "high"]
         trucks_count: Optional[int]
@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
 parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a0 * base")
-parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance"], help="the energy consumption model to use")
+parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
 parser.add_argument("--trucks-count", type=int, required=False, help="the number of trucks to override")
@@ -48,13 +48,6 @@ if __name__ == "__main__":
     problem = Problem.import_data(namespace.problem)
 
     truck = TruckConfig.import_data()
-
-    # For comparison only
-    truck = TruckConfig(
-        maximum_velocity=0.58,
-        capacity=1800,
-        coefficients=(1,),
-    )
 
     models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
     if namespace.config == "linear":
@@ -133,7 +126,7 @@ if __name__ == "__main__":
         )
     else:
         print(
-            model.fixed_time,
+            model.fixed_time if namespace.config == "endurance" else 10 ** 9,
             # model.fixed_distance,
             model.drone_speed,
         )

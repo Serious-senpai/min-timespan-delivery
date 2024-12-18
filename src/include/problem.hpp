@@ -84,7 +84,7 @@ namespace d2d
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
         const double average_distance;
-        const double maximum_waiting_time = 2 * ONE_HOUR; // hard-coded value
+        const double maximum_waiting_time = 2 * ONE_HOUR; // Hard-coded value
         const double total_demand;
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;

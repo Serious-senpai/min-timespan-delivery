@@ -3,7 +3,7 @@
 #include "standard.hpp"
 #include "utils.hpp"
 
-#define ONE_HOUR 60.0
+#define ONE_HOUR 3600.0
 
 namespace d2d
 {

@@ -40,7 +40,7 @@ namespace d2d
         static std::vector<double> calculate_waiting_time_violations(
             const std::vector<std::size_t> &customers,
             const std::vector<double> &time_segments,
-            const std::function<double(const std::size_t &)> service_time);
+            const std::function<double(const std::size_t &)> &service_time);
 
         /** @brief The amount of weight exceeding vehicle capacity. */
         virtual double capacity_violation() const = 0;
@@ -97,7 +97,7 @@ namespace d2d
     std::vector<double> _BaseRoute::calculate_waiting_time_violations(
         const std::vector<std::size_t> &customers,
         const std::vector<double> &time_segments,
-        const std::function<double(const std::size_t &)> service_time)
+        const std::function<double(const std::size_t &)> &service_time)
     {
         auto problem = Problem::get_instance();
         std::vector<double> violations(customers.size());
