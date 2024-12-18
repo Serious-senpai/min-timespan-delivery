@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing_extensions import List, Tuple, Union, TYPE_CHECKING
+from typing_extensions import List, Literal, Tuple, Union, TYPE_CHECKING
 
 from package import (
     DroneEnduranceConfig,
@@ -21,13 +21,15 @@ from package import (
 class Namespace(argparse.Namespace):
     if TYPE_CHECKING:
         evaluate: Path
+        config: Literal["linear", "non-linear", "endurance", "unlimited"]
 
 
 parser = argparse.ArgumentParser(
-    description="Evaluate a provided solution JSON",
+    description="Evaluate a provided solution JSON using another model",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
-parser.add_argument("evaluate", type=Path, help="evaluate a provided solution JSON instead of solving")
+parser.add_argument("evaluate", type=Path, help="path to the solution JSON to evaluate")
+parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the new energy consumption model to use for evaluation")
 
 
 if __name__ == "__main__":
@@ -44,9 +46,9 @@ if __name__ == "__main__":
     truck = TruckConfig.import_data()
 
     models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
-    if data["config"] == "linear":
+    if namespace.config == "linear":
         models = DroneLinearConfig.import_data()
-    elif data["config"] == "non-linear":
+    elif namespace.config == "non-linear":
         models = DroneNonlinearConfig.import_data()
     else:
         models = DroneEnduranceConfig.import_data()
@@ -121,7 +123,7 @@ if __name__ == "__main__":
         )
     else:
         print(
-            model.fixed_time if data["config"] == "endurance" else 10 ** 9,
+            model.fixed_time if namespace.config == "endurance" else 10 ** 9,
             # model.fixed_distance,
             model.drone_speed,
         )
