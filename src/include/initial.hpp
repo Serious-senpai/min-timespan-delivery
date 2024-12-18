@@ -14,7 +14,7 @@ namespace d2d
         auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
         if (!temp->feasible)
         {
-            // std::cerr << "Insertion would violate " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+            // std::cerr << "Insertion would violate " << temp->drone_energy_violation << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
             return false;
         }
 
@@ -350,6 +350,24 @@ namespace d2d
             }
         }
 
+        // Filter out dronable customers who cannot form a single feasible route
+        std::vector<bool> real_dronable(problem->customers.size());
+        {
+            std::vector<std::vector<d2d::TruckRoute>> truck_routes(problem->trucks_count);
+            for (std::size_t i = 0; i < problem->customers.size(); i++)
+            {
+                if (real_dronable[i])
+                {
+                    std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
+                    drone_routes[0].emplace_back(std::vector<std::size_t>{0, i, 0});
+                    if (_insertable<ST>(truck_routes, drone_routes))
+                    {
+                        real_dronable[i] = true;
+                    }
+                }
+            }
+        }
+
         std::multiset<_initialization_iteration_pack> timestamps;
         for (std::size_t i = 0; i < clusters.size(); i++)
         {
@@ -364,8 +382,8 @@ namespace d2d
 
             auto dronable_iter = std::find_if(
                 clusters[i].begin(), clusters[i].end(),
-                [&problem](std::size_t c)
-                { return problem->customers[c].dronable; });
+                [&real_dronable](std::size_t c)
+                { return real_dronable[c]; });
             if (dronable_iter != clusters[i].end())
             {
                 timestamps.emplace(0, i, 0, *dronable_iter, false);
@@ -411,7 +429,7 @@ namespace d2d
             double min_distance = std::numeric_limits<double>::max();
             for (auto &customer : clusters[clusters_mapping[from]])
             {
-                if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
+                if (real_dronable[customer] && problem->distances[from][customer] < min_distance)
                 {
                     min_distance = problem->distances[from][customer];
                     nearest = customer;
@@ -422,7 +440,7 @@ namespace d2d
             {
                 for (auto &customer : global_customers)
                 {
-                    if (problem->customers[customer].dronable && problem->distances[from][customer] < min_distance)
+                    if (real_dronable[customer] && problem->distances[from][customer] < min_distance)
                     {
                         min_distance = problem->distances[from][customer];
                         nearest = customer;
@@ -542,7 +560,7 @@ namespace d2d
                     std::set<std::size_t> pool;
                     for (auto &c : clusters[cluster])
                     {
-                        if (problem->customers[c].dronable)
+                        if (real_dronable[c])
                         {
                             pool.insert(c);
                         }
@@ -558,7 +576,7 @@ namespace d2d
                         // std::cerr << "Utilizing global_customers" << std::endl;
                         for (auto &c : global_customers)
                         {
-                            if (problem->customers[c].dronable)
+                            if (real_dronable[c])
                             {
                                 pool.insert(c);
                             }
@@ -591,7 +609,7 @@ namespace d2d
             auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
             // std::cerr << "truck_routes = " << truck_routes << " \e[31m" << temp->truck_working_time << "\e[0m" << std::endl;
             // std::cerr << "drone_routes = " << drone_routes << " \e[31m" << temp->drone_working_time << "\e[0m" << std::endl;
-            // std::cerr << "feasible = " << temp->feasible << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
+            // std::cerr << "feasible = " << temp->feasible << " " << temp->drone_energy_violation << " " << temp->capacity_violation << " " << temp->waiting_time_violation << " " << temp->fixed_time_violation << std::endl;
         }
 
         // Resize drone routes to `problem->drones_count`
