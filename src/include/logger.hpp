@@ -15,7 +15,7 @@ namespace d2d
         std::vector<std::pair<std::string, std::vector<std::size_t>>> _neighborhoods;
 
     public:
-        std::size_t last_improved, iterations;
+        std::size_t last_improved = 0, iterations = 0;
         std::chrono::milliseconds elapsed;
 
         void log(
