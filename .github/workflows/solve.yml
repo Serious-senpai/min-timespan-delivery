@@ -177,7 +177,7 @@ jobs:
           for f in $(ls pre-result | grep -P '(?<!-pretty)\.json$')
           do
             problem=$(cat pre-result/$f | jq -r '.problem')
-            python scripts/evaluate.py pre-result/$f | build/main.exe | python scripts/out.py $problem
+            python scripts/evaluate.py pre-result/$f -c non-linear | build/main.exe | python scripts/out.py $problem
           done
 
       - name: Summarize results
