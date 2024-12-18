@@ -107,9 +107,9 @@ class DroneNonlinearConfig(_VariableDroneConfig):
                 base = _VariableDroneConfig.from_data(d)
                 item = DroneNonlinearConfig(
                     k1=data["k1"],
-                    k2=data["k2 (sqrt(kg/m)"],
-                    c1=data["c1 (sqrt(m/kg)"],
-                    c2=data["c2 (sqrt(m/kg)"],
+                    k2=data["k2 (sqrt(kg/m))"],
+                    c1=data["c1 (sqrt(m/kg))"],
+                    c2=data["c2 (sqrt(m/kg))"],
                     c4=data["c4 (kg/m)"],
                     c5=data["c5 (Ns/m)"],
                     **asdict(base),
