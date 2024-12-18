@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
-from typing_extensions import Literal, Optional, Tuple, Union, TYPE_CHECKING
+from pathlib import Path
+from typing_extensions import List, Tuple, Union, TYPE_CHECKING
 
 from package import (
     DroneEnduranceConfig,
     DroneLinearConfig,
     DroneNonlinearConfig,
     Problem,
+    ResultJSON,
+    SolutionJSON,
     TruckConfig,
     euc_distance,
 )
@@ -16,34 +20,14 @@ from package import (
 
 class Namespace(argparse.Namespace):
     if TYPE_CHECKING:
-        problem: str
-        tabu_size_factor: int
-        config: Literal["linear", "non-linear", "endurance", "unlimited"]
-        speed_type: Literal["low", "high"]
-        range_type: Literal["low", "high"]
-        trucks_count: Optional[int]
-        drones_count: Optional[int]
-        reset_after_factor: int
-        max_elite_size: int
-        destroy_rate: int
-        verbose: bool
+        evaluate: Path
 
 
 parser = argparse.ArgumentParser(
-    description="The min-timespan parallel technician-and-drone scheduling in door-to-door sampling service system.\nAlgorithm input transformer.",
+    description="Evaluate a provided solution JSON",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
-parser.add_argument("problem", type=str, help="the problem name in the archive")
-parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a0 * base")
-parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the energy consumption model to use")
-parser.add_argument("--speed-type", default="low", choices=["low", "high"], help="speed type of drones")
-parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
-parser.add_argument("--trucks-count", type=int, required=False, help="the number of trucks to override")
-parser.add_argument("--drones-count", type=int, required=False, help="the number of drones to override")
-parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
-parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
-parser.add_argument("--destroy-rate", default=0, type=int, help="the perentage of an elite solution to destroy = a4")
-parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
+parser.add_argument("evaluate", type=Path, help="evaluate a provided solution JSON instead of solving")
 
 
 if __name__ == "__main__":
@@ -52,21 +36,25 @@ if __name__ == "__main__":
 
     print(namespace, file=sys.stderr)
 
-    problem = Problem.import_data(namespace.problem)
+    with namespace.evaluate.open("r", encoding="utf-8") as file:
+        data: ResultJSON[SolutionJSON] = json.load(file)
+
+    problem = Problem.import_data(data["problem"])
 
     truck = TruckConfig.import_data()
 
     models: Tuple[Union[DroneLinearConfig, DroneNonlinearConfig, DroneEnduranceConfig], ...]
-    if namespace.config == "linear":
+    if data["config"] == "linear":
         models = DroneLinearConfig.import_data()
-    elif namespace.config == "non-linear":
+    elif data["config"] == "non-linear":
         models = DroneNonlinearConfig.import_data()
     else:
         models = DroneEnduranceConfig.import_data()
 
     for model in models:
-        if model.speed_type == namespace.speed_type and model.range_type == namespace.range_type:
+        if model.speed_type == data["speed_type"] and model.range_type == data["range_type"]:
             break
+
     else:
         raise RuntimeError("Cannot find a satisfying model from list", models)
 
@@ -83,8 +71,8 @@ if __name__ == "__main__":
 
     print(
         problem.customers_count,
-        namespace.trucks_count or problem.trucks_count,
-        namespace.drones_count or problem.drones_count,
+        data["trucks_count"],
+        data["drones_count"],
     )
 
     print(*problem.x)
@@ -95,8 +83,8 @@ if __name__ == "__main__":
     print(*problem.truck_service_time)
     print(*problem.drone_service_time)
 
-    print(namespace.tabu_size_factor)
-    print(int(namespace.verbose))
+    print(data["tabu_size_factor"])
+    print(0)  # verbose = False
 
     print(truck.maximum_velocity, truck.capacity)
     print(len(truck.coefficients), *truck.coefficients)
@@ -133,10 +121,21 @@ if __name__ == "__main__":
         )
     else:
         print(
-            model.fixed_time if namespace.config == "endurance" else 10 ** 9,
+            model.fixed_time if data["config"] == "endurance" else 10 ** 9,
             # model.fixed_distance,
             model.drone_speed,
         )
 
-    print(namespace.max_elite_size, namespace.reset_after_factor, namespace.destroy_rate)
-    print(0)  # Not in evaluation
+    print(data["max_elite_size"], data["reset_after_factor"], data["destroy_rate"])
+    print(1)  # In evaluation mode
+
+    def print_routes(routes: List[List[int]]) -> None:
+        print(len(routes))
+        for route in routes:
+            print(len(route), *route)
+
+    for routes in data["solution"]["truck_paths"]:
+        print_routes(routes)
+
+    for routes in data["solution"]["drone_paths"]:
+        print_routes(routes)
