@@ -682,9 +682,17 @@ namespace d2d
         const std::vector<double> &truck_working_time,
         const std::vector<double> &drone_working_time)
     {
-        return std::max(
-            *std::max_element(truck_working_time.begin(), truck_working_time.end()),
-            *std::max_element(drone_working_time.begin(), drone_working_time.end()));
+        double result = 0;
+        if (!truck_working_time.empty())
+        {
+            result = *std::max_element(truck_working_time.begin(), truck_working_time.end());
+        }
+        if (!drone_working_time.empty())
+        {
+            result = std::max(result, *std::max_element(drone_working_time.begin(), drone_working_time.end()));
+        }
+
+        return result;
     }
 
     double Solution::_calculate_energy_violation(const std::vector<std::vector<DroneRoute>> &drone_routes)
