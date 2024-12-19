@@ -4,7 +4,7 @@ cycler==0.12.1
 flake8==7.1.1
 fonttools==4.53.1
 kiwisolver==1.4.7
-matplotlib==3.9.2
+matplotlib==3.10.0
 mccabe==0.7.0
 mypy==1.13.0
 mypy-extensions==1.0.0
