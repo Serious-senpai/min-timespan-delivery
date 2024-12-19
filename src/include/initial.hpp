@@ -372,6 +372,11 @@ namespace d2d
         for (std::size_t i = 0; i < clusters.size(); i++)
         {
             // std::cerr << "At cluster " << i << ": " << clusters[i] << std::endl;
+            if (clusters[i].empty())
+            {
+                continue;
+            }
+
             std::sort(
                 clusters[i].begin(), clusters[i].end(), [&problem](const std::size_t &i, const std::size_t &j)
                 { return problem->distances[0][i] < problem->distances[0][j]; });

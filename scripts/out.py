@@ -117,8 +117,8 @@ if __name__ == "__main__":
 
     data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
-        "trucks_count": problem.trucks_count,
-        "drones_count": problem.drones_count,
+        "trucks_count": len(solution["truck_paths"]),
+        "drones_count": len(solution["drone_paths"]),
         "iterations": iterations,
         "tabu_size_factor": tabu_size_factor,
         "reset_after_factor": reset_after_factor,
