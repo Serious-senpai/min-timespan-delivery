@@ -132,7 +132,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.config }}
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}.${{ matrix.config }}
           path: result/*
 
   compare-to-nonlinear:
@@ -152,7 +152,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: pre-result/
-          pattern: solution-*-${{ matrix.config }}
+          pattern: solution-*.${{ matrix.config }}
           merge-multiple: true
 
       - name: Download executable
@@ -181,13 +181,15 @@ jobs:
           done
 
       - name: Summarize results
-        run: python scripts/summary.py
+        run: |
+          python scripts/summary.py
+          mv result/summary.csv result/compare-${{ matrix.config }}-to-non-linear.csv
 
       - name: Upload summary table
         uses: actions/upload-artifact@v4
         with:
           name: compare-${{ matrix.config }}-to-non-linear-csv
-          path: result/summary.csv
+          path: result/compare-${{ matrix.config }}-to-non-linear.csv
 
       - name: Upload summary and all results
         uses: actions/upload-artifact@v4
