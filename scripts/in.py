@@ -83,8 +83,8 @@ if __name__ == "__main__":
 
     print(
         problem.customers_count,
-        namespace.trucks_count or problem.trucks_count,
-        namespace.drones_count or problem.drones_count,
+        namespace.trucks_count if namespace.trucks_count is not None else problem.trucks_count,
+        namespace.drones_count if namespace.drones_count is not None else problem.drones_count,
     )
 
     print(*problem.x)
