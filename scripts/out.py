@@ -45,6 +45,8 @@ def read_solution() -> Optional[SolutionJSON]:
     drone_paths: List[List[List[int]]] = eval(input())
 
     feasible = bool(int(input()))
+    truck_working_time: List[float] = eval(input())
+    drone_working_time: List[float] = eval(input())
 
     return {
         "cost": cost,
@@ -56,6 +58,8 @@ def read_solution() -> Optional[SolutionJSON]:
         "truck_paths": truck_paths,
         "drone_paths": drone_paths,
         "feasible": feasible,
+        "truck_working_time": truck_working_time,
+        "drone_working_time": drone_working_time,
     }
 
 

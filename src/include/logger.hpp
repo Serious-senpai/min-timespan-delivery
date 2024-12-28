@@ -50,6 +50,8 @@ namespace d2d
             std::cout << ptr->drone_routes << "\n";
 
             std::cout << ptr->feasible << "\n";
+            std::cout << ptr->truck_working_time << "\n";
+            std::cout << ptr->drone_working_time << "\n";
         }
 
         void finalize(const std::shared_ptr<ST> ptr)
