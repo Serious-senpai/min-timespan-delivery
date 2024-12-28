@@ -352,6 +352,7 @@ namespace d2d
 
         // Filter out dronable customers who cannot form a single feasible route
         std::vector<bool> real_dronable(problem->customers.size());
+        if (problem->drones_count > 0)
         {
             std::vector<std::vector<d2d::TruckRoute>> truck_routes(problem->trucks_count);
             for (std::size_t i = 0; i < problem->customers.size(); i++)
