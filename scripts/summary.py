@@ -60,6 +60,8 @@ if __name__ == "__main__":
             "Fixed time violation",
             "Truck paths",
             "Drone paths",
+            "Truck working time",
+            "Drone working time",
             "Feasible",
             "Initialization",
             "Last improved",
@@ -105,11 +107,13 @@ if __name__ == "__main__":
                 str(result["solution"]["fixed_time_violation"]),
                 csv_wrap(result["solution"]["truck_paths"]),
                 csv_wrap(result["solution"]["drone_paths"]),
+                csv_wrap(result["solution"]["truck_working_time"]),
+                csv_wrap(result["solution"]["drone_working_time"]),
                 str(int(result["solution"]["feasible"])),
                 result["initialization_label"],
                 str(result["last_improved"]),
                 str(result["elapsed"]),
                 csv_wrap(result["url"]) if result["url"] is not None else "",
-                csv_wrap(f"=ROUND(100 * (R{row} - AC{row}) / R{row}, 2)") if milp_time is not None else "",
+                csv_wrap(f"=ROUND(100 * (R{row} - AE{row}) / R{row}, 2)") if milp_time is not None else "",
             ]
             csv.write(",".join(segments) + "\n")

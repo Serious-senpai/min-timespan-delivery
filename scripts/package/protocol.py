@@ -22,6 +22,8 @@ class _BaseSolutionJSON(TypedDict):
     waiting_time_violation: float
     fixed_time_violation: float
     feasible: bool
+    truck_working_time: List[float]
+    drone_working_time: List[float]
 
 
 T = TypeVar("T", bound=_BaseSolutionJSON)
