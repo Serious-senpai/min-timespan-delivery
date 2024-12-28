@@ -356,7 +356,7 @@ namespace d2d
             std::vector<std::vector<d2d::TruckRoute>> truck_routes(problem->trucks_count);
             for (std::size_t i = 0; i < problem->customers.size(); i++)
             {
-                if (real_dronable[i])
+                if (problem->customers[i].dronable)
                 {
                     std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
                     drone_routes[0].emplace_back(std::vector<std::size_t>{0, i, 0});
@@ -367,6 +367,7 @@ namespace d2d
                 }
             }
         }
+        // std::cerr << "real_dronable = " << std::accumulate(real_dronable.begin(), real_dronable.end(), 0) << std::endl;
 
         std::multiset<_initialization_iteration_pack> timestamps;
         for (std::size_t i = 0; i < clusters.size(); i++)
