@@ -23,6 +23,7 @@ class Namespace(argparse.Namespace):
         range_type: Literal["low", "high"]
         trucks_count: Optional[int]
         drones_count: Optional[int]
+        waiting_time_limit: float
         reset_after_factor: int
         max_elite_size: int
         destroy_rate: int
@@ -40,6 +41,7 @@ parser.add_argument("--speed-type", default="low", choices=["low", "high"], help
 parser.add_argument("--range-type", default="low", choices=["low", "high"], help="range type of drones")
 parser.add_argument("--trucks-count", type=int, required=False, help="the number of trucks to override")
 parser.add_argument("--drones-count", type=int, required=False, help="the number of drones to override")
+parser.add_argument("--waiting-time-limit", type=float, default=3600, help="the waiting time limit for each customer")
 parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
 parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("--destroy-rate", default=0, type=int, help="the perentage of an elite solution to destroy = a4")
@@ -85,6 +87,7 @@ if __name__ == "__main__":
         problem.customers_count,
         namespace.trucks_count if namespace.trucks_count is not None else problem.trucks_count,
         namespace.drones_count if namespace.drones_count is not None else problem.drones_count,
+        namespace.waiting_time_limit,
     )
 
     print(*problem.x)

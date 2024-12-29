@@ -39,6 +39,7 @@ namespace d2d
             const bool verbose,
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
+            const double &waiting_time_limit,
             const std::vector<Customer> &customers,
             const std::vector<std::vector<double>> &distances,
             const double &average_distance,
@@ -58,6 +59,7 @@ namespace d2d
               verbose(verbose),
               trucks_count(trucks_count),
               drones_count(drones_count),
+              waiting_time_limit(waiting_time_limit),
               customers(customers),
               distances(distances),
               average_distance(average_distance),
@@ -84,10 +86,10 @@ namespace d2d
         const std::size_t tabu_size_factor;
         const bool verbose;
         const std::size_t trucks_count, drones_count;
+        const double waiting_time_limit;
         const std::vector<Customer> customers;
         const std::vector<std::vector<double>> distances;
         const double average_distance;
-        const double maximum_waiting_time = 2 * ONE_HOUR; // Hard-coded value
         const double total_demand;
         const TruckConfig *const truck;
         const _BaseDroneConfig *const drone;
@@ -115,6 +117,9 @@ namespace d2d
         {
             std::size_t customers_count, trucks_count, drones_count;
             std::cin >> customers_count >> trucks_count >> drones_count;
+
+            double waiting_time_limit;
+            std::cin >> waiting_time_limit;
 
             std::vector<double> x(customers_count + 1);
             for (std::size_t i = 0; i < customers_count + 1; i++)
@@ -315,6 +320,7 @@ namespace d2d
                 verbose,
                 trucks_count,
                 drones_count,
+                waiting_time_limit,
                 customers,
                 distances,
                 average_distance,

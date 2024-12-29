@@ -95,6 +95,18 @@ namespace d2d
 
             std::cout << (problem->drone->speed_type == d2d::StatsType::low ? "low" : "high") << "\n";
             std::cout << (problem->drone->range_type == d2d::StatsType::low ? "low" : "high") << "\n";
+            std::cout << problem->waiting_time_limit << "\n";
+
+            std::cout << problem->truck->maximum_speed() << "\n";
+            if (problem->endurance != nullptr)
+            {
+                std::cout << problem->endurance->fixed_time << "\n";
+                std::cout << problem->endurance->drone_speed << "\n";
+            }
+            else
+            {
+                std::cout << "0\n0\n";
+            }
 
             print_solution(ptr);
 

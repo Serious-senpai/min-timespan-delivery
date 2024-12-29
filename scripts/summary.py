@@ -49,6 +49,10 @@ if __name__ == "__main__":
             "Energy model",
             "Speed type",
             "Range type",
+            "Waiting time limit",
+            "Truck maximum speed",
+            "Endurance fixed time",
+            "Endurance drone speed",
             "Cost",
             "MILP cost",
             "Improved [%]",
@@ -96,9 +100,13 @@ if __name__ == "__main__":
                 result["config"],
                 result["speed_type"],
                 result["range_type"],
+                str(result["waiting_time_limit"]),
+                str(result["truck_maximum_speed"]),
+                str(result["endurance_fixed_time"]),
+                str(result["endurance_drone_speed"]),
                 str(result["solution"]["cost"] / 60),
                 str(milp[result["problem"]]["Optimal"]) if milp_feasible else "",  # type: ignore
-                csv_wrap(f"=ROUND(100 * (P{row} - O{row}) / P{row}, 2)") if milp_feasible else "",
+                csv_wrap(f"=ROUND(100 * (T{row} - S{row}) / T{row}, 2)") if milp_feasible else "",
                 str(milp_time) if milp_time is not None else "",
                 str(milp[result["problem"]]["status"]) if milp_available else "",
                 str(result["solution"]["capacity_violation"]),
@@ -114,6 +122,6 @@ if __name__ == "__main__":
                 str(result["last_improved"]),
                 str(result["elapsed"]),
                 csv_wrap(result["url"]) if result["url"] is not None else "",
-                csv_wrap(f"=ROUND(100 * (R{row} - AE{row}) / R{row}, 2)") if milp_time is not None else "",
+                csv_wrap(f"=ROUND(100 * (V{row} - AI{row}) / V{row}, 2)") if milp_time is not None else "",
             ]
             csv.write(",".join(segments) + "\n")

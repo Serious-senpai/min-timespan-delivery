@@ -3,8 +3,6 @@
 #include "standard.hpp"
 #include "utils.hpp"
 
-#define ONE_HOUR 3600.0
-
 namespace d2d
 {
     class TruckConfig
@@ -31,6 +29,11 @@ namespace d2d
         double speed(const std::size_t &index) const
         {
             return _maximum_velocity * _coefficients[index % _coefficients.size()];
+        }
+
+        double maximum_speed() const
+        {
+            return _maximum_velocity;
         }
     };
 

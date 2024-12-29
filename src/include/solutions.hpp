@@ -823,7 +823,7 @@ namespace d2d
         std::cerr << "tabu_size = " << problem->tabu_size << "\n";
         std::cerr << "verbose = " << problem->verbose << "\n";
         std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
-        std::cerr << "maximum_waiting_time = " << problem->maximum_waiting_time << "\n";
+        std::cerr << "waiting_time_limit = " << problem->waiting_time_limit << "\n";
         std::cerr << "max_elite_size = " << problem->max_elite_size << ", reset_after = " << problem->reset_after << "\n";
 
         logger.last_improved = 0;

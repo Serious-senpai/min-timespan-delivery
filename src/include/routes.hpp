@@ -3,6 +3,8 @@
 #include "errors.hpp"
 #include "problem.hpp"
 
+#define ONE_HOUR 3600.0
+
 namespace d2d
 {
     class _BaseRoute
@@ -105,7 +107,7 @@ namespace d2d
         double time = std::accumulate(time_segments.begin(), time_segments.end(), 0.0);
         for (std::size_t i = 0; i < customers.size(); i++)
         {
-            violations[i] = std::max(0.0, time - service_time(customers[i]) - problem->maximum_waiting_time);
+            violations[i] = std::max(0.0, time - service_time(customers[i]) - problem->waiting_time_limit);
             time -= time_segments[i];
         }
 

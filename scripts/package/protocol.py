@@ -63,6 +63,10 @@ class ResultJSON(Generic[T], TypedDict):
     config: str
     speed_type: str
     range_type: str
+    waiting_time_limit: float
+    truck_maximum_speed: float
+    endurance_fixed_time: float
+    endurance_drone_speed: float
     solution: T
     propagation: List[PropagationJSON[T]]
     history: List[Optional[T]]

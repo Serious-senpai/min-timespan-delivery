@@ -90,6 +90,11 @@ if __name__ == "__main__":
     config = input()
     speed_type = input()
     range_type = input()
+    waiting_time_limit = float(input())
+
+    truck_maximum_speed = float(input())
+    endurance_fixed_time = float(input())
+    endurance_drone_speed = float(input())
 
     problem = Problem.import_data(namespace.problem)
 
@@ -133,6 +138,10 @@ if __name__ == "__main__":
         "config": config,
         "speed_type": speed_type,
         "range_type": range_type,
+        "waiting_time_limit": waiting_time_limit,
+        "truck_maximum_speed": truck_maximum_speed,
+        "endurance_fixed_time": endurance_fixed_time,
+        "endurance_drone_speed": endurance_drone_speed,
         "solution": solution,
         "propagation": propagation,
         "history": history,
