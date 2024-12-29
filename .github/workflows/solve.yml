@@ -54,20 +54,26 @@ jobs:
           name: executable
           path: build/main.exe
 
-  solve:
+  solve-20-low-low:
     name: Run algorithm
     runs-on: ubuntu-latest
     needs: build
     strategy:
       fail-fast: false
       matrix:
-        problem: ["6.10.1", "6.10.2", "6.10.3", "6.10.4", "6.20.1", "6.20.2", "6.20.3", "6.20.4", "6.5.1", "6.5.2", "6.5.3", "6.5.4",
-          "10.10.1", "10.10.2", "10.10.3", "10.10.4", "10.20.1", "10.20.2", "10.20.3", "10.20.4", "10.5.1", "10.5.2", "10.5.3", "10.5.4",
-          "12.10.1", "12.10.2", "12.10.3", "12.10.4", "12.20.1", "12.20.2", "12.20.3", "12.20.4", "12.5.1", "12.5.2", "12.5.3", "12.5.4",
-          "20.10.1", "20.10.2", "20.10.3", "20.10.4", "20.20.1", "20.20.2", "20.20.3", "20.20.4", "20.5.1", "20.5.2", "20.5.3", "20.5.4",
-          "50.10.1", "50.10.2", "50.10.3", "50.10.4", "50.20.1", "50.20.2", "50.20.3", "50.20.4", "50.30.1", "50.30.2", "50.30.3", "50.30.4", "50.40.1", "50.40.2", "50.40.3", "50.40.4",
-          "100.10.1", "100.10.2", "100.10.3", "100.10.4", "100.20.1", "100.20.2", "100.20.3", "100.20.4", "100.30.1", "100.30.2", "100.30.3", "100.30.4", "100.40.1", "100.40.2", "100.40.3", "100.40.4"]
-        steps: [0, 1]
+        problem: ["20.10.1", "20.10.2", "20.10.3", "20.10.4", "20.20.1", "20.20.2", "20.20.3", "20.20.4", "20.5.1", "20.5.2", "20.5.3", "20.5.4"]
+        speed-type: [low]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 2, drones-count: 0},
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 2, drones-count: 1},
+          {trucks-count: 2, drones-count: 2},
+          {trucks-count: 2, drones-count: 3},
+        ]
 
     steps:
       - name: Checkout repository
@@ -98,8 +104,8 @@ jobs:
         run: |
           exitcode=0
           set +e
-          let begin=5*${{ matrix.steps }}+1
-          let end=$begin+4
+          let begin=1
+          let end=10
 
           report_error() {
             this_exitcode=$?
@@ -114,7 +120,12 @@ jobs:
           for i in $(seq $begin $end)
           do
             echo "RUN #$i"
-            python scripts/in.py ${{ matrix.problem }} > input.txt
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
             report_error
 
             cat input.txt | build/main.exe > input2.txt
@@ -130,14 +141,1001 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: solution-${{ matrix.problem }}-${{ matrix.steps }}
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-20-low-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["20.10.1", "20.10.2", "20.10.3", "20.10.4", "20.20.1", "20.20.2", "20.20.3", "20.20.4", "20.5.1", "20.5.2", "20.5.3", "20.5.4"]
+        speed-type: [low]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 2, drones-count: 0},
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 2, drones-count: 1},
+          {trucks-count: 2, drones-count: 2},
+          {trucks-count: 2, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-20-high-low:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["20.10.1", "20.10.2", "20.10.3", "20.10.4", "20.20.1", "20.20.2", "20.20.3", "20.20.4", "20.5.1", "20.5.2", "20.5.3", "20.5.4"]
+        speed-type: [high]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 2, drones-count: 0},
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 2, drones-count: 1},
+          {trucks-count: 2, drones-count: 2},
+          {trucks-count: 2, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-20-high-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["20.10.1", "20.10.2", "20.10.3", "20.10.4", "20.20.1", "20.20.2", "20.20.3", "20.20.4", "20.5.1", "20.5.2", "20.5.3", "20.5.4"]
+        speed-type: [high]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 2, drones-count: 0},
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 2, drones-count: 1},
+          {trucks-count: 2, drones-count: 2},
+          {trucks-count: 2, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+  solve-50-low-low:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["50.10.1", "50.10.2", "50.10.3", "50.10.4", "50.20.1", "50.20.2", "50.20.3", "50.20.4", "50.30.1", "50.30.2", "50.30.3", "50.30.4", "50.40.1", "50.40.2", "50.40.3", "50.40.4"]
+        speed-type: [low]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 3, drones-count: 1},
+          {trucks-count: 3, drones-count: 2},
+          {trucks-count: 3, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-50-low-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["50.10.1", "50.10.2", "50.10.3", "50.10.4", "50.20.1", "50.20.2", "50.20.3", "50.20.4", "50.30.1", "50.30.2", "50.30.3", "50.30.4", "50.40.1", "50.40.2", "50.40.3", "50.40.4"]
+        speed-type: [low]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 3, drones-count: 1},
+          {trucks-count: 3, drones-count: 2},
+          {trucks-count: 3, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-50-high-low:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["50.10.1", "50.10.2", "50.10.3", "50.10.4", "50.20.1", "50.20.2", "50.20.3", "50.20.4", "50.30.1", "50.30.2", "50.30.3", "50.30.4", "50.40.1", "50.40.2", "50.40.3", "50.40.4"]
+        speed-type: [high]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 3, drones-count: 1},
+          {trucks-count: 3, drones-count: 2},
+          {trucks-count: 3, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-50-high-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["50.10.1", "50.10.2", "50.10.3", "50.10.4", "50.20.1", "50.20.2", "50.20.3", "50.20.4", "50.30.1", "50.30.2", "50.30.3", "50.30.4", "50.40.1", "50.40.2", "50.40.3", "50.40.4"]
+        speed-type: [high]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 3, drones-count: 1},
+          {trucks-count: 3, drones-count: 2},
+          {trucks-count: 3, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-100-low-low:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["100.10.1", "100.10.2", "100.10.3", "100.10.4", "100.20.1", "100.20.2", "100.20.3", "100.20.4", "100.30.1", "100.30.2", "100.30.3", "100.30.4", "100.40.1", "100.40.2", "100.40.3", "100.40.4"]
+        speed-type: [low]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 7, drones-count: 0},
+          {trucks-count: 4, drones-count: 1},
+          {trucks-count: 4, drones-count: 2},
+          {trucks-count: 4, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-100-low-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["100.10.1", "100.10.2", "100.10.3", "100.10.4", "100.20.1", "100.20.2", "100.20.3", "100.20.4", "100.30.1", "100.30.2", "100.30.3", "100.30.4", "100.40.1", "100.40.2", "100.40.3", "100.40.4"]
+        speed-type: [low]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 7, drones-count: 0},
+          {trucks-count: 4, drones-count: 1},
+          {trucks-count: 4, drones-count: 2},
+          {trucks-count: 4, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-100-high-low:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["100.10.1", "100.10.2", "100.10.3", "100.10.4", "100.20.1", "100.20.2", "100.20.3", "100.20.4", "100.30.1", "100.30.2", "100.30.3", "100.30.4", "100.40.1", "100.40.2", "100.40.3", "100.40.4"]
+        speed-type: [high]
+        range-type: [low]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 7, drones-count: 0},
+          {trucks-count: 4, drones-count: 1},
+          {trucks-count: 4, drones-count: 2},
+          {trucks-count: 4, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-100-high-high:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: ["100.10.1", "100.10.2", "100.10.3", "100.10.4", "100.20.1", "100.20.2", "100.20.3", "100.20.4", "100.30.1", "100.30.2", "100.30.3", "100.30.4", "100.40.1", "100.40.2", "100.40.3", "100.40.4"]
+        speed-type: [high]
+        range-type: [high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 4, drones-count: 0},
+          {trucks-count: 5, drones-count: 0},
+          {trucks-count: 6, drones-count: 0},
+          {trucks-count: 7, drones-count: 0},
+          {trucks-count: 4, drones-count: 1},
+          {trucks-count: 4, drones-count: 2},
+          {trucks-count: 4, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for i in $(seq $begin $end)
+          do
+            echo "RUN #$i"
+            python scripts/in.py ${{ matrix.problem }} \
+            --speed-type ${{ matrix.speed-type }} \
+            --range-type ${{ matrix.range-type }} \
+            --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+            --trucks-count ${{ matrix.vehicles.trucks-count }} \
+            --drones-count ${{ matrix.vehicles.drones-count }} > input.txt
+            report_error
+
+            cat input.txt | build/main.exe > input2.txt
+            report_error
+
+            cat input2.txt | python scripts/out.py ${{ matrix.problem }} --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            report_error
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.problem }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
           path: result/*
 
   summary:
     name: Summarize results
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: solve
+    needs: [
+      solve-20-low-low, solve-20-low-high, solve-20-high-low, solve-20-high-high,
+      solve-50-low-low, solve-50-low-high, solve-50-high-low, solve-50-high-high,
+      solve-100-low-low, solve-100-low-high, solve-100-high-low, solve-100-high-high
+    ]
 
     steps:
       - name: Checkout repository
