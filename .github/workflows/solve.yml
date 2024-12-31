@@ -773,8 +773,7 @@ jobs:
     if: ${{ always() }}
     needs: [
       solve-20-low-low, solve-20-low-high, solve-20-high-low, solve-20-high-high,
-      solve-50-low-low, solve-50-low-high, solve-50-high-low, solve-50-high-high,
-      solve-100-low-low, solve-100-low-high, solve-100-high-low, solve-100-high-high
+      solve-50-low-low, solve-50-low-high, solve-50-high-low, solve-50-high-high
     ]
 
     steps:
