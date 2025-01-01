@@ -111,13 +111,14 @@ jobs:
           then
             K=2
           elif [[ ${{ matrix.customers-count }} -eq 50 ]]
+          then
             K=3
           else
             echo "::error::Invalid customers count"
             exit 1
           fi
 
-          let trucks=K+${{ matrix.vehicles.trucks-count }}
+          let trucks=$K+${{ matrix.vehicles.trucks-count }}
           let drones=${{ matrix.vehicles.drones-count }}
 
           report_error() {
