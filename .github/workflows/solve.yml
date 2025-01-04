@@ -61,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        format: ["100.10.*", "100.20.*", "100.30.*", "100.40.*"]
+        prefix: ["100.10", "100.20", "100.30", "100.40"]
         speed-type: [low, high]
         range-type: [low, high]
         waiting-time-limit: [3600, 7200]
@@ -121,7 +121,7 @@ jobs:
             fi
           }
 
-          for problem in problems/data/${{ matrix.format }}.txt
+          for problem in problems/data/${{ matrix.prefix }}.*.txt
           do
             problem=$(basename -s .txt $problem)
             for i in $(seq $begin $end)
@@ -149,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: solution-${{ matrix.format }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          name: solution-${{ matrix.prefix }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
           path: result/*
 
   summary:
