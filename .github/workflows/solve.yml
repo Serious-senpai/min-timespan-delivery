@@ -63,8 +63,8 @@ jobs:
       matrix:
         customers-count: [20, 50]
         speed-type: [low]
-        range-type: [low]
-        waiting-time-limit: [3600, 7200]
+        range-type: [low, high]
+        waiting-time-limit: [1800, 3600, 7200]
         vehicles: [
           {trucks-count: 0, drones-count: 0},
           {trucks-count: 1, drones-count: 0},
