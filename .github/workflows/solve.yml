@@ -62,8 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         customers-count: [20, 50]
-        speed-type: [low, high]
-        range-type: [low, high]
+        speed-type: [low]
+        range-type: [low]
         waiting-time-limit: [3600, 7200]
         vehicles: [
           {trucks-count: 0, drones-count: 0},

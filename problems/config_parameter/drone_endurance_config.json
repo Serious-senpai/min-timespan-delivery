@@ -2,9 +2,9 @@
     "1": {
         "speed_type": "low",
         "range": "low",
-        "capacity [kg]": 2.27,
-        "FixedTime (s)": 1800,
-        "V_max (m/s)": 22.26259
+        "capacity [kg]": 30,
+        "FixedTime (s)": 6600,
+        "V_max (m/s)": 20
     },
     "2": {
         "speed_type": "low",
