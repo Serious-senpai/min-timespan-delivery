@@ -74,6 +74,7 @@ jobs:
           {trucks-count: 0, drones-count: 2},
           {trucks-count: 0, drones-count: 3},
         ]
+        step: [0, 1]
 
     steps:
       - name: Checkout repository
@@ -104,8 +105,8 @@ jobs:
         run: |
           exitcode=0
           set +e
-          let begin=1
-          let end=10
+          let begin=5*${{ matrix.step }}+1
+          let end=$begin+4
 
           if [[ ${{ matrix.customers-count }} -eq 20 ]]
           then
@@ -159,7 +160,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: solution-${{ matrix.customers-count }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          name: solution-${{ matrix.customers-count }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}-${{ matrix.step }}
           path: result/*
 
   summary:
