@@ -350,12 +350,31 @@ namespace d2d
             }
         }
 
+        // Filter out truckable customers (due to waiting time limit, for example)
+        std::vector<bool> real_truckable(problem->customers.size());
+        if (problem->trucks_count > 0)
+        {
+            real_truckable[0] = true;
+            std::vector<std::vector<DroneRoute>> drone_routes(problem->drones_count);
+            for (std::size_t i = 1; i < problem->customers.size(); i++)
+            {
+                std::vector<std::vector<d2d::TruckRoute>> truck_routes(problem->trucks_count);
+                truck_routes[0].emplace_back(std::vector<std::size_t>{0, i, 0});
+                if (_insertable<ST>(truck_routes, drone_routes))
+                {
+                    real_truckable[i] = true;
+                }
+            }
+        }
+        // std::cerr << "real_truckable = " << std::accumulate(real_truckable.begin(), real_truckable.end(), 0) << std::endl;
+
         // Filter out dronable customers who cannot form a single feasible route
         std::vector<bool> real_dronable(problem->customers.size());
         if (problem->drones_count > 0)
         {
+            real_dronable[0] = true;
             std::vector<std::vector<d2d::TruckRoute>> truck_routes(problem->trucks_count);
-            for (std::size_t i = 0; i < problem->customers.size(); i++)
+            for (std::size_t i = 1; i < problem->customers.size(); i++)
             {
                 if (problem->customers[i].dronable)
                 {
@@ -369,6 +388,24 @@ namespace d2d
             }
         }
         // std::cerr << "real_dronable = " << std::accumulate(real_dronable.begin(), real_dronable.end(), 0) << std::endl;
+
+        const auto truckable = [&real_truckable](std::size_t c)
+        {
+            return real_truckable[c];
+        };
+        const auto dronable = [&real_dronable](std::size_t c)
+        {
+            return real_dronable[c];
+        };
+
+        // Ensure each customer can be served by at least 1 type of vehicle
+        for (std::size_t i = 0; i < problem->customers.size(); i++)
+        {
+            if (!truckable(i) && !dronable(i))
+            {
+                throw std::runtime_error(utils::format("Customer %d cannot be served by neither trucks nor drones", i));
+            }
+        }
 
         std::multiset<_initialization_iteration_pack> timestamps;
         for (std::size_t i = 0; i < clusters.size(); i++)
@@ -384,13 +421,13 @@ namespace d2d
                 { return problem->distances[0][i] < problem->distances[0][j]; });
             // std::cerr << "Sorted to " << clusters[i] << std::endl;
 
-            auto truck_customer = *utils::random_element(clusters[i]);
-            timestamps.emplace(0, i, 0, truck_customer, true);
+            auto truckable_iter = std::find_if(clusters[i].begin(), clusters[i].end(), truckable);
+            if (truckable_iter != clusters[i].end())
+            {
+                timestamps.emplace(0, i, 0, *truckable_iter, true);
+            }
 
-            auto dronable_iter = std::find_if(
-                clusters[i].begin(), clusters[i].end(),
-                [&real_dronable](std::size_t c)
-                { return real_dronable[c]; });
+            auto dronable_iter = std::find_if(clusters[i].begin(), clusters[i].end(), dronable);
             if (dronable_iter != clusters[i].end())
             {
                 timestamps.emplace(0, i, 0, *dronable_iter, false);
@@ -403,40 +440,45 @@ namespace d2d
             global_customers.insert(global_customers.end(), i);
         }
 
-        const auto truck_next = [&](std::size_t from, std::size_t truck)
-        {
-            std::size_t nearest;
-            const auto &cluster = clusters[clusters_mapping[from]];
-            if (!cluster.empty())
-            {
-                nearest = *std::min_element(
-                    cluster.begin(), cluster.end(),
-                    [&problem, &from](const std::size_t &i, const std::size_t &j)
-                    {
-                        return problem->distances[from][i] < problem->distances[from][j];
-                    });
-            }
-            else
-            {
-                nearest = *std::min_element(
-                    global_customers.begin(), global_customers.end(),
-                    [&problem, &from](const std::size_t &i, const std::size_t &j)
-                    {
-                        return problem->distances[from][i] < problem->distances[from][j];
-                    });
-            }
-
-            auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
-            timestamps.emplace(temp->truck_working_time[truck], truck, from, nearest, true);
-        };
-
-        const auto drone_next = [&](std::size_t from, std::size_t drone)
+        const auto truck_next = [&](std::size_t from, std::size_t truck) -> void
         {
             std::size_t nearest = std::numeric_limits<std::size_t>::max();
             double min_distance = std::numeric_limits<double>::max();
             for (auto &customer : clusters[clusters_mapping[from]])
             {
-                if (real_dronable[customer] && problem->distances[from][customer] < min_distance)
+                if (truckable(customer) && problem->distances[from][customer] < min_distance)
+                {
+                    min_distance = problem->distances[from][customer];
+                    nearest = customer;
+                }
+            }
+
+            if (nearest == std::numeric_limits<std::size_t>::max()) // No truckable customers
+            {
+                for (auto &customer : global_customers)
+                {
+                    if (truckable(customer) && problem->distances[from][customer] < min_distance)
+                    {
+                        min_distance = problem->distances[from][customer];
+                        nearest = customer;
+                    }
+                }
+            }
+
+            if (nearest < std::numeric_limits<std::size_t>::max())
+            {
+                auto temp = std::make_shared<ST>(truck_routes, drone_routes, nullptr, false);
+                timestamps.emplace(temp->truck_working_time[truck], truck, from, nearest, true);
+            }
+        };
+
+        const auto drone_next = [&](std::size_t from, std::size_t drone) -> void
+        {
+            std::size_t nearest = std::numeric_limits<std::size_t>::max();
+            double min_distance = std::numeric_limits<double>::max();
+            for (auto &customer : clusters[clusters_mapping[from]])
+            {
+                if (dronable(customer) && problem->distances[from][customer] < min_distance)
                 {
                     min_distance = problem->distances[from][customer];
                     nearest = customer;
@@ -447,7 +489,7 @@ namespace d2d
             {
                 for (auto &customer : global_customers)
                 {
-                    if (real_dronable[customer] && problem->distances[from][customer] < min_distance)
+                    if (dronable(customer) && problem->distances[from][customer] < min_distance)
                     {
                         min_distance = problem->distances[from][customer];
                         nearest = customer;
@@ -508,7 +550,11 @@ namespace d2d
                     clusters[cluster].push_back(packed.customer);
                     global_customers.insert(packed.customer);
 
-                    std::set<std::size_t> pool(clusters[cluster].begin(), clusters[cluster].end());
+                    std::set<std::size_t> pool;
+                    std::copy_if(
+                        clusters[cluster].begin(), clusters[cluster].end(),
+                        std::inserter(pool, pool.begin()),
+                        truckable);
                     for (auto &p : timestamps)
                     {
                         pool.erase(p.customer);
@@ -518,7 +564,10 @@ namespace d2d
                     if (pool.empty())
                     {
                         // std::cerr << "Utilizing global_customers" << std::endl;
-                        pool.insert(global_customers.begin(), global_customers.end());
+                        std::copy_if(
+                            global_customers.begin(), global_customers.end(),
+                            std::inserter(pool, pool.begin()),
+                            truckable);
                         for (auto &p : timestamps)
                         {
                             pool.erase(p.customer);
@@ -565,13 +614,10 @@ namespace d2d
                     global_customers.insert(packed.customer);
 
                     std::set<std::size_t> pool;
-                    for (auto &c : clusters[cluster])
-                    {
-                        if (real_dronable[c])
-                        {
-                            pool.insert(c);
-                        }
-                    }
+                    std::copy_if(
+                        clusters[cluster].begin(), clusters[cluster].end(),
+                        std::inserter(pool, pool.begin()),
+                        dronable);
                     for (auto &p : timestamps)
                     {
                         pool.erase(p.customer);
@@ -581,13 +627,10 @@ namespace d2d
                     if (pool.empty())
                     {
                         // std::cerr << "Utilizing global_customers" << std::endl;
-                        for (auto &c : global_customers)
-                        {
-                            if (real_dronable[c])
-                            {
-                                pool.insert(c);
-                            }
-                        }
+                        std::copy_if(
+                            global_customers.begin(), global_customers.end(),
+                            std::inserter(pool, pool.begin()),
+                            dronable);
                         for (auto &p : timestamps)
                         {
                             pool.erase(p.customer);
