@@ -416,16 +416,19 @@ namespace d2d
                 continue;
             }
 
-            std::sort(
-                clusters[i].begin(), clusters[i].end(), [&problem](const std::size_t &i, const std::size_t &j)
-                { return problem->distances[0][i] < problem->distances[0][j]; });
-            // std::cerr << "Sorted to " << clusters[i] << std::endl;
+            std::shuffle(clusters[i].begin(), clusters[i].end(), utils::rng);
+            // std::cerr << "Shuffled to " << clusters[i] << std::endl;
 
             auto truckable_iter = std::find_if(clusters[i].begin(), clusters[i].end(), truckable);
             if (truckable_iter != clusters[i].end())
             {
                 timestamps.emplace(0, i, 0, *truckable_iter, true);
             }
+
+            std::sort(
+                clusters[i].begin(), clusters[i].end(), [&problem](const std::size_t &i, const std::size_t &j)
+                { return problem->distances[0][i] < problem->distances[0][j]; });
+            // std::cerr << "Sorted to " << clusters[i] << std::endl;
 
             auto dronable_iter = std::find_if(clusters[i].begin(), clusters[i].end(), dronable);
             if (dronable_iter != clusters[i].end())
