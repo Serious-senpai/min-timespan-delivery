@@ -156,6 +156,8 @@ if __name__ == "__main__":
     }
     print(solution)
 
+    ROOT.joinpath("result").mkdir(parents=True, exist_ok=True)
+
     index = random_str(8)
     while ROOT.joinpath("result", f"{namespace.problem}-{index}.json").exists():
         index = random_str(8)
