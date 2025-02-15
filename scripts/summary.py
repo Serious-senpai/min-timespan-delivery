@@ -4,7 +4,7 @@ import json
 import re
 from typing_extensions import Dict, Iterable, Optional
 
-from package import MILPResultJSON, ResultJSON, SolutionJSON, ROOT, csv_wrap
+from package import MILPResultJSON, Problem, ResultJSON, SolutionJSON, ROOT, csv_wrap
 
 
 def compare() -> Dict[str, MILPResultJSON]:
@@ -72,6 +72,12 @@ if __name__ == "__main__":
             "Elapsed [s]",
             "URL",
             "Faster [%]",
+            "Weight per truck route",
+            "Customers per truck route",
+            "Truck route count",
+            "Weight per drone route",
+            "Customers per drone route",
+            "Drone route count,"
         ]
         csv.write(",".join(headers) + "\n")
 
@@ -84,6 +90,15 @@ if __name__ == "__main__":
                 milp_time = milp[result["problem"]]["Solve_Time"]  # type: ignore
             elif milp_available:
                 milp_time = 36000.0  # 10 hours without any feasible solutions
+
+            truck_route_count = sum(len(routes) for routes in result["solution"]["truck_paths"])
+            drone_route_count = sum(len(routes) for routes in result["solution"]["drone_paths"])
+
+            problem = Problem.import_data(result["problem"])
+            truck_weight = sum(sum(sum(problem.demands[c] for c in route) for route in routes) for routes in result["solution"]["truck_paths"])
+            drone_weight = sum(sum(sum(problem.demands[c] for c in route) for route in routes) for routes in result["solution"]["drone_paths"])
+            truck_customers = sum(sum(len(route) - 2 for route in routes) for routes in result["solution"]["truck_paths"])
+            drone_customers = sum(sum(len(route) - 2 for route in routes) for routes in result["solution"]["drone_paths"])
 
             segments = [
                 csv_wrap(result["problem"]),
@@ -123,5 +138,11 @@ if __name__ == "__main__":
                 str(result["elapsed"]),
                 csv_wrap(result["url"]) if result["url"] is not None else "",
                 csv_wrap(f"=ROUND(100 * (V{row} - AI{row}) / V{row}, 2)") if milp_time is not None else "",
+                str(truck_weight / truck_route_count),
+                str(truck_customers / truck_route_count),
+                str(truck_route_count),
+                str(drone_weight / drone_route_count),
+                str(drone_customers / drone_route_count),
+                str(drone_route_count),
             ]
             csv.write(",".join(segments) + "\n")
