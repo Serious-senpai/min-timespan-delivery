@@ -54,7 +54,115 @@ jobs:
           name: executable
           path: build/main.exe
 
-  solve:
+  solve-20-50:
+    name: Run algorithm
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        customers-count: [20, 50]
+        speed-type: [low, high]
+        range-type: [low, high]
+        waiting-time-limit: [3600, 7200]
+        vehicles: [
+          {trucks-count: 0, drones-count: 0},
+          {trucks-count: 1, drones-count: 0},
+          {trucks-count: 2, drones-count: 0},
+          {trucks-count: 3, drones-count: 0},
+          {trucks-count: 0, drones-count: 1},
+          {trucks-count: 0, drones-count: 2},
+          {trucks-count: 0, drones-count: 3},
+        ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: executable
+          path: build/
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize working space
+        run: |
+          mkdir result
+          chmod +x build/main.exe
+
+      - name: Run algorithm
+        run: |
+          exitcode=0
+          set +e
+          let begin=1
+          let end=10
+
+          if [[ ${{ matrix.customers-count }} -eq 20 ]]
+          then
+            K=2
+          elif [[ ${{ matrix.customers-count }} -eq 50 ]]
+          then
+            K=3
+          else
+            echo "::error::Invalid customers count"
+            exit 1
+          fi
+
+          let trucks=$K+${{ matrix.vehicles.trucks-count }}
+          let drones=${{ matrix.vehicles.drones-count }}
+
+          report_error() {
+            this_exitcode=$?
+
+            if [ $this_exitcode -ne 0 ]
+            then
+              echo "::warning::Exit code $this_exitcode at run #$i"
+              exitcode=1
+            fi
+          }
+
+          for problem in problems/data/${{ matrix.customers-count }}.*.txt
+          do
+            problem=$(basename -s .txt $problem)
+            for i in $(seq $begin $end)
+            do
+              echo "RUN #$i"
+              python scripts/in.py $problem \
+              --speed-type ${{ matrix.speed-type }} \
+              --range-type ${{ matrix.range-type }} \
+              --waiting-time-limit ${{ matrix.waiting-time-limit }} \
+              --trucks-count $trucks \
+              --drones-count $drones > input.txt
+              report_error
+
+              cat input.txt | build/main.exe > input2.txt
+              report_error
+
+              cat input2.txt | python scripts/out.py $problem --url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              report_error
+            done
+          done
+
+          exit $exitcode
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: solution-${{ matrix.customers-count }}-${{ matrix.speed-type }}-${{ matrix.range-type }}-${{ matrix.waiting-time-limit }}-${{ matrix.vehicles.trucks-count }}-${{ matrix.vehicles.drones-count }}
+          path: result/*
+
+  solve-100:
     name: Run algorithm
     runs-on: ubuntu-latest
     needs: build
@@ -156,7 +264,7 @@ jobs:
     name: Summarize results
     runs-on: ubuntu-latest
     if: ${{ always() }}
-    needs: solve
+    needs: [solve-20-50, solve-100]
 
     steps:
       - name: Checkout repository
