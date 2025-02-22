@@ -852,7 +852,8 @@ namespace d2d
             elite.push_back(result);
         };
 
-        for (std::size_t iteration = 0;; iteration++)
+        std::size_t iteration_cap = (problem->fix_iteration > 0 ? problem->fix_iteration : std::numeric_limits<int>::max());
+        for (std::size_t iteration = 0; iteration < iteration_cap; iteration++)
         {
             if (problem->verbose)
             {

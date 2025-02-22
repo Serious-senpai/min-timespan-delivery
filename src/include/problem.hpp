@@ -50,6 +50,7 @@ namespace d2d
             const DroneNonlinearConfig *const nonlinear,
             const DroneEnduranceConfig *const endurance,
 
+            const int &fix_iteration,
             const std::size_t &reset_after_factor,
             const std::size_t &max_elite_size,
             const std::size_t &destroy_rate,
@@ -69,6 +70,7 @@ namespace d2d
               linear(linear),
               nonlinear(nonlinear),
               endurance(endurance),
+              fix_iteration(fix_iteration),
               reset_after_factor(reset_after_factor),
               max_elite_size(max_elite_size),
               destroy_rate(destroy_rate),
@@ -97,6 +99,7 @@ namespace d2d
         const DroneNonlinearConfig *const nonlinear;
         const DroneEnduranceConfig *const endurance;
 
+        const int fix_iteration;
         const std::size_t reset_after_factor;
         const std::size_t max_elite_size;
         const std::size_t destroy_rate;
@@ -272,8 +275,9 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
+            int fix_iteration;
             std::size_t max_elite_size, reset_after_factor, destroy_rate;
-            std::cin >> max_elite_size >> reset_after_factor >> destroy_rate;
+            std::cin >> fix_iteration >> max_elite_size >> reset_after_factor >> destroy_rate;
 
             bool has_evaluate;
             std::optional<std::pair<std::vector<std::vector<std::vector<std::size_t>>>, std::vector<std::vector<std::vector<std::size_t>>>>> evaluate;
@@ -333,6 +337,7 @@ namespace d2d
                 dynamic_cast<DroneLinearConfig *>(drone),
                 dynamic_cast<DroneNonlinearConfig *>(drone),
                 dynamic_cast<DroneEnduranceConfig *>(drone),
+                fix_iteration,
                 reset_after_factor,
                 max_elite_size,
                 destroy_rate,

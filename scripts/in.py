@@ -21,9 +21,10 @@ class Namespace(argparse.Namespace):
         config: Literal["linear", "non-linear", "endurance", "unlimited"]
         speed_type: Literal["low", "high"]
         range_type: Literal["low", "high"]
-        trucks_count: Optional[int]
-        drones_count: Optional[int]
+        trucks_count: int
+        drones_count: int
         waiting_time_limit: float
+        fix_iteration: int
         reset_after_factor: int
         max_elite_size: int
         destroy_rate: int
@@ -35,14 +36,20 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
-parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a0 * base")
+parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a1 * base")
 parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="high", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="high", choices=["low", "high"], help="range type of drones")
-parser.add_argument("--trucks-count", type=int, required=False, help="the number of trucks to override")
-parser.add_argument("--drones-count", type=int, required=False, help="the number of drones to override")
+parser.add_argument("--trucks-count", default=-1, type=int, help="the number of trucks to override, pass a negative value to use default")
+parser.add_argument("--drones-count", default=-1, type=int, help="the number of drones to override, pass a negative value to use default")
 parser.add_argument("--waiting-time-limit", type=float, default=3600, help="the waiting time limit for each customer")
-parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a1 * base")
+parser.add_argument(
+    "--fix-iteration",
+    default=-1,
+    type=int,
+    help="fix the number of iterations, set this value will also set --reset-after-factor (i.e. reset does not occur)",
+)
+parser.add_argument("--reset-after-factor", default=30, type=int, help="the number of non-improved iterations before resetting the current solution = a2 * base")
 parser.add_argument("--max-elite-size", default=10, type=int, help="the maximum size of the elite set = a3")
 parser.add_argument("--destroy-rate", default=0, type=int, help="the perentage of an elite solution to destroy = a4")
 parser.add_argument("-v", "--verbose", action="store_true", help="the verbose mode")
@@ -85,8 +92,8 @@ if __name__ == "__main__":
 
     print(
         problem.customers_count,
-        namespace.trucks_count if namespace.trucks_count is not None else problem.trucks_count,
-        namespace.drones_count if namespace.drones_count is not None else problem.drones_count,
+        namespace.trucks_count if namespace.trucks_count > 0 else problem.trucks_count,
+        namespace.drones_count if namespace.drones_count > 0 else problem.drones_count,
         namespace.waiting_time_limit,
     )
 
@@ -141,5 +148,10 @@ if __name__ == "__main__":
             model.drone_speed,
         )
 
-    print(namespace.max_elite_size, namespace.reset_after_factor, namespace.destroy_rate)
+    print(
+        namespace.fix_iteration,
+        namespace.max_elite_size,
+        namespace.reset_after_factor if namespace.fix_iteration < 0 else namespace.fix_iteration,
+        namespace.destroy_rate,
+    )
     print(0)  # Not in evaluation
