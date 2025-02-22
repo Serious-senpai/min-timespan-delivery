@@ -116,9 +116,8 @@ jobs:
               echo "RUN #$i"
               python scripts/in.py $problem \
               --tabu-size-factor ${{ matrix.tabu-size-factor }} \
-              --strategy ${{ matrix.strategy }} \
-              --trucks-count $trucks \
-              --drones-count $drones > input.txt
+              --fix-iteration 10000 \
+              --strategy ${{ matrix.strategy }} > input.txt
               report_error
 
               cat input.txt | build/main.exe > input2.txt
