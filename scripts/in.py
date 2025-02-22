@@ -24,6 +24,7 @@ class Namespace(argparse.Namespace):
         trucks_count: int
         drones_count: int
         waiting_time_limit: float
+        strategy: Literal["random", "cyclic", "vns"]
         fix_iteration: int
         reset_after_factor: int
         max_elite_size: int
@@ -32,7 +33,7 @@ class Namespace(argparse.Namespace):
 
 
 parser = argparse.ArgumentParser(
-    description="The min-timespan parallel technician-and-drone scheduling in door-to-door sampling service system.\nAlgorithm input transformer.",
+    description="The min-timespan parallel technician-and-drone scheduling in door-to-door sampling service system.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
@@ -43,6 +44,7 @@ parser.add_argument("--range-type", default="high", choices=["low", "high"], hel
 parser.add_argument("--trucks-count", default=-1, type=int, help="the number of trucks to override, pass a negative value to use default")
 parser.add_argument("--drones-count", default=-1, type=int, help="the number of drones to override, pass a negative value to use default")
 parser.add_argument("--waiting-time-limit", type=float, default=3600, help="the waiting time limit for each customer")
+parser.add_argument("--strategy", default="random", choices=["random", "cyclic", "vns"], help="tabu search neighborhood selection strategy")
 parser.add_argument(
     "--fix-iteration",
     default=-1,
@@ -149,6 +151,7 @@ if __name__ == "__main__":
         )
 
     print(
+        namespace.strategy,
         namespace.fix_iteration,
         namespace.max_elite_size,
         namespace.reset_after_factor if namespace.fix_iteration < 0 else namespace.fix_iteration,

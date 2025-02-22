@@ -823,6 +823,7 @@ namespace d2d
         std::cerr << "tabu_size = " << problem->tabu_size << "\n";
         std::cerr << "verbose = " << problem->verbose << "\n";
         std::cerr << "trucks_count = " << problem->trucks_count << ", drones_count = " << problem->drones_count << "\n";
+        std::cerr << "strategy = " << problem->strategy << "\n";
         std::cerr << "waiting_time_limit = " << problem->waiting_time_limit << "\n";
         std::cerr << "max_elite_size = " << problem->max_elite_size << ", reset_after = " << problem->reset_after << "\n";
 
@@ -955,7 +956,30 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
 
-            neighborhood = utils::random<std::size_t>(0, _neighborhoods.size() - 1);
+            if (problem->strategy == 0)
+            {
+                neighborhood = utils::random<std::size_t>(0, _neighborhoods.size() - 1);
+            }
+            else if (problem->strategy == 1)
+            {
+                neighborhood = (neighborhood + 1) % _neighborhoods.size();
+            }
+            else
+            {
+                static std::size_t last_last_improved = 0;
+                if (last_last_improved != logger.last_improved)
+                {
+                    // Found a new best solution
+                    neighborhood = 0;
+                }
+                else
+                {
+                    // No new best solution found
+                    neighborhood = (neighborhood + 1) % _neighborhoods.size();
+                }
+
+                last_last_improved = logger.last_improved;
+            }
         }
 
         if (problem->verbose)
