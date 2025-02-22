@@ -78,6 +78,7 @@ class ResultJSON(Generic[T], TypedDict):
     elite_set: List[List[float]]
     elapsed: float
     url: Optional[str]
+    strategy: str
 
 
 class _FeasibleMILPResultJSON(TypedDict):

@@ -163,6 +163,7 @@ namespace d2d
             }
 
             std::cout << elapsed.count() << "\n";
+            std::cout << problem->strategy << "\n";
         }
     };
 }
