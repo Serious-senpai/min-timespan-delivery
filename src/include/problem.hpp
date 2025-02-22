@@ -50,7 +50,7 @@ namespace d2d
             const DroneNonlinearConfig *const nonlinear,
             const DroneEnduranceConfig *const endurance,
 
-            const std::size_t &strategy,
+            const std::string &strategy,
             const int &fix_iteration,
             const std::size_t &reset_after_factor,
             const std::size_t &max_elite_size,
@@ -101,7 +101,7 @@ namespace d2d
         const DroneNonlinearConfig *const nonlinear;
         const DroneEnduranceConfig *const endurance;
 
-        const std::size_t strategy;
+        const std::string strategy;
         const int fix_iteration;
         const std::size_t reset_after_factor;
         const std::size_t max_elite_size;
@@ -278,14 +278,8 @@ namespace d2d
                 throw std::runtime_error(utils::format("Unknown drone energy model \"%s\"", drone_class.c_str()));
             }
 
-            std::size_t strategy;
-            {
-                std::vector<std::string> strategies = {"random", "cyclic", "vns"};
-                std::string strategy_str;
-                std::cin >> strategy_str;
-
-                strategy = std::distance(strategies.begin(), std::find(strategies.begin(), strategies.end(), strategy_str));
-            }
+            std::string strategy;
+            std::cin >> strategy;
 
             int fix_iteration;
             std::size_t max_elite_size, reset_after_factor, destroy_rate;

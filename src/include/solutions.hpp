@@ -956,15 +956,15 @@ namespace d2d
             violation_update(A3, current->waiting_time_violation);
             violation_update(A4, current->fixed_time_violation);
 
-            if (problem->strategy == 0)
+            if (problem->strategy == "random")
             {
                 neighborhood = utils::random<std::size_t>(0, _neighborhoods.size() - 1);
             }
-            else if (problem->strategy == 1)
+            else if (problem->strategy == "cyclic")
             {
                 neighborhood = (neighborhood + 1) % _neighborhoods.size();
             }
-            else
+            else if (problem->strategy == "vns")
             {
                 static std::size_t last_last_improved = 0;
                 if (last_last_improved != logger.last_improved)
@@ -979,6 +979,10 @@ namespace d2d
                 }
 
                 last_last_improved = logger.last_improved;
+            }
+            else
+            {
+                throw std::invalid_argument(utils::format("Unrecognized strategy \"%s\"", problem->strategy.c_str()));
             }
         }
 

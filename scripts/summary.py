@@ -77,7 +77,8 @@ if __name__ == "__main__":
             "Truck route count",
             "Weight per drone route",
             "Customers per drone route",
-            "Drone route count,"
+            "Drone route count",
+            "Strategy",
         ]
         csv.write(",".join(headers) + "\n")
 
@@ -144,5 +145,6 @@ if __name__ == "__main__":
                 str(drone_weight / drone_route_count if drone_route_count > 0 else 0),
                 str(drone_customers / drone_route_count if drone_route_count > 0 else 0),
                 str(drone_route_count),
+                result["strategy"],
             ]
             csv.write(",".join(segments) + "\n")

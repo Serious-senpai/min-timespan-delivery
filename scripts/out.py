@@ -123,6 +123,7 @@ if __name__ == "__main__":
 
     elite_set: List[List[float]] = [eval(input()) for _ in range(int(input()))]
     elapsed = float(input()) / 1000  # Convert ms to s
+    strategy = input()
 
     data: ResultJSON[SolutionJSON] = {
         "problem": namespace.problem,
@@ -153,6 +154,7 @@ if __name__ == "__main__":
         "elite_set": elite_set,
         "elapsed": elapsed,
         "url": namespace.url,
+        "strategy": strategy,
     }
     print(solution)
 
