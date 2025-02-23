@@ -75,20 +75,23 @@ namespace d2d
         void add_to_tabu(std::vector<std::size_t> &tabu_id)
         {
             auto problem = Problem::get_instance();
-            std::sort(tabu_id.begin(), tabu_id.end());
+            if (problem->tabu_size > 0)
+            {
+                std::sort(tabu_id.begin(), tabu_id.end());
 
-            auto tabu_iter = std::find(_tabu_list.begin(), _tabu_list.end(), tabu_id);
-            if (tabu_iter == _tabu_list.end())
-            {
-                while (_tabu_list.size() >= problem->tabu_size)
+                auto tabu_iter = std::find(_tabu_list.begin(), _tabu_list.end(), tabu_id);
+                if (tabu_iter == _tabu_list.end())
                 {
-                    _tabu_list.erase(_tabu_list.begin());
+                    while (_tabu_list.size() >= problem->tabu_size)
+                    {
+                        _tabu_list.erase(_tabu_list.begin());
+                    }
+                    _tabu_list.push_back(tabu_id);
                 }
-                _tabu_list.push_back(tabu_id);
-            }
-            else
-            {
-                std::rotate(tabu_iter, tabu_iter + 1, _tabu_list.end());
+                else
+                {
+                    std::rotate(tabu_iter, tabu_iter + 1, _tabu_list.end());
+                }
             }
         }
 

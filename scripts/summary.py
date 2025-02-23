@@ -100,7 +100,7 @@ if __name__ == "__main__":
             milp_available = result["problem"] in milp
             milp_feasible = milp_available and milp[result["problem"]]["status"] != "INFEASIBLE"
 
-            milp_time: Optional[float] = None
+            milp_time = None
             if milp_feasible:
                 milp_time = milp[result["problem"]]["Solve_Time"]  # type: ignore
             elif milp_available:
