@@ -817,7 +817,7 @@ namespace d2d
                                                [](const std::size_t &s, const std::vector<DroneRoute> &routes)
                                                { return s + !routes.empty(); }));
 
-        problem->tabu_size = base_hyperparameter;
+        problem->tabu_size = problem->tabu_size_factor * base_hyperparameter;
         problem->reset_after = problem->reset_after_factor * base_hyperparameter;
 
         std::cerr << "tabu_size = " << problem->tabu_size << "\n";

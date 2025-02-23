@@ -80,7 +80,7 @@ namespace d2d
             auto tabu_iter = std::find(_tabu_list.begin(), _tabu_list.end(), tabu_id);
             if (tabu_iter == _tabu_list.end())
             {
-                if (_tabu_list.size() == problem->tabu_size)
+                while (_tabu_list.size() >= problem->tabu_size)
                 {
                     _tabu_list.erase(_tabu_list.begin());
                 }
