@@ -169,7 +169,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: summary-csv
-          path: result/summary.csv
+          path: |
+            result/summary.csv
+            result/summary.db
 
       - name: Upload summary and all results
         if: ${{ always() }}
