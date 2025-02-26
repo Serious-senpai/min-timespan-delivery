@@ -35,7 +35,7 @@ namespace d2d
         static Problem *_instance;
 
         Problem(
-            const std::size_t &tabu_size_factor,
+            const double &tabu_size_factor,
             const bool verbose,
             const std::size_t &trucks_count,
             const std::size_t &drones_count,
@@ -87,7 +87,7 @@ namespace d2d
         }
 
     public:
-        const std::size_t tabu_size_factor;
+        const double tabu_size_factor;
         const bool verbose;
         const std::size_t trucks_count, drones_count;
         const double waiting_time_limit;
@@ -193,7 +193,7 @@ namespace d2d
 
             average_distance /= customers.size() * (customers.size() - 1) / 2;
 
-            std::size_t tabu_size_factor;
+            double tabu_size_factor;
             bool verbose;
             std::cin >> tabu_size_factor >> verbose;
 
