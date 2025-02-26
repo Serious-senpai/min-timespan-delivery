@@ -5,7 +5,7 @@ import json
 import re
 import sqlite3
 from string import ascii_lowercase
-from typing_extensions import Dict, Iterable, Optional
+from typing_extensions import Dict, Iterable
 
 from package import MILPResultJSON, Problem, ResultJSON, SolutionJSON, ROOT, csv_wrap
 

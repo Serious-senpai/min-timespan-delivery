@@ -17,7 +17,7 @@ from package import (
 class Namespace(argparse.Namespace):
     if TYPE_CHECKING:
         problem: str
-        tabu_size_factor: int
+        tabu_size_factor: float
         config: Literal["linear", "non-linear", "endurance", "unlimited"]
         speed_type: Literal["low", "high"]
         range_type: Literal["low", "high"]
@@ -37,7 +37,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument("problem", type=str, help="the problem name in the archive")
-parser.add_argument("-t", "--tabu-size-factor", default=1, type=int, help="tabu size of each neighborhood = a1 * base")
+parser.add_argument("-t", "--tabu-size-factor", default=1.0, type=float, help="tabu size of each neighborhood = a1 * base")
 parser.add_argument("-c", "--config", default="endurance", choices=["linear", "non-linear", "endurance", "unlimited"], help="the energy consumption model to use")
 parser.add_argument("--speed-type", default="high", choices=["low", "high"], help="speed type of drones")
 parser.add_argument("--range-type", default="high", choices=["low", "high"], help="range type of drones")
