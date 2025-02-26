@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     iterations = int(input())
 
-    tabu_size_factor = int(input())
+    tabu_size_factor = float(input())
     reset_after_factor = int(input())
 
     tabu_size = int(input())

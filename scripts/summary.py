@@ -176,7 +176,7 @@ if __name__ == "__main__":
             "trucks_count INTEGER NOT NULL",
             "drones_count INTEGER NOT NULL",
             "iterations INTEGER NOT NULL",
-            "tabu_size_factor INTEGER NOT NULL",
+            "tabu_size_factor REAL NOT NULL",
             "reset_after_factor INTEGER NOT NULL",
             "tabu_size INTEGER NOT NULL",
             "reset_after INTEGER NOT NULL",
