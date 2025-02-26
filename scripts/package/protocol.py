@@ -54,7 +54,7 @@ class ResultJSON(Generic[T], TypedDict):
     trucks_count: int
     drones_count: int
     iterations: int
-    tabu_size_factor: int
+    tabu_size_factor: float
     reset_after_factor: int
     tabu_size: int
     reset_after: int
