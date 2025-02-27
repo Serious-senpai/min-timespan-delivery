@@ -1,0 +1,13 @@
+# Reference: https://docs.docker.com/reference/compose-file/
+name: min-timespan-delivery
+
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: bash -c "scripts/build.sh alglib && sleep infinity"
+    container_name: devcontainer
+    volumes:
+      - ..:/workspaces/min-timespan-delivery
+    working_dir: /workspaces/min-timespan-delivery
